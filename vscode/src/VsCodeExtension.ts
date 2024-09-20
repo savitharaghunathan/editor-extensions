@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { v4 as uuidv4 } from "uuid";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import { registerAllCommands } from "./commands";
+import { setupWebviewMessageListener } from "./webviewMessageHandler";
 
 export class VsCodeExtension {
   private extensionContext: vscode.ExtensionContext;
@@ -31,17 +32,7 @@ export class VsCodeExtension {
 
     // Set up message listener when the webview is ready
     this.sidebar.onWebviewReady((webview) => {
-      webview.onDidReceiveMessage(async (message: any) => {
-        switch (message.command) {
-          case "startup":
-            console.log("received startup message from webview");
-            break;
-          case "testing":
-            console.log("received testing message from webview");
-            webview.postMessage({ command: "refactor" });
-            break;
-        }
-      });
+      setupWebviewMessageListener(webview);
     });
 
     // Commands

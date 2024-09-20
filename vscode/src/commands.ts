@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
+import { setupWebviewMessageListener } from "./webviewMessageHandler";
 
 let fullScreenPanel: vscode.WebviewPanel | undefined;
 
@@ -65,6 +66,8 @@ const commandsMap: (
         panel,
         true
       );
+
+      setupWebviewMessageListener(panel.webview);
 
       //When panel closes, reset the webview and focus
       panel.onDidDispose(
