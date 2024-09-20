@@ -54,6 +54,7 @@ const commandsMap: (
         vscode.ViewColumn.One,
         {
           retainContextWhenHidden: true,
+          enableScripts: true,
         }
       );
       fullScreenPanel = panel;
