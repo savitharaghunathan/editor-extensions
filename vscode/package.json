@@ -1,7 +1,8 @@
 {
   "name": "konveyor",
+  "publisher": "Konveyor",
   "displayName": "konveyor",
-  "description": "",
+  "description": "VSCode Extension for Konveyor to assist in migrating and modernizing applications.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.93.0"
@@ -14,10 +15,49 @@
   "contributes": {
     "commands": [
       {
-        "command": "konveyor.helloWorld",
-        "title": "Hello World"
+        "command": "konveyor.konveyorGUIView",
+        "title": "Open GUI",
+        "category": "Konveyor"
+      },
+      {
+        "command": "konveyor.toggleFullScreen",
+        "title": "Toggle GUI Fullscreen",
+        "category": "Konveyor"
       }
-    ]
+    ],
+    "view/title": [
+      {
+        "command": "konveyor.toggleFullScreen",
+        "group": "navigation@1",
+        "when": "view == konveyor.konveyorGUIView"
+      }
+    ],
+    "editor/title": [
+      {
+        "command": "konveyor.toggleFullScreen",
+        "group": "navigation@1",
+        "when": "activeWebviewPanelId == konveyor.konveyorGUIView"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "konveyor",
+          "title": "Konveyor",
+          "icon": "$(extensions)"
+        }
+      ]
+    },
+    "views": {
+      "konveyor": [
+        {
+          "type": "webview",
+          "id": "konveyor.konveyorGUIView",
+          "name": "Konveyor",
+          "visibility": "visible"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -31,17 +71,21 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.93.0",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
+    "@types/uuid": "^10.0.0",
+    "@types/vscode": "^1.93.0",
     "@typescript-eslint/eslint-plugin": "^8.3.0",
     "@typescript-eslint/parser": "^8.3.0",
-    "eslint": "^9.9.1",
-    "typescript": "^5.5.4",
-    "ts-loader": "^9.5.1",
-    "webpack": "^5.94.0",
-    "webpack-cli": "^5.1.4",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.9.1",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.4",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "uuid": "^10.0.0"
   }
 }

@@ -1,25 +1,34 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { VsCodeExtension } from './VsCodeExtension';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "konveyor" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('konveyor.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from konveyor!');
-	});
-
-	context.subscriptions.push(disposable);
+	// TODO(djzager): This was in continue but I couldn't get it to work correctly.
+	// const { activateExtension } = await import("./activate");
+	try {
+		const extension = new VsCodeExtension(context);
+		console.log('Extension activated');
+	} catch (e) {
+	  console.log("Error activating extension: ", e);
+	  vscode.window
+		.showInformationMessage(
+		  "Error activating the Konveyor extension.",
+		//   "View Logs",
+		  "Retry",
+		)
+		.then((selection) => {
+		//   if (selection === "View Logs") {
+		// 	vscode.commands.executeCommand("konveyor.viewLogs");
+		//   } else
+		  if (selection === "Retry") {
+			// Reload VS Code window
+			vscode.commands.executeCommand("workbench.action.reloadWindow");
+		  }
+		});
+	}
 }
 
 // This method is called when your extension is deactivated
