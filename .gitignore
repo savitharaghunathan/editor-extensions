@@ -3,3 +3,4 @@ vscode/dist
 vscode/build
 vscode/tsconfig.tsbuildinfo
 vscode/tsbuildinfo
+.aider*
