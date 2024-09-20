@@ -1,0 +1,5 @@
+vscode/node_modules
+vscode/dist
+vscode/build
+vscode/tsconfig.tsbuildinfo
+vscode/tsbuildinfo
