@@ -8,6 +8,7 @@ export class KonveyorGUIWebviewViewProvider
   private _webview?: vscode.Webview;
   private _webviewView?: vscode.WebviewView;
   private outputChannel: vscode.OutputChannel;
+  private webviewReadyCallback?: (webview: vscode.Webview) => void;
 
   constructor(
     private readonly windowId: string,
@@ -22,6 +23,12 @@ export class KonveyorGUIWebviewViewProvider
 
   get webview() {
     return this._webview;
+  }
+  onWebviewReady(callback: (webview: vscode.Webview) => void) {
+    this.webviewReadyCallback = callback;
+    if (this._webview) {
+      callback(this._webview);
+    }
   }
 
   resolveWebviewView(
@@ -45,6 +52,10 @@ export class KonveyorGUIWebviewViewProvider
       webviewView,
       true
     );
+
+    if (this.webviewReadyCallback) {
+      this.webviewReadyCallback(webviewView.webview);
+    }
   }
 
   getSidebarContent(

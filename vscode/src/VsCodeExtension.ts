@@ -28,17 +28,21 @@ export class VsCodeExtension {
         }
       )
     );
-    // this.sidebar.webview.onDidReceiveMessage(async (message: any) => {
-    //   switch (message.command) {
-    //     case "startup":
-    //       console.log("received message from webview");
-    //       break;
-    //     case "testing":
-    //       console.log("received message from webview");
-    //       this.sidebar!.webview.postMessage({ command: "refactor" });
-    //       break;
-    //   }
-    // });
+
+    // Set up message listener when the webview is ready
+    this.sidebar.onWebviewReady((webview) => {
+      webview.onDidReceiveMessage(async (message: any) => {
+        switch (message.command) {
+          case "startup":
+            console.log("received startup message from webview");
+            break;
+          case "testing":
+            console.log("received testing message from webview");
+            webview.postMessage({ command: "refactor" });
+            break;
+        }
+      });
+    });
 
     // Commands
     registerAllCommands(context, this.extensionContext, this.sidebar);
