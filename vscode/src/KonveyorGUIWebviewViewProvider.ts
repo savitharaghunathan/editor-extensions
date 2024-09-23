@@ -78,7 +78,9 @@ export class KonveyorGUIWebviewViewProvider
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}' ${webview.cspSource} 'unsafe-inline';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${
+          webview.cspSource
+        }; script-src 'nonce-${nonce}' ${webview.cspSource} 'unsafe-inline';">
         <title>Konveyor</title>
         <link rel="stylesheet" href="${styleUri}">
       </head>
@@ -91,7 +93,7 @@ export class KonveyorGUIWebviewViewProvider
             console.log('HTML started up. Full screen:', ${isFullScreen});
           });
         </script>
-        <script nonce="${nonce}" src="${scriptUri}" onerror="console.error('Failed to load script')"></script>
+        ${`<script nonce="${nonce}" src="${scriptUri}"></script>`}
       </body>
     </html>
     `;
