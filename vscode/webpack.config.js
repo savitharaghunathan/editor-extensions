@@ -1,14 +1,10 @@
-import * as path from "path";
-import * as webpack from "webpack";
-//@ts-check
-/** @typedef {import('webpack').Configuration} WebpackConfig **/
+const path = require("path");
 
-export default (env: any, argv: any) => {
+module.exports = (env, argv) => {
   const mode = argv.mode || "none";
   const isDev = mode === "development";
 
-  /** @type WebpackConfig */
-  const extensionConfig: webpack.Configuration = {
+  const extensionConfig = {
     target: "node",
     mode: mode,
     entry: "./src/extension.ts",
@@ -42,7 +38,7 @@ export default (env: any, argv: any) => {
     },
   };
 
-  const webviewConfig: webpack.Configuration = {
+  const webviewConfig = {
     target: "web",
     mode: mode,
     entry: "./src/webview/index.tsx",
