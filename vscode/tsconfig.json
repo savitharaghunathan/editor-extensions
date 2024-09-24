@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
+    "target": "es2020",
     "outDir": "out",
-    "lib": ["es6", "dom"],
+    "lib": ["es2020", "WebWorker", "DOM"],
     "jsx": "react",
     "sourceMap": true,
     "rootDir": "src",
-    "strict": false
+    "strict": true
   },
   "include": ["src"],
   "exclude": ["node_modules", ".vscode-test", "src/webviews"]
