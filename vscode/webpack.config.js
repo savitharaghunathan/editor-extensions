@@ -12,6 +12,7 @@ module.exports = (env, argv) => {
       path: path.resolve(__dirname, "out"),
       filename: "extension.js",
       libraryTarget: "commonjs2",
+      devtoolModuleFilenameTemplate: "../[resource-path]",
     },
     externals: {
       vscode: "commonjs vscode",
@@ -27,12 +28,17 @@ module.exports = (env, argv) => {
           use: [
             {
               loader: "ts-loader",
+              options: {
+                compilerOptions: {
+                  sourceMap: "true",
+                },
+              },
             },
           ],
         },
       ],
     },
-    devtool: "nosources-source-map",
+    devtool: isDev ? "source-map" : "nosources-source-map",
     infrastructureLogging: {
       level: "log",
     },
