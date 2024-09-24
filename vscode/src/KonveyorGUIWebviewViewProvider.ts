@@ -66,7 +66,7 @@ export class KonveyorGUIWebviewViewProvider
     const webview = panel.webview;
     const extensionUri = context.extensionUri;
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(extensionUri, "out", "main.wv.js")
+      vscode.Uri.joinPath(extensionUri, "out", "webview", "main.wv.js")
     );
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(extensionUri, "media", "styles.css")

@@ -44,7 +44,7 @@ module.exports = (env, argv) => {
     entry: "./src/webview/index.tsx",
     output: {
       filename: "[name].wv.js",
-      path: path.resolve(__dirname, "out"),
+      path: path.resolve(__dirname, "out/webview"),
     },
     resolve: {
       extensions: [".js", ".ts", ".tsx"],
