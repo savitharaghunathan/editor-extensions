@@ -65,7 +65,7 @@ module.exports = (env, argv) => {
       ],
     },
     devtool: isDev ? "inline-cheap-module-source-map" : false,
-    watch: true,
+    watch: isDev,
     watchOptions: {
       ignored: /node_modules/,
       poll: 1000,

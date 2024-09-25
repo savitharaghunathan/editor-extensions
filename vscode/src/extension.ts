@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
       .showInformationMessage(
         "Error activating the Konveyor extension.",
         //   "View Logs",
-        "Retry"
+        "Retry",
       )
       .then((selection) => {
         //   if (selection === "View Logs") {

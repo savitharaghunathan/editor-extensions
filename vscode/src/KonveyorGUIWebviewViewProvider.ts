@@ -12,7 +12,7 @@ export class KonveyorGUIWebviewViewProvider
 
   constructor(
     private readonly windowId: string,
-    private readonly extensionContext: vscode.ExtensionContext
+    private readonly extensionContext: vscode.ExtensionContext,
   ) {
     this.outputChannel = vscode.window.createOutputChannel("Konveyor");
   }
@@ -34,7 +34,7 @@ export class KonveyorGUIWebviewViewProvider
   resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): void | Thenable<void> {
     this._webview = webviewView.webview;
     this._webviewView = webviewView;
@@ -50,7 +50,7 @@ export class KonveyorGUIWebviewViewProvider
     webviewView.webview.html = this.getSidebarContent(
       this.extensionContext,
       webviewView,
-      true
+      true,
     );
 
     if (this.webviewReadyCallback) {
@@ -61,15 +61,15 @@ export class KonveyorGUIWebviewViewProvider
   getSidebarContent(
     context: vscode.ExtensionContext,
     panel: vscode.WebviewPanel | vscode.WebviewView,
-    isFullScreen: boolean = false
+    isFullScreen: boolean = false,
   ): string {
     const webview = panel.webview;
     const extensionUri = context.extensionUri;
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(extensionUri, "out", "webview", "main.wv.js")
+      vscode.Uri.joinPath(extensionUri, "out", "webview", "main.wv.js"),
     );
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(extensionUri, "media", "styles.css")
+      vscode.Uri.joinPath(extensionUri, "media", "styles.css"),
     );
     const nonce = getNonce();
 

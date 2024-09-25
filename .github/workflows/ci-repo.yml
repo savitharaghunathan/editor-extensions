@@ -1,0 +1,81 @@
+name: CI (repo level)
+
+on:
+  push:
+    branches:
+      - "main"
+      - "release-*"
+
+  pull_request:
+    branches:
+      - "main"
+      - "release-*"
+
+  workflow_dispatch:
+
+  workflow_call:
+
+concurrency:
+  group: ci-repo-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Cache extension node_modules
+        uses: actions/cache@v3
+        with:
+          path: vscode/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
+
+      - name: Install dependencies
+        run: |
+          cd vscode
+          npm version
+          npm ci
+
+      - name: Lint sources
+        run: |
+          cd vscode 
+          npm run lint
+
+      - name: Build
+        run: |
+          cd vscode
+          npm run package
+
+  vscode-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Cache extension node_modules
+        uses: actions/cache@v3
+        with:
+          path: vscode/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
+
+      - run:  |
+            cd vscode
+            npm ci
+      - run: |
+            cd vscode
+            xvfb-run -a npm run test
+      

@@ -7,16 +7,16 @@ let fullScreenPanel: vscode.WebviewPanel | undefined;
 function getFullScreenTab() {
   const tabs = vscode.window.tabGroups.all.flatMap((tabGroup) => tabGroup.tabs);
   return tabs.find((tab) =>
-    (tab.input as any)?.viewType?.endsWith("konveyor.konveyorGUIView")
+    (tab.input as any)?.viewType?.endsWith("konveyor.konveyorGUIView"),
   );
 }
 
 const commandsMap: (
   extensionContext: vscode.ExtensionContext,
-  sidebar: KonveyorGUIWebviewViewProvider
+  sidebar: KonveyorGUIWebviewViewProvider,
 ) => { [command: string]: (...args: any) => any } = (
   extensionContext,
-  sidebar
+  sidebar,
 ) => {
   return {
     "konveyor.focusKonveyorInput": async () => {
@@ -49,14 +49,14 @@ const commandsMap: (
       }
 
       //create the full screen panel
-      let panel = vscode.window.createWebviewPanel(
+      const panel = vscode.window.createWebviewPanel(
         "konveyor.konveyorGUIView",
         "Konveyor",
         vscode.ViewColumn.One,
         {
           retainContextWhenHidden: true,
           enableScripts: true,
-        }
+        },
       );
       fullScreenPanel = panel;
 
@@ -64,7 +64,7 @@ const commandsMap: (
       panel.webview.html = sidebar.getSidebarContent(
         extensionContext,
         panel,
-        true
+        true,
       );
 
       setupWebviewMessageListener(panel.webview);
@@ -75,7 +75,7 @@ const commandsMap: (
           vscode.commands.executeCommand("konveyor.focusKonveyorInput");
         },
         null,
-        extensionContext.subscriptions
+        extensionContext.subscriptions,
       );
     },
   };
@@ -84,13 +84,13 @@ const commandsMap: (
 export function registerAllCommands(
   context: vscode.ExtensionContext,
   extensionContext: vscode.ExtensionContext,
-  sidebar: KonveyorGUIWebviewViewProvider
+  sidebar: KonveyorGUIWebviewViewProvider,
 ) {
   for (const [command, callback] of Object.entries(
-    commandsMap(extensionContext, sidebar)
+    commandsMap(extensionContext, sidebar),
   )) {
     context.subscriptions.push(
-      vscode.commands.registerCommand(command, callback)
+      vscode.commands.registerCommand(command, callback),
     );
   }
 }

@@ -14,7 +14,7 @@ export class VsCodeExtension {
     this.windowId = uuidv4();
     this.sidebar = new KonveyorGUIWebviewViewProvider(
       this.windowId,
-      this.extensionContext
+      this.extensionContext,
     );
 
     // Sidebar
@@ -26,8 +26,8 @@ export class VsCodeExtension {
           webviewOptions: {
             retainContextWhenHidden: true,
           },
-        }
-      )
+        },
+      ),
     );
 
     // Set up message listener when the webview is ready

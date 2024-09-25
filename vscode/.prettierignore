@@ -1,0 +1,13 @@
+# Library, IDE and build locations
+**/node_modules/
+**/coverage/
+**/dist/
+**/out/
+.vscode/
+.idea/
+.eslintcache/
+
+#
+# NOTE: Could ignore anything that eslint will look at since eslint also applies
+#       prettier.
+#
