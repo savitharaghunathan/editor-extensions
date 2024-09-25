@@ -1,16 +1,35 @@
 {
   "name": "konveyor",
-  "publisher": "Konveyor",
-  "displayName": "konveyor",
+  "displayName": "Konveyor",
   "description": "VSCode Extension for Konveyor to assist in migrating and modernizing applications.",
   "version": "0.0.1",
+  "license": "Apache-2.0",
+  "publisher": "Konveyor",
+  "author": "Konveyor",
+  "icon": "resources/konveyor-icon-color.png",
+  "homepage": "https://github.com/konveyor/editor-extensions/blob/main/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/konveyor/editor-extensions"
+  },
+  "bugs": "https://github.com/konveyor/editor-extensions/issues",
   "engines": {
     "vscode": "^1.93.0",
     "node": ">=20.12.2",
     "npm": "^9.5.0 || ^10.5.2"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Machine Learning",
+    "Snippets",
+    "Linters"
+  ],
+  "keywords": [
+    "Migration",
+    "Migrate",
+    "modernizing",
+    "MTA",
+    "Analyze"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -28,7 +47,7 @@
         {
           "id": "konveyor",
           "title": "Konveyor",
-          "icon": "$(extensions)"
+          "icon": "resources/konveyor-icon-color.png"
         }
       ]
     },
