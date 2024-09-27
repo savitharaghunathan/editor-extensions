@@ -32,7 +32,7 @@ jobs:
           - os: ubuntu-latest
             arch: linux
       max-parallel: 1
-    if: ${{ contains (github.event.inputs.architectures, matrix.arch ) || github.event_name != 'workflow_dispatch' }}
+    
     steps:
       - name: checkout code
         uses: actions/checkout@v4
