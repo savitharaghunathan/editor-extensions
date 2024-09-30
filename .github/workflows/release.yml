@@ -18,7 +18,7 @@ on:
         default: 'main'
       architectures:
         description: 'Arch to build'
-        default: 'linux, macos, windows'
+        default: 'linux,macos,windows'
       run_tests:
         description: 'Run tests before packaging and releasing'
         default: 'true'
@@ -51,29 +51,28 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
 
       - name: Install dependencies
+        working-directory: ./vscode
         run: |
-          cd vscode
-          npm version
           npm ci
 
       - name: Lint sources
+        working-directory: ./vscode
         run: |
-          cd vscode 
           npm run lint
 
       - name: Build
+        working-directory: ./vscode
         run: |
-          cd vscode
           npm run package
 
       - name: Generate .vsix package
+        working-directory: ./vscode
         run: |
-          npm install -g @vscode/vsce
-          vsce package
+          npm install @vscode/vsce
+          npx vsce package
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
-          path: "*.vsix"
-      
+          path: "vscode/*.vsix"
