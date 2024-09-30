@@ -1,4 +1,4 @@
-# konveyor-vscode README
+# konveyor-vscode
 
 This extension allows the user to run Konveyor AI from VSCode.
 
@@ -12,7 +12,6 @@ TODO
 
 ## Extension Settings
 
-TODO
 
 ## Known Issues
 
@@ -21,3 +20,4 @@ TODO
 ## Release Notes
 
 TODO
+
