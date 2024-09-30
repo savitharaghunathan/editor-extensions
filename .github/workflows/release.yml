@@ -16,64 +16,99 @@ on:
       release_branch:
         description: 'Branch to release (e.g., main, release-1.0)'
         default: 'main'
-      architectures:
-        description: 'Arch to build'
-        default: 'linux, macos, windows'
       run_tests:
-        description: 'Run tests before packaging and releasing'
+        description: 'Run tests before packaging and releasing (true/false)'
         default: 'true'
-      
+
 jobs:
   build:
+    name: Build and Release (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             arch: linux
-      max-parallel: 1
-    
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
+
     steps:
-      - name: checkout code
+      - name: Check if architecture is selected
+        id: check_arch
+        shell: bash
+        run: |
+          echo "Selected architectures: ${{ github.event.inputs.architectures }}"
+          if [[ "${{ github.event.inputs.architectures }}" == *"${{ matrix.arch }}"* ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip job if architecture not selected
+        if: ${{ steps.check_arch.outputs.should_build == 'false' }}
+        run: |
+          echo "Skipping build for architecture ${{ matrix.arch }}"
+          exit 0
+
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch || github.ref }}
+          ref: ${{ github.event.inputs.release_branch || github.ref }}
 
-      - name: Use Node.js from .nvmrc
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
 
-      - name: Cache extension node_modules
-        uses: actions/cache@v3
-        with:
-          path: vscode/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
-
       - name: Install dependencies
-        run: |
-          cd vscode
-          npm version
-          npm ci
+        working-directory: ./vscode
+        run: npm ci
 
       - name: Lint sources
-        run: |
-          cd vscode 
-          npm run lint
+        working-directory: ./vscode
+        run: npm run lint
 
       - name: Build
-        run: |
-          cd vscode
-          npm run package
+        working-directory: ./vscode
+        run: npm run package
+
+      # Install Xvfb on Linux
+      - name: Install Xvfb (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        run: sudo apt-get install -y xvfb
+
+      # Run tests on Linux
+      - name: Run tests (Linux)
+        if: ${{ github.event.inputs.run_tests == 'true' && runner.os == 'Linux' }}
+        working-directory: ./vscode
+        run: xvfb-run npm test
+        shell: bash
+
+      # Run tests on macOS
+      - name: Run tests (macOS)
+        if: ${{ github.event.inputs.run_tests == 'true' && runner.os == 'macOS' }}
+        working-directory: ./vscode
+        run: npm test
+        shell: bash
+
+      # Run tests on Windows
+      - name: Run tests (Windows)
+        if: ${{ github.event.inputs.run_tests == 'true' && runner.os == 'Windows' }}
+        working-directory: ./vscode
+        run: npm test
+        shell: cmd
 
       - name: Generate .vsix package
+        working-directory: ./vscode
         run: |
-          npm install -g @vscode/vsce
-          vsce package
+          npm install @vscode/vsce
+          npx vsce package
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
-          path: "*.vsix"
-      
+          path: "vscode/*.vsix"
