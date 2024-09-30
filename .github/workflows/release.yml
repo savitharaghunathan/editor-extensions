@@ -11,15 +11,6 @@ on:
       - "main"
       - "release-*"
 
-  workflow_dispatch:
-    inputs:
-      release_branch:
-        description: 'Branch to release (e.g., main, release-1.0)'
-        default: 'main'
-      run_tests:
-        description: 'Run tests before packaging and releasing (true/false)'
-        default: 'true'
-
 jobs:
   build:
     name: Build and Release (${{ matrix.arch }})
@@ -36,27 +27,10 @@ jobs:
       max-parallel: 3
 
     steps:
-      - name: Check if architecture is selected
-        id: check_arch
-        shell: bash
-        run: |
-          echo "Selected architectures: ${{ github.event.inputs.architectures }}"
-          if [[ "${{ github.event.inputs.architectures }}" == *"${{ matrix.arch }}"* ]]; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_build=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Skip job if architecture not selected
-        if: ${{ steps.check_arch.outputs.should_build == 'false' }}
-        run: |
-          echo "Skipping build for architecture ${{ matrix.arch }}"
-          exit 0
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.release_branch || github.ref }}
+          ref: ${{ github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -75,31 +49,26 @@ jobs:
         working-directory: ./vscode
         run: npm run package
 
-      # Install Xvfb on Linux
-      - name: Install Xvfb (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        run: sudo apt-get install -y xvfb
-
-      # Run tests on Linux
-      - name: Run tests (Linux)
-        if: ${{ github.event.inputs.run_tests == 'true' && runner.os == 'Linux' }}
+      # Install Xvfb and Run tests on Linux
+      - name: Install Xvfb and Run tests (Linux)
+        if: matrix.arch == 'linux'
         working-directory: ./vscode
-        run: xvfb-run npm test
-        shell: bash
+        run: |
+          sudo apt-get install -y xvfb
+          xvfb-run npm test
 
       # Run tests on macOS
       - name: Run tests (macOS)
-        if: ${{ github.event.inputs.run_tests == 'true' && runner.os == 'macOS' }}
+        if: matrix.arch == 'macos'
         working-directory: ./vscode
         run: npm test
-        shell: bash
 
       # Run tests on Windows
       - name: Run tests (Windows)
-        if: ${{ github.event.inputs.run_tests == 'true' && runner.os == 'Windows' }}
+        if: matrix.arch == 'windows'
         working-directory: ./vscode
-        run: npm test
         shell: cmd
+        run: npm test
 
       - name: Generate .vsix package
         working-directory: ./vscode
@@ -112,3 +81,15 @@ jobs:
         with:
           name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
           path: "vscode/*.vsix"
+
+      # Update latest release (only on Linux and for main branch)
+      - name: Update latest release
+        if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            vscode/*.vsix
