@@ -83,14 +83,12 @@ jobs:
           path: "vscode/*.vsix"
 
       # Update latest release (only on Linux and for main branch)
-      - name: Update latest release
+      - name: Create or Update Release
         if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
+          files: "vscode/*.vsix"
+          tag_name: "latest"
           prerelease: true
-          title: "Development Build"
-          files: |
-            vscode/*.vsix
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
