@@ -85,13 +85,14 @@ jobs:
       # Update latest release (only on Linux and for main branch)
       - name: Create or Update Release
         if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          files: "vscode/*.vsix"
-          tag_name: "latest"
-          target_commitish: ${{ github.sha }}
-          overwrite: true
+          tag: latest
+          releaseName: "Development Build"
+          allowUpdates: true
+          replacesArtifacts: true
+          commit: ${{ github.sha }}
+          artifacts: "vscode/*.vsix"
           prerelease: true
-          name: "Development Build"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
