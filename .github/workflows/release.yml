@@ -89,6 +89,9 @@ jobs:
         with:
           files: "vscode/*.vsix"
           tag_name: "latest"
+          target_commitish: ${{ github.sha }}
+          overwrite: true
           prerelease: true
+          name: "Development Build"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
