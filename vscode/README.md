@@ -1,21 +1,23 @@
 # konveyor-vscode
 
-konveyor-vscode is a Konveyor AI plugin extension that is supported on VSCode
+This extension allows the user to run Konveyor AI from VSCode.
 
 ## Features
-<TODO>
+
+TODO
 
 ## Requirements
-<TODO>
+
+TODO
 
 ## Extension Settings
 
-<TODO>
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+TODO 
 
 ## Release Notes
 
-<Todo>
+TODO
+

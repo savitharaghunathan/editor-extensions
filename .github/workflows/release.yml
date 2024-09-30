@@ -11,59 +11,64 @@ on:
       - "main"
       - "release-*"
 
-  workflow_dispatch:
-    inputs:
-      release_branch:
-        description: 'Branch to release (e.g., main, release-1.0)'
-        default: 'main'
-      architectures:
-        description: 'Arch to build'
-        default: 'linux,macos,windows'
-      run_tests:
-        description: 'Run tests before packaging and releasing'
-        default: 'true'
-      
 jobs:
   build:
+    name: Build and Release (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             arch: linux
-      max-parallel: 1
-    
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
+
     steps:
-      - name: checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch || github.ref }}
+          ref: ${{ github.ref }}
 
-      - name: Use Node.js from .nvmrc
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
 
-      - name: Cache extension node_modules
-        uses: actions/cache@v3
-        with:
-          path: vscode/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
-
       - name: Install dependencies
         working-directory: ./vscode
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Lint sources
         working-directory: ./vscode
-        run: |
-          npm run lint
+        run: npm run lint
 
       - name: Build
         working-directory: ./vscode
+        run: npm run package
+
+      # Install Xvfb and Run tests on Linux
+      - name: Install Xvfb and Run tests (Linux)
+        if: matrix.arch == 'linux'
+        working-directory: ./vscode
         run: |
-          npm run package
+          sudo apt-get install -y xvfb
+          xvfb-run npm test
+
+      # Run tests on macOS
+      - name: Run tests (macOS)
+        if: matrix.arch == 'macos'
+        working-directory: ./vscode
+        run: npm test
+
+      # Run tests on Windows
+      - name: Run tests (Windows)
+        if: matrix.arch == 'windows'
+        working-directory: ./vscode
+        shell: cmd
+        run: npm test
 
       - name: Generate .vsix package
         working-directory: ./vscode
@@ -76,3 +81,16 @@ jobs:
         with:
           name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
           path: "vscode/*.vsix"
+
+      # Update latest release (only on Linux and for main branch)
+      - name: Update latest release
+        if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            vscode/*.vsix
+
