@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and Release (${{ matrix.arch }})
+    name: Build and Package (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -40,12 +40,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
-
-      - name: Cache extension node_modules
-        uses: actions/cache@v3
-        with:
-          path: vscode/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
 
       - name: Install dependencies
         working-directory: ./vscode
