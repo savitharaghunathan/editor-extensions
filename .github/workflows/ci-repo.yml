@@ -1,0 +1,113 @@
+name: CI (repo level)
+
+on:
+  push:
+    branches:
+      - "main"
+      - "release-*"
+
+  pull_request:
+    branches:
+      - "main"
+      - "release-*"
+
+concurrency:
+  group: ci-repo-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and Package (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Install dependencies
+        working-directory: ./vscode
+        run: |
+          npm version
+          npm ci
+
+      - name: Lint sources
+        working-directory: ./vscode
+        run: npm run lint
+
+      - name: Build
+        working-directory: ./vscode
+        run: npm run package
+
+      # Install Xvfb and Run tests on Linux
+      - name: Install Xvfb and Run tests (Linux)
+        if: matrix.arch == 'linux'
+        working-directory: ./vscode
+        run: 
+          xvfb-run -a npm run test
+
+      # Run tests on macOS
+      - name: Run tests (macOS)
+        if: matrix.arch == 'macos'
+        working-directory: ./vscode
+        run: npm test
+
+      # Run tests on Windows
+      - name: Run tests (Windows)
+        if: matrix.arch == 'windows'
+        working-directory: ./vscode
+        shell: cmd
+        run: npm test
+
+      - name: Generate .vsix package
+        working-directory: ./vscode
+        run: |
+          npm install @vscode/vsce
+          npx vsce package
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
+          path: "vscode/*.vsix"
+
+      # Update latest release (only on Linux and for main branch)
+      # - name: Update latest release
+      #   if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
+      #   uses: marvinpinto/action-automatic-releases@latest
+      #   with:
+      #     repo_token: "${{secrets.GITHUB_TOKEN}}"
+      #     automatic_release_tag: "latest"
+      #     prerelease: true
+      #     title: "Development Build"
+      #     files: |
+      #       *.vsix
+
+      - name: Create or Update Pre-release
+        if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: "Development Build - ${{ github.sha }}"
+          allowUpdates: true
+          commit: ${{ github.sha }}
+          artifacts: "vscode/*.vsix"
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
