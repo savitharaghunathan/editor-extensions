@@ -86,13 +86,20 @@ jobs:
         with:
           name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
           path: "vscode/*.vsix"
-
+          
+      - name: Generate tag name
+        id: vars
+        shell: bash
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
+          TAG_NAME="dev-${SHORT_SHA}"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
       - name: Create or Update Pre-release
         if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
         with:
-          tag: Development Build - ${{ github.sha }}
+          tag: ${{ steps.vars.outputs.tag_name }}
           allowUpdates: true
           commit: ${{ github.sha }}
           artifacts: "vscode/*.vsix"
