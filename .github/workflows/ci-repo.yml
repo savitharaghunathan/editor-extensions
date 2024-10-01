@@ -86,7 +86,7 @@ jobs:
         with:
           name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
           path: "vscode/*.vsix"
-
+          
       - name: Generate tag name
         id: vars
         shell: bash
