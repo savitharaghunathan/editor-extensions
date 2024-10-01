@@ -11,71 +11,90 @@ on:
       - "main"
       - "release-*"
 
-  workflow_dispatch:
-
-  workflow_call:
-
 concurrency:
   group: ci-repo-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  package-tests:
-    runs-on: ubuntu-latest
+  build:
+    name: Build and Package (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
 
     steps:
-      - name: Check-out repository
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-      - name: Use Node.js from .nvmrc
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
 
-      - name: Cache extension node_modules
-        uses: actions/cache@v3
-        with:
-          path: vscode/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
-
       - name: Install dependencies
+        working-directory: ./vscode
         run: |
-          cd vscode
           npm version
           npm ci
 
       - name: Lint sources
-        run: |
-          cd vscode 
-          npm run lint
+        working-directory: ./vscode
+        run: npm run lint
 
       - name: Build
+        working-directory: ./vscode
+        run: npm run package
+
+      # Install Xvfb and Run tests on Linux
+      - name: Install Xvfb and Run tests (Linux)
+        if: matrix.arch == 'linux'
+        working-directory: ./vscode
+        run: 
+          xvfb-run -a npm run test
+
+      # Run tests on macOS
+      - name: Run tests (macOS)
+        if: matrix.arch == 'macos'
+        working-directory: ./vscode
+        run: npm test
+
+      # Run tests on Windows
+      - name: Run tests (Windows)
+        if: matrix.arch == 'windows'
+        working-directory: ./vscode
+        shell: cmd
+        run: npm test
+
+      - name: Generate .vsix package
+        working-directory: ./vscode
         run: |
-          cd vscode
-          npm run package
+          npm install @vscode/vsce
+          npx vsce package
 
-  vscode-tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check-out repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js from .nvmrc
-        uses: actions/setup-node@v4
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
         with:
-          node-version-file: "vscode/.nvmrc"
+          name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
+          path: "vscode/*.vsix"
 
-      - name: Cache extension node_modules
-        uses: actions/cache@v3
+      # Update latest release (only on Linux and for main branch)
+      - name: Update latest release
+        if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
+        uses: marvinpinto/action-automatic-releases@latest
         with:
-          path: vscode/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
-
-      - run:  |
-            cd vscode
-            npm ci
-      - run: |
-            cd vscode
-            xvfb-run -a npm run test
-      
+          repo_token: "${{secrets.GITHUB_TOKEN}}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            *.vsix
