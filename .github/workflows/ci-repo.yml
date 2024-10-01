@@ -88,26 +88,26 @@ jobs:
           path: "vscode/*.vsix"
 
       # Update latest release (only on Linux and for main branch)
-      # - name: Update latest release
-      #   if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
-      #   uses: marvinpinto/action-automatic-releases@latest
-      #   with:
-      #     repo_token: "${{secrets.GITHUB_TOKEN}}"
-      #     automatic_release_tag: "latest"
-      #     prerelease: true
-      #     title: "Development Build"
-      #     files: |
-      #       *.vsix
-
-      - name: Create or Update Pre-release
-        if: matrix.arch == 'linux'
-        uses: ncipollo/release-action@v1
+      - name: Update latest release
+        if: runner.os == 'Linux' && github.ref == 'refs/heads/main'
+        uses: marvinpinto/action-automatic-releases@latest
         with:
-          tag: latest
-          name: "Development Build - ${{ github.sha }}"
-          allowUpdates: true
-          commit: ${{ github.sha }}
-          artifacts: "vscode/*.vsix"
+          repo_token: "${{secrets.GITHUB_TOKEN}}"
+          automatic_release_tag: "latest"
           prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          title: "Development Build"
+          files: |
+            *.vsix
+
+      # - name: Create or Update Pre-release
+      #   if: matrix.arch == 'linux'
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     tag: latest
+      #     name: "Development Build - ${{ github.sha }}"
+      #     allowUpdates: true
+      #     commit: ${{ github.sha }}
+      #     artifacts: "vscode/*.vsix"
+      #     prerelease: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
