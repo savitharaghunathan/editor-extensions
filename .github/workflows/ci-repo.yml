@@ -10,14 +10,17 @@ on:
     branches:
       - "main"
       - "release-*"
+  workflow_dispatch:
 
+  workflow_call:
+    
 concurrency:
   group: ci-repo-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build and Package (${{ matrix.arch }})
+    name: Build (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -40,7 +43,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
-          
+
       - name: Cache extension node_modules
         uses: actions/cache@v3
         with:
@@ -50,19 +53,41 @@ jobs:
       - name: Install dependencies
         working-directory: ./vscode
         run: |
-          npm version
           npm ci
 
       - name: Lint sources
         working-directory: ./vscode
         run: npm run lint
 
-      - name: Build
-        working-directory: ./vscode
-        run: npm run package
+  test:
+    name: Test (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
 
-      # Install Xvfb and Run tests on Linux
-      - name: Install Xvfb and Run tests (Linux)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Install dependencies
+        working-directory: ./vscode
+        run: npm ci
+
+      # Run tests on Linux
+      - name: Run tests (Linux)
         if: matrix.arch == 'linux'
         working-directory: ./vscode
         run: 
@@ -81,6 +106,38 @@ jobs:
         shell: cmd
         run: npm test
 
+  package:
+    name: Package (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Install dependencies
+        working-directory: ./vscode
+        run: npm ci
+
+      - name: Build Package
+        working-directory: ./vscode
+        run: npm run package
+
       - name: Generate .vsix package
         working-directory: ./vscode
         run: |
@@ -90,25 +147,39 @@ jobs:
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-extension-${{ matrix.arch }}-${{ github.run_id }}
+          name: vscode-extension-${{ matrix.arch }}
           path: "vscode/*.vsix"
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: package
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts
 
       - name: Generate tag name
         id: vars
         shell: bash
         run: |
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-8)
-          TAG_NAME="dev-${SHORT_SHA}"
+          TAG_NAME="v0.0.1-dev-${SHORT_SHA}"
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
-      - name: Create or Update Pre-release
-        if: matrix.arch == 'linux' && github.ref == 'refs/heads/main'
+      - name: Create Pre-release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.vars.outputs.tag_name }}
-          allowUpdates: true
+          releaseName: "Development Build - ${{ steps.vars.outputs.tag_name }}"
           commit: ${{ github.sha }}
-          artifacts: "vscode/*.vsix"
+          artifacts: "./artifacts/**/*.vsix"
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
