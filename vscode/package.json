@@ -15,7 +15,7 @@
   "bugs": "https://github.com/konveyor/editor-extensions/issues",
   "engines": {
     "vscode": "^1.93.0",
-    "node": ">=20.12.2",
+    "node": ">=20.13.0",
     "npm": "^9.5.0 || ^10.5.2"
   },
   "categories": [
@@ -217,7 +217,6 @@
             "id": "override-analyzer",
             "title": "Override Analyzer Binary",
             "description": "Specify a custom path for the analyzer binary\n[Override Analyzer Binary](command:konveyor.overrideAnalyzerBinaries)",
-
             "completionEvents": [],
             "media": {
               "markdown": "media/walkthroughs/override-analyzer.md"
@@ -227,7 +226,9 @@
             "id": "configure-custom-rules",
             "title": "Configure Custom Rules",
             "description": "Add custom rules for analysis\n[Configure Custom Rules](command:konveyor.configureCustomRules)",
-            "completionEvents": ["onCommand:konveyor.configureCustomRules"],
+            "completionEvents": [
+              "onCommand:konveyor.configureCustomRules"
+            ],
             "media": {
               "markdown": "media/walkthroughs/custom-rules.md"
             }
