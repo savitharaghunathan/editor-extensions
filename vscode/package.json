@@ -258,6 +258,10 @@
       }
     ]
   },
+  "lint-staged": {
+    "*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}": "eslint --fix",
+    "*.{css,json,md,yaml,yml}": "prettier --write"
+  },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack --mode production --config webpack.config.js",
@@ -268,7 +272,8 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
-    "clean": "rimraf ./out ./test_out"
+    "clean": "rimraf ./out ./test_out",
+    "prepare": "cd .. && husky vscode/.husky"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.7",
@@ -288,6 +293,8 @@
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.36.1",
     "eslint-plugin-unused-imports": "^4.1.4",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.2",
     "webpack": "^5.94.0",

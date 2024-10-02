@@ -1,10 +1,7 @@
 import * as vscode from "vscode";
-import { getNonce } from "./getNonce";
 import { getWebviewContent } from "./webviewContent";
 
-export class KonveyorGUIWebviewViewProvider
-  implements vscode.WebviewViewProvider
-{
+export class KonveyorGUIWebviewViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "konveyor.konveyorGUIView";
   private _webview?: vscode.Webview;
   private _webviewView?: vscode.WebviewView;
@@ -49,11 +46,7 @@ export class KonveyorGUIWebviewViewProvider
       ],
     };
 
-    webviewView.webview.html = getWebviewContent(
-      this.extensionContext,
-      webviewView.webview,
-      true
-    );
+    webviewView.webview.html = getWebviewContent(this.extensionContext, webviewView.webview, true);
 
     if (this.webviewReadyCallback) {
       this.webviewReadyCallback(webviewView.webview);

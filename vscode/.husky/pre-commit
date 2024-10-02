@@ -1,0 +1,3 @@
+# hooks need to be in root
+cd vscode
+npx lint-staged

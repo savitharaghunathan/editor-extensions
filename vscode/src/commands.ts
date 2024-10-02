@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import { setupWebviewMessageListener } from "./webviewMessageHandler";
 import { ExtensionState } from "./extensionState";
 import { getWebviewContent } from "./webviewContent";
@@ -9,14 +8,12 @@ let fullScreenPanel: vscode.WebviewPanel | undefined;
 
 function getFullScreenTab() {
   const tabs = vscode.window.tabGroups.all.flatMap((tabGroup) => tabGroup.tabs);
-  return tabs.find((tab) =>
-    (tab.input as any)?.viewType?.endsWith("konveyor.konveyorGUIView"),
-  );
+  return tabs.find((tab) => (tab.input as any)?.viewType?.endsWith("konveyor.konveyorGUIView"));
 }
 
 const commandsMap: (
   extensionContext: vscode.ExtensionContext,
-  state: ExtensionState
+  state: ExtensionState,
 ) => {
   [command: string]: (...args: any) => any;
 } = (extensionContext, state) => {
@@ -94,7 +91,7 @@ const commandsMap: (
       panel.webview.html = getWebviewContent(
         extensionContext,
         sidebarProvider?.webview || panel.webview,
-        true
+        true,
       );
 
       setupWebviewMessageListener(panel.webview);
@@ -111,25 +108,25 @@ const commandsMap: (
     "konveyor.overrideAnalyzerBinaries": async () => {
       const options: vscode.OpenDialogOptions = {
         canSelectMany: false,
-        openLabel: 'Select Analyzer Binary',
+        openLabel: "Select Analyzer Binary",
         filters: {
-          'Executable Files': ['exe', 'sh', 'bat', ''],
-          'All Files': ['*']
-        }
+          "Executable Files": ["exe", "sh", "bat", ""],
+          "All Files": ["*"],
+        },
       };
 
       const fileUri = await vscode.window.showOpenDialog(options);
-      
+
       if (fileUri && fileUri[0]) {
         const filePath = fileUri[0].fsPath;
-        
+
         // Update the user settings
-        const config = vscode.workspace.getConfiguration('konveyor');
-        await config.update('analyzerPath', filePath, vscode.ConfigurationTarget.Global);
-        
+        const config = vscode.workspace.getConfiguration("konveyor");
+        await config.update("analyzerPath", filePath, vscode.ConfigurationTarget.Global);
+
         vscode.window.showInformationMessage(`Analyzer binary path updated to: ${filePath}`);
       } else {
-        vscode.window.showInformationMessage('No analyzer binary selected.');
+        vscode.window.showInformationMessage("No analyzer binary selected.");
       }
     },
     "konveyor.configureCustomRules": async () => {
@@ -137,86 +134,94 @@ const commandsMap: (
         canSelectMany: true,
         canSelectFolders: true,
         canSelectFiles: true,
-        openLabel: 'Select Custom Rules',
+        openLabel: "Select Custom Rules",
         filters: {
-          'All Files': ['*']
-        }
+          "All Files": ["*"],
+        },
       };
 
       const fileUris = await vscode.window.showOpenDialog(options);
-      
+
       if (fileUris && fileUris.length > 0) {
         const customRules = fileUris.map((uri) => uri.fsPath);
-        
+
         // TODO(djzager): Should we verify the rules provided are valid?
 
         // Update the user settings
-        const config = vscode.workspace.getConfiguration('konveyor');
-        await config.update('customRules', customRules, vscode.ConfigurationTarget.Workspace);
+        const config = vscode.workspace.getConfiguration("konveyor");
+        await config.update("customRules", customRules, vscode.ConfigurationTarget.Workspace);
 
         // Ask the user if they want to disable the default ruleset
-        const useDefaultRulesets = await vscode.window.showQuickPick(
-          ['Yes', 'No'],
-          {
-            placeHolder: 'Do you want to use the default rulesets?',
-            canPickMany: false
-          }
-        );
+        const useDefaultRulesets = await vscode.window.showQuickPick(["Yes", "No"], {
+          placeHolder: "Do you want to use the default rulesets?",
+          canPickMany: false,
+        });
 
-        if (useDefaultRulesets === 'Yes') {
-          await config.update('useDefaultRulesets', true, vscode.ConfigurationTarget.Workspace);
-        } else if (useDefaultRulesets === 'No') {
-          await config.update('useDefaultRulesets', false, vscode.ConfigurationTarget.Workspace);
+        if (useDefaultRulesets === "Yes") {
+          await config.update("useDefaultRulesets", true, vscode.ConfigurationTarget.Workspace);
+        } else if (useDefaultRulesets === "No") {
+          await config.update("useDefaultRulesets", false, vscode.ConfigurationTarget.Workspace);
         }
-        
-        vscode.window.showInformationMessage(`Custom Rules Updated: ${customRules}\nUse Default Rulesets: ${useDefaultRulesets}`);
+
+        vscode.window.showInformationMessage(
+          `Custom Rules Updated: ${customRules}\nUse Default Rulesets: ${useDefaultRulesets}`,
+        );
       } else {
-        vscode.window.showInformationMessage('No custom rules selected.');
+        vscode.window.showInformationMessage("No custom rules selected.");
       }
     },
-    "konveyor.configureSourcesTargets": async() => {
-      const config = vscode.workspace.getConfiguration('konveyor');
-      const currentLabelSelector = config.get<string>('labelSelector', '');
+    "konveyor.configureSourcesTargets": async () => {
+      const config = vscode.workspace.getConfiguration("konveyor");
+      const currentLabelSelector = config.get<string>("labelSelector", "");
 
       // Function to extract values from label selector
       const extractValuesFromSelector = (selector: string, key: string): string[] => {
-        const regex = new RegExp(`konveyor.io/${key}=(.*?)(?:\\s|$)`, 'g');
+        const regex = new RegExp(`konveyor.io/${key}=(.*?)(?:\\s|$)`, "g");
         const matches = selector.matchAll(regex);
-        const values = Array.from(matches, match => match[1]);
-        return values.flatMap(value => value.split('|'));
+        const values = Array.from(matches, (match) => match[1]);
+        return values.flatMap((value) => value.split("|"));
       };
 
       // Extract sources and targets from the current label selector
-      const currentSources = extractValuesFromSelector(currentLabelSelector, 'source');
-      const currentTargets = extractValuesFromSelector(currentLabelSelector, 'target');
+      const currentSources = extractValuesFromSelector(currentLabelSelector, "source");
+      const currentTargets = extractValuesFromSelector(currentLabelSelector, "target");
 
-      const state: { sources: string[]; targets: string[]; labelSelector: string } = { sources: [], targets: [], labelSelector: '' };
+      const state: { sources: string[]; targets: string[]; labelSelector: string } = {
+        sources: [],
+        targets: [],
+        labelSelector: "",
+      };
 
       // Function to show QuickPick for sources and targets
-      const showQuickPick = async (title: string, placeholder: string, items: string[], selectedItems: string[]): Promise<string[] | undefined> => {
+      const showQuickPick = async (
+        title: string,
+        placeholder: string,
+        items: string[],
+        selectedItems: string[],
+      ): Promise<string[] | undefined> => {
         const result = await vscode.window.showQuickPick(
-          items.map(item => ({
+          items.map((item) => ({
             label: item,
-            picked: selectedItems.includes(item)
+            picked: selectedItems.includes(item),
           })),
           {
             canPickMany: true,
             placeHolder: placeholder,
-            title: title
-          }
+            title: title,
+          },
         );
         if (result === undefined) {
           return undefined;
         }
-        return result.map(item => item.label);
+        return result.map((item) => item.label);
       };
 
       // Show QuickPick for sources
       const selectedSources = await showQuickPick(
-        'Select Source Technologies',
-        'Choose one or more source technologies',
+        "Select Source Technologies",
+        "Choose one or more source technologies",
         sourceOptions,
-        currentSources
+        currentSources,
       );
       if (selectedSources === undefined) {
         return;
@@ -225,10 +230,10 @@ const commandsMap: (
 
       // Show QuickPick for targets
       const selectedTargets = await showQuickPick(
-        'Select Target Technologies',
-        'Choose one or more target technologies',
+        "Select Target Technologies",
+        "Choose one or more target technologies",
         targetOptions,
-        currentTargets
+        currentTargets,
       );
       if (selectedTargets === undefined) {
         return;
@@ -236,20 +241,20 @@ const commandsMap: (
       state.targets = selectedTargets;
 
       // Compute initial label selector
-      const sources = state.sources.map(source => `konveyor.io/source=${source}`).join(' || ');
-      const targets = state.targets.map(target => `konveyor.io/target=${target}`).join(' || ');
+      const sources = state.sources.map((source) => `konveyor.io/source=${source}`).join(" || ");
+      const targets = state.targets.map((target) => `konveyor.io/target=${target}`).join(" || ");
       if (sources === "" && targets === "") {
         vscode.window.showInformationMessage("No sources or targets selected.");
         return;
       }
 
-      state.labelSelector = `(${[sources, targets].filter(part => part !== "").join(' && ')}) || (discovery)`;
+      state.labelSelector = `(${[sources, targets].filter((part) => part !== "").join(" && ")}) || (discovery)`;
 
       // Show input box for modifying label selector
       const modifiedLabelSelector = await vscode.window.showInputBox({
-        prompt: 'Modify the label selector if needed',
+        prompt: "Modify the label selector if needed",
         value: state.labelSelector,
-        placeHolder: 'e.g., source=(java|spring) target=(quarkus)'
+        placeHolder: "e.g., source=(java|spring) target=(quarkus)",
       });
 
       if (modifiedLabelSelector === undefined) {
@@ -258,18 +263,24 @@ const commandsMap: (
       state.labelSelector = modifiedLabelSelector;
 
       // Update the user settings
-      await config.update('labelSelector', state.labelSelector, vscode.ConfigurationTarget.Workspace);
+      await config.update(
+        "labelSelector",
+        state.labelSelector,
+        vscode.ConfigurationTarget.Workspace,
+      );
 
-      vscode.window.showInformationMessage(`Configuration updated: Sources: ${state.sources.join(', ')}, Targets: ${state.targets.join(', ')}, Label Selector: ${state.labelSelector}`);
+      vscode.window.showInformationMessage(
+        `Configuration updated: Sources: ${state.sources.join(", ")}, Targets: ${state.targets.join(", ")}, Label Selector: ${state.labelSelector}`,
+      );
     },
     "konveyor.configureLabelSelector": async () => {
-      const config = vscode.workspace.getConfiguration('konveyor');
-      const currentLabelSelector = config.get<string>('labelSelector', '');
+      const config = vscode.workspace.getConfiguration("konveyor");
+      const currentLabelSelector = config.get<string>("labelSelector", "");
 
       const modifiedLabelSelector = await vscode.window.showInputBox({
-        prompt: 'Modify the label selector if needed',
+        prompt: "Modify the label selector if needed",
         value: currentLabelSelector,
-        placeHolder: 'e.g., source=(java|spring) target=(quarkus)'
+        placeHolder: "e.g., source=(java|spring) target=(quarkus)",
       });
 
       if (modifiedLabelSelector === undefined) {
@@ -277,20 +288,17 @@ const commandsMap: (
       }
 
       // Update the user settings
-      await config.update('labelSelector', modifiedLabelSelector, vscode.ConfigurationTarget.Workspace);
+      await config.update(
+        "labelSelector",
+        modifiedLabelSelector,
+        vscode.ConfigurationTarget.Workspace,
+      );
     },
   };
 };
 
-export function registerAllCommands(
-  context: vscode.ExtensionContext,
-  state: ExtensionState
-) {
-  for (const [command, callback] of Object.entries(
-    commandsMap(context, state)
-  )) {
-    context.subscriptions.push(
-      vscode.commands.registerCommand(command, callback),
-    );
+export function registerAllCommands(context: vscode.ExtensionContext, state: ExtensionState) {
+  for (const [command, callback] of Object.entries(commandsMap(context, state))) {
+    context.subscriptions.push(vscode.commands.registerCommand(command, callback));
   }
 }

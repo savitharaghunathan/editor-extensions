@@ -4,15 +4,13 @@ import { getNonce } from "./getNonce";
 export function getWebviewContent(
   context: vscode.ExtensionContext,
   webview: vscode.Webview,
-  isFullScreen: boolean = false
+  isFullScreen: boolean = false,
 ): string {
   const extensionUri = context.extensionUri;
   const scriptUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "out", "webview", "main.wv.js")
+    vscode.Uri.joinPath(extensionUri, "out", "webview", "main.wv.js"),
   );
-  const styleUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, "media", "styles.css")
-  );
+  const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "styles.css"));
   const nonce = getNonce();
 
   return `<!DOCTYPE html>
