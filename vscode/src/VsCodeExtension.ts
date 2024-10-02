@@ -22,7 +22,7 @@ export class VsCodeExtension {
     // Check for multi-root workspace
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 1) {
       vscode.window.showWarningMessage(
-        "Konveyor does not currently support multi-root workspaces. Only the first workspace folder will be analyzed."
+        "Konveyor does not currently support multi-root workspaces. Only the first workspace folder will be analyzed.",
       );
     }
 
@@ -32,15 +32,11 @@ export class VsCodeExtension {
 
     // Sidebar
     context.subscriptions.push(
-      vscode.window.registerWebviewViewProvider(
-        "konveyor.konveyorGUIView",
-        sidebarProvider,
-        {
-          webviewOptions: {
-            retainContextWhenHidden: true,
-          },
+      vscode.window.registerWebviewViewProvider("konveyor.konveyorGUIView", sidebarProvider, {
+        webviewOptions: {
+          retainContextWhenHidden: true,
         },
-      ),
+      }),
     );
 
     sidebarProvider.onWebviewReady((webview) => {
