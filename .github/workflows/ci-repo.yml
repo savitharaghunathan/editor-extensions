@@ -10,24 +10,48 @@ on:
     branches:
       - "main"
       - "release-*"
-
   workflow_dispatch:
+    inputs:
+      shouldRelease:
+        description: 'Should a release be created?'
+        required: false
+        default: 'false'
 
   workflow_call:
+    inputs:
+      shouldRelease:
+        type: boolean
+        description: 'Should a release be created?'
+        required: false
+        default: false
 
+    
 concurrency:
   group: ci-repo-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  package-tests:
-    runs-on: ubuntu-latest
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
 
     steps:
-      - name: Check-out repository
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-      - name: Use Node.js from .nvmrc
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
@@ -39,43 +63,145 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
 
       - name: Install dependencies
+        working-directory: ./vscode
         run: |
-          cd vscode
-          npm version
           npm ci
 
       - name: Lint sources
-        run: |
-          cd vscode 
-          npm run lint
+        working-directory: ./vscode
+        run: npm run lint
 
-      - name: Build
-        run: |
-          cd vscode
-          npm run package
-
-  vscode-tests:
-    runs-on: ubuntu-latest
+  test:
+    name: Test (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
 
     steps:
-      - name: Check-out repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js from .nvmrc
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: "vscode/.nvmrc"
 
-      - name: Cache extension node_modules
-        uses: actions/cache@v3
-        with:
-          path: vscode/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('vscode/package-lock.json') }}
+      - name: Install dependencies
+        working-directory: ./vscode
+        run: npm ci
 
-      - run:  |
-            cd vscode
-            npm ci
-      - run: |
-            cd vscode
-            xvfb-run -a npm run test
+      # Run tests on Linux
+      - name: Run tests (Linux)
+        if: matrix.arch == 'linux'
+        working-directory: ./vscode
+        run: 
+          xvfb-run -a npm run test
+
+      # Run tests on macOS
+      - name: Run tests (macOS)
+        if: matrix.arch == 'macos'
+        working-directory: ./vscode
+        run: npm test
+
+      # Run tests on Windows
+      - name: Run tests (Windows)
+        if: matrix.arch == 'windows'
+        working-directory: ./vscode
+        shell: cmd
+        run: npm test
+
+  package:
+    name: Package (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Install dependencies
+        working-directory: ./vscode
+        run: npm ci
+
+      - name: Build Package
+        working-directory: ./vscode
+        run: npm run package
+
+      - name: Generate .vsix package
+        working-directory: ./vscode
+        run: |
+          npm install @vscode/vsce
+          npx vsce package
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-${{ matrix.arch }}
+          path: "vscode/*.vsix"
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: package
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (github.event.inputs.shouldRelease == 'true' || github.event.inputs.shouldRelease == true)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts
+
+      - name: Read version from package.json
+        id: get_version
+        working-directory: ./vscode
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+
+      - name: Generate tag name with timestamp
+        id: vars
+        shell: bash
+        run: |
+          TAG_NAME="v${{ steps.get_version.outputs.version }}-dev+$(date +%Y%m%d)"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create Pre-release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.vars.outputs.tag_name }}
+          commit: ${{ github.sha }}
+          artifacts: "./artifacts/**/*.vsix"
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
