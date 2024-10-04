@@ -186,9 +186,12 @@ jobs:
 
       - name: Read version from package.json
         id: get_version
+        shell: bash
         working-directory: ./vscode
-        run: echo "version=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
-
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> $GITHUB_OUTPUT
+    
       - name: Generate tag name with timestamp
         id: vars
         shell: bash
