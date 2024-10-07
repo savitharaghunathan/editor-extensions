@@ -191,19 +191,6 @@ jobs:
           path: vscode
           pattern: vscode-extension-*
           merge-multiple: true
-
-  
-      - name: Download VSIX artifact for macOS
-        uses: actions/download-artifact@v3
-        with:
-          name: vscode-extension-macos
-          path: ./artifacts/macos
-  
-      - name: Download VSIX artifact for Windows
-        uses: actions/download-artifact@v3
-        with:
-          name: vscode-extension-windows
-          path: ./artifacts/windows
   
       - name: Verify downloaded artifacts
         run: ls -R ./artifacts
