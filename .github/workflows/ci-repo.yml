@@ -161,6 +161,9 @@ jobs:
         with:
           name: vscode-extension-${{ matrix.arch }}
           path: "vscode/*.vsix"
+      
+      - name: Verify artifacts
+        run: ls -l ./artifacts
 
   release:
     name: Release
@@ -183,6 +186,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ./artifacts
+          
+      - name: Verify downloaded artifacts
+        run: ls -R ./artifacts
 
       - name: Read version from package.json
         id: get_version
