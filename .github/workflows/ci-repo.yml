@@ -193,7 +193,7 @@ jobs:
           merge-multiple: true
   
       - name: Verify downloaded artifacts
-        run: ls -R ./artifacts
+        run: ls -R vscode
   
       - name: Read version from package.json
         id: get_version
