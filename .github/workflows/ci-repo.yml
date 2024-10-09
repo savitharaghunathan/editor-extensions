@@ -168,7 +168,7 @@ jobs:
     needs: package
     if: |
       github.ref == 'refs/heads/main' &&
-      (github.event.inputs.shouldRelease == 'true' || github.event.inputs.shouldRelease == true)
+      (inputs.shouldRelease == 'true' || inputs.shouldRelease == true)
 
     steps:
       - name: Checkout code
