@@ -33,7 +33,7 @@ jobs:
             release_timestamp=$(date --date="$release_date" +%s)
             age_in_days=$(( (current_date - release_timestamp) / 86400 ))
 
-            if [ $age_in_days -gt 0 ]; then
+            if [ $age_in_days -gt 7 ]; then
               echo "Deleting prerelease $release_id (created at $release_date) and tag $tag_name"
               
               # Delete the prerelease
