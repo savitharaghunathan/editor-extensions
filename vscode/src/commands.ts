@@ -1,8 +1,10 @@
-import * as vscode from "vscode";
 import { setupWebviewMessageListener } from "./webviewMessageHandler";
 import { ExtensionState } from "./extensionState";
 import { getWebviewContent } from "./webviewContent";
 import { sourceOptions, targetOptions } from "./config/labels";
+import { AnalysisConfig } from "./webview/types";
+import { runAnalysis } from "./runAnalysis"; // Import the runAnalysis function
+import * as vscode from "vscode";
 
 let fullScreenPanel: vscode.WebviewPanel | undefined;
 
@@ -11,48 +13,59 @@ function getFullScreenTab() {
   return tabs.find((tab) => (tab.input as any)?.viewType?.endsWith("konveyor.konveyorGUIView"));
 }
 
-const commandsMap: (
-  extensionContext: vscode.ExtensionContext,
-  state: ExtensionState,
-) => {
+const commandsMap: (state: ExtensionState) => {
   [command: string]: (...args: any) => any;
-} = (extensionContext, state) => {
-  const { sidebarProvider } = state;
+} = (state) => {
+  const { sidebarProvider, extensionContext } = state;
   return {
     "konveyor.startAnalysis": async (resource: vscode.Uri) => {
-      if (!resource) {
-        vscode.window.showErrorMessage("No file selected for analysis.");
-        return;
-      }
-
-      // Get the file path
-      const filePath = resource.fsPath;
-
-      // Perform your analysis logic here
       try {
-        // For example, read the file content
-        const fileContent = await vscode.workspace.fs.readFile(resource);
-        const contentString = Buffer.from(fileContent).toString("utf8");
+        if (!resource || !resource.fsPath) {
+          throw new Error("No folder selected for analysis.");
+        }
 
-        console.log(contentString, fileContent);
+        const stats = await vscode.workspace.fs.stat(resource);
+        if (stats.type !== vscode.FileType.Directory) {
+          throw new Error("Selected item is not a folder. Please select a folder for analysis.");
+        }
 
-        // TODO: Analyze the file content
-        vscode.window.showInformationMessage(`Analyzing file: ${filePath}`);
+        // Fetch the workspace configuration
+        const config = vscode.workspace.getConfiguration("konveyor");
 
-        // Call your analysis function/module
-        // analyzeFileContent(contentString);
+        // Get the label selector from the configuration
+        const labelSelector = config.get<string>("labelSelector");
+
+        // Get the custom rules from the configuration
+        const customRules = config.get<string[]>("customRules");
+
+        // Get the override analyzer binary path from the configuration
+        const overrideAnalyzerBinaryPath = config.get<string>("overrideAnalyzerBinaryPath");
+
+        // Create an object to hold the analysis configuration
+        const analysisConfig: AnalysisConfig = {
+          labelSelector,
+          customRules,
+          overrideAnalyzerBinaryPath,
+          inputPath: resource.fsPath,
+        };
+
+        // Call the runAnalysis function with the necessary context, webview, and analysis configuration
+        await runAnalysis(state, analysisConfig, state.sidebarProvider?.webview);
       } catch (error) {
-        vscode.window.showErrorMessage(`Failed to analyze file: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        state.sidebarProvider?.webview?.postMessage({
+          type: "analysisFailed",
+          message: errorMessage,
+        });
+        vscode.window.showErrorMessage(`Failed to start analysis: ${errorMessage}`);
       }
     },
 
     "konveyor.focusKonveyorInput": async () => {
       const fullScreenTab = getFullScreenTab();
       if (!fullScreenTab) {
-        // focus sidebar
         vscode.commands.executeCommand("konveyor.konveyorGUIView.focus");
       } else {
-        // focus fullscreen
         fullScreenPanel?.reveal();
       }
       // sidebar.webviewProtocol?.request("focusInput", undefined);
@@ -77,28 +90,30 @@ const commandsMap: (
 
       //create the full screen panel
       const panel = vscode.window.createWebviewPanel(
-        "konveyor.konveyorGUIView",
+        "konveyor.konveyorFullScreenView",
         "Konveyor",
         vscode.ViewColumn.One,
         {
           retainContextWhenHidden: true,
           enableScripts: true,
+          localResourceRoots: [
+            vscode.Uri.joinPath(extensionContext.extensionUri, "media"),
+            vscode.Uri.joinPath(extensionContext.extensionUri, "out"),
+          ],
         },
       );
       fullScreenPanel = panel;
 
       //Add content to the panel
-      panel.webview.html = getWebviewContent(
-        extensionContext,
-        sidebarProvider?.webview || panel.webview,
-        true,
-      );
+      panel.webview.html = getWebviewContent(extensionContext, panel.webview, true);
 
-      setupWebviewMessageListener(panel.webview);
+      setupWebviewMessageListener(panel.webview, state);
 
       //When panel closes, reset the webview and focus
       panel.onDidDispose(
         () => {
+          state.webviewProviders.delete(sidebarProvider);
+          fullScreenPanel = undefined;
           vscode.commands.executeCommand("konveyor.focusKonveyorInput");
         },
         null,
@@ -297,8 +312,8 @@ const commandsMap: (
   };
 };
 
-export function registerAllCommands(context: vscode.ExtensionContext, state: ExtensionState) {
-  for (const [command, callback] of Object.entries(commandsMap(context, state))) {
-    context.subscriptions.push(vscode.commands.registerCommand(command, callback));
+export function registerAllCommands(state: ExtensionState) {
+  for (const [command, callback] of Object.entries(commandsMap(state))) {
+    state.extensionContext.subscriptions.push(vscode.commands.registerCommand(command, callback));
   }
 }
