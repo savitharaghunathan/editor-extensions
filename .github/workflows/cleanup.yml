@@ -3,7 +3,8 @@ name: Prune Nightly Pre-releases
 on:
   schedule:
     - cron: "0 6 * * *"  # Runs every day at 6:00am UTC
-
+  workflow_dispatch:
+  
 jobs:
   prune:
     runs-on: ubuntu-latest
