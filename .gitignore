@@ -3,5 +3,6 @@ vscode/dist
 vscode/build
 vscode/tsconfig.tsbuildinfo
 vscode/tsbuildinfo
+vscode/.metadata
+vscode/org.eclipse*
 .aider*
-.vscode

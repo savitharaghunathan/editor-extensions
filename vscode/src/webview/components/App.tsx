@@ -4,7 +4,6 @@ import {
   PageSection,
   Title,
   EmptyState,
-  EmptyStateIcon,
   EmptyStateBody,
   Button,
   Alert,
@@ -17,12 +16,12 @@ import {
   Modal,
   ButtonVariant,
 } from "@patternfly/react-core";
-import { SearchIcon } from "@patternfly/react-icons";
 import { vscode } from "../globals";
-import { RuleSet } from "../types";
+import { Incident, RuleSet } from "../types";
 import GuidedApproachWizard from "./GuidedApproachWizard";
 import ProgressIndicator from "./ProgressIndicator";
 import ViolationIncidentsList from "./ViolationIncidentsList";
+import { ChatbotContainer } from "./ChatbotContainer";
 
 const App: React.FC = () => {
   const [analysisResults, setAnalysisResults] = useState<RuleSet[] | null>();
@@ -30,11 +29,42 @@ const App: React.FC = () => {
   const [analysisMessage, setAnalysisMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [focusedIncident, setFocusedIncident] = useState<Incident | null>(null);
+  const [expandedViolations, setExpandedViolations] = useState<Set<string>>(new Set());
+  const [isChatVisible, setIsChatVisible] = useState(false);
+
+  const handleIncidentSelect = (incident: Incident) => {
+    setFocusedIncident(incident);
+    vscode.postMessage({
+      command: "openFile",
+      file: incident.uri,
+      line: incident.lineNumber,
+    });
+  };
 
   useEffect(() => {
+    const state = vscode.getState() || {};
+    console.log("State:", state);
+
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
+      console.log("Received message:", message);
       switch (message.type) {
+        case "loadStoredAnalysis": {
+          console.log("Received stored analysis results:", message.data);
+          const storedAnalysisResults = message.data;
+          if (
+            storedAnalysisResults &&
+            Array.isArray(storedAnalysisResults) &&
+            storedAnalysisResults.length > 0
+          ) {
+            setAnalysisResults(storedAnalysisResults);
+          } else {
+            setAnalysisResults(null);
+          }
+          break;
+        }
+
         case "analysisData":
           if (message.data) {
             setAnalysisResults(message.data);
@@ -62,8 +92,6 @@ const App: React.FC = () => {
     };
 
     window.addEventListener("message", handleMessage);
-
-    vscode.postMessage({ command: "requestAnalysisData" });
 
     return () => {
       window.removeEventListener("message", handleMessage);
@@ -123,6 +151,14 @@ const App: React.FC = () => {
                       </Button>
                     </FlexItem>
                   )}
+                  <FlexItem>
+                    <Button
+                      variant={ButtonVariant.secondary}
+                      onClick={() => setIsChatVisible(!isChatVisible)}
+                    >
+                      Chat with Konveyor
+                    </Button>
+                  </FlexItem>
                 </Flex>
               </FlexItem>
             </Flex>
@@ -148,10 +184,18 @@ const App: React.FC = () => {
             {isAnalyzing ? (
               <ProgressIndicator progress={50} />
             ) : hasViolations ? (
-              <ViolationIncidentsList violations={violations} />
+              <ViolationIncidentsList
+                violations={violations}
+                focusedIncident={focusedIncident}
+                onIncidentSelect={handleIncidentSelect}
+                compact={false}
+                expandedViolations={expandedViolations}
+                setExpandedViolations={setExpandedViolations}
+                onOpenChat={() => setIsChatVisible(!isChatVisible)}
+              />
             ) : (
               <EmptyState>
-                <EmptyStateIcon icon={SearchIcon} />
+                {/* <EmptyStateIcon icon={SearchIcon} /> */}
                 <Title headingLevel="h2" size="lg">
                   {analysisResults?.length ? "No Violations Found" : "No Analysis Results"}
                 </Title>
@@ -165,17 +209,12 @@ const App: React.FC = () => {
           </StackItem>
         </Stack>
       </PageSection>
-      <Modal
-        variant="small"
-        isOpen={isWizardOpen}
-        onClose={closeWizard}
-        title="Guided Approach"
-        description="Address issues one at a time"
-      >
+      <Modal variant="small" isOpen={isWizardOpen} onClose={closeWizard} title="Guided Approach">
         {isWizardOpen && hasViolations && (
           <GuidedApproachWizard violations={violations} onClose={closeWizard} />
         )}
       </Modal>
+      {isChatVisible ? <ChatbotContainer /> : null}
     </Page>
   );
 };

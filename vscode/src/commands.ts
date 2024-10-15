@@ -31,7 +31,13 @@ const commandsMap: (state: ExtensionState) => {
         vscode.window.showErrorMessage("Analyzer must be started before run!");
         return;
       }
-      analyzerClient.runAnalysis(state.sidebarProvider.webview!);
+      analyzerClient.clearStoredRulesets();
+
+      if (fullScreenPanel && fullScreenPanel.webview) {
+        analyzerClient.runAnalysis(fullScreenPanel.webview);
+      } else {
+        analyzerClient.runAnalysis(state.sidebarProvider.webview!);
+      }
     },
     "konveyor.focusKonveyorInput": async () => {
       const fullScreenTab = getFullScreenTab();
@@ -76,10 +82,22 @@ const commandsMap: (state: ExtensionState) => {
       );
       fullScreenPanel = panel;
 
-      //Add content to the panel
       panel.webview.html = getWebviewContent(extensionContext, panel.webview, true);
 
-      setupWebviewMessageListener(panel.webview, state);
+      panel.webview.onDidReceiveMessage((message) => {
+        if (message.type === "webviewReady") {
+          console.log("Webview is ready, setting up message listener");
+          setupWebviewMessageListener(panel.webview, state);
+
+          console.log("Populating webview with stored rulesets");
+          state.analyzerClient.populateWebviewWithStoredRulesets(panel.webview);
+        }
+      });
+
+      if (state.sidebarProvider) {
+        // Option 1: Hide the sidebar
+        vscode.commands.executeCommand("workbench.action.closeSidebar");
+      }
 
       //When panel closes, reset the webview and focus
       panel.onDidDispose(

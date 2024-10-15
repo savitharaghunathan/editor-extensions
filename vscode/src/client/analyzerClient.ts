@@ -39,6 +39,7 @@ export class AnalyzerClient {
         return;
       }
     });
+
     this.analyzerServer = spawn(this.getAnalyzerPath(), this.getAnalyzerArgs(), {
       cwd: this.extContext!.extensionPath,
     });
@@ -133,6 +134,8 @@ export class AnalyzerClient {
                   });
 
                   progress.report({ message: "Results processed!" });
+
+                  this.storeRulesets(rulesets);
 
                   resolve();
                   if (webview) {
@@ -286,5 +289,46 @@ export class AnalyzerClient {
       ),
       lspServerPath: path.join(this.extContext!.extensionPath, "assets/bin/jdtls/bin/jdtls"),
     };
+  }
+  private storeRulesets(rulesets: RuleSet[]): void {
+    if (this.extContext) {
+      this.extContext.globalState.update("storedRulesets", JSON.stringify(rulesets));
+    }
+  }
+
+  public clearStoredRulesets(): void {
+    if (this.extContext) {
+      this.extContext.globalState.update("storedRulesets", undefined);
+    }
+  }
+
+  // New method to retrieve stored rulesets
+  public getStoredRulesets(): RuleSet[] | null {
+    if (this.extContext) {
+      const storedRulesets = this.extContext.globalState.get("storedRulesets");
+      return storedRulesets ? JSON.parse(storedRulesets as string) : null;
+    }
+    return null;
+  }
+
+  // New method to populate webview with stored rulesets
+  public populateWebviewWithStoredRulesets(webview: vscode.Webview): void {
+    const storedRulesets = this.getStoredRulesets();
+    console.log("Stored rulesets: ", storedRulesets);
+    if (storedRulesets) {
+      const diagnosticsMap: Map<string, vscode.Diagnostic[]> = new Map();
+      processIncidents(storedRulesets, diagnosticsMap);
+
+      diagnosticsMap.forEach((diagnostics, fileKey) => {
+        const fileUri = vscode.Uri.parse(fileKey);
+        this.diagnosticCollection.set(fileUri, diagnostics);
+      });
+
+      console.log("senging message to webview");
+      webview.postMessage({
+        type: "loadStoredAnalysis",
+        data: storedRulesets,
+      });
+    }
   }
 }
