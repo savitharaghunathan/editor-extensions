@@ -87,7 +87,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vscode-extension-${{ matrix.os }}
-          path: ./artifacts/*.vsix
+          path: ./vscode/*.vsix
 
   release:
     name: Final Release
@@ -100,17 +100,14 @@ jobs:
       - name: Download VSIX Artifacts
         uses: actions/download-artifact@v4
         with:
+          path: ./artifacts
           name: vscode-extension-*
       
-      - name: Rename VSIX Package
+      - name: Rename VSIX Packages
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            mv vscode/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            mv vscode/*.vsix ./artifacts/konveyor-macos-${{ steps.get_version.outputs.version }}.vsix
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mv vscode/*.vsix ./artifacts/konveyor-windows-${{ steps.get_version.outputs.version }}.vsix
-          fi
+          mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
+          mv ./artifacts/vscode-extension-macos/*.vsix ./artifacts/konveyor-macos-${{ steps.get_version.outputs.version }}.vsix
+          mv ./artifacts/vscode-extension-windows/*.vsix ./artifacts/konveyor-windows-${{ steps.get_version.outputs.version }}.vsix
 
       - name: Create Release
         uses: ncipollo/release-action@v1
