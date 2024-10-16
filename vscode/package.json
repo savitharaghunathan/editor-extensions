@@ -65,10 +65,16 @@
         "icon": "$(gear)"
       },
       {
-        "command": "konveyor.startAnalysis",
-        "title": "Start Analysis",
+        "command": "konveyor.startAnalyzer",
+        "title": "Start Analyzer",
         "category": "Konveyor",
-        "icon": "$(gear)"
+        "icon": "$(play}"
+      },
+      {
+        "command": "konveyor.runAnalysis",
+        "title": "Run Analysis",
+        "category": "Konveyor",
+        "icon": "$(play}"
       }
     ],
     "submenus": [
@@ -109,10 +115,6 @@
           "command": "konveyor.toggleFullScreen",
           "group": "navigation@1",
           "when": "activeWebviewPanelId == konveyor.konveyorGUIView"
-        },
-        {
-          "command": "konveyor.startAnalysis",
-          "group": "navigation@1"
         }
       ],
       "explorer/context": [
@@ -121,12 +123,7 @@
           "group": "navigation@1"
         }
       ],
-      "konveyor.submenu": [
-        {
-          "command": "konveyor.startAnalysis",
-          "group": "navigation@1"
-        }
-      ]
+      "konveyor.submenu": []
     },
     "configuration": {
       "type": "object",
@@ -248,7 +245,7 @@
           {
             "id": "start-analyzer",
             "title": "Start Analyzer",
-            "description": "Start the analyzer",
+            "description": "Start the analyzer\n[Start Analyzer](command:konveyor.startAnalyzer)",
             "completionEvents": [],
             "media": {
               "markdown": "media/walkthroughs/start-analyzer.md"
@@ -310,9 +307,10 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@patternfly/patternfly": "^5.4.1",
-    "@patternfly/react-core": "^5.4.0",
+    "@patternfly/patternfly": "6.0.0-prerelease.15",
+    "@patternfly/react-core": "6.0.0-prerelease.15",
     "@patternfly/react-table": "^5.4.1",
+    "@patternfly/virtual-assistant": "2.0.0-alpha.59",
     "@types/react-window": "^1.8.8",
     "babel-loader": "^9.2.1",
     "copy-webpack-plugin": "^12.0.2",

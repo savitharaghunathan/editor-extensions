@@ -19,7 +19,7 @@ export function getWebviewContent(
   const nonce = getNonce();
 
   return `<!DOCTYPE html>
-<html lang="en" class="pf-v5-theme-dark">
+<html lang="en" class="pf-v6-theme-dark">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +42,7 @@ export function getWebviewContent(
     <script nonce="${nonce}">
       window.vscode = acquireVsCodeApi();
       window.addEventListener('load', function() {
-        window.vscode.postMessage({ command: 'startup', isFullScreen: ${isFullScreen} });
+        window.vscode.postMessage({ type: 'webviewReady', isFullScreen: ${isFullScreen} });
         console.log('HTML started up. Full screen:', ${isFullScreen});
       });
     </script>
