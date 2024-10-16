@@ -24,6 +24,9 @@ jobs:
           - os: windows-latest
             arch: windows
       max-parallel: 3
+    outputs:
+      tag_name: ${{ steps.determine_tag.outputs.tag_name }}  
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -81,8 +84,6 @@ jobs:
           npm install @vscode/vsce
           npx vsce package
 
-
-
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
@@ -103,12 +104,6 @@ jobs:
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts
 
-      # - name: Download VSIX Artifacts
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     path: ./artifacts
-      #     name: vscode-extension-*
-      
       - name: Download Linux Artifact
         uses: actions/download-artifact@v4
         with:
@@ -126,22 +121,20 @@ jobs:
         with:
           name: vscode-extension-windows
           path: ./artifacts/vscode-extension-windows
-    
 
       - name: Verify Downloaded Artifacts
         run: ls -R ./artifacts
 
-
       - name: Rename VSIX Packages
         run: |
-          mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
-          mv ./artifacts/vscode-extension-macos/*.vsix ./artifacts/konveyor-macos-${{ steps.get_version.outputs.version }}.vsix
-          mv ./artifacts/vscode-extension-windows/*.vsix ./artifacts/konveyor-windows-${{ steps.get_version.outputs.version }}.vsix
+          mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-linux-${{ needs.release_prereq.outputs.tag_name }}.vsix
+          mv ./artifacts/vscode-extension-macos/*.vsix ./artifacts/konveyor-macos-${{ needs.release_prereq.outputs.tag_name }}.vsix
+          mv ./artifacts/vscode-extension-windows/*.vsix ./artifacts/konveyor-windows-${{ needs.release_prereq.outputs.tag_name }}.vsix
 
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ needs.release.outputs.tag_name }}
+          tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
