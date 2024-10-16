@@ -51,9 +51,25 @@ jobs:
         working-directory: ./vscode
         run: npm run lint
 
-      - name: Run Tests
+      # Run tests on Linux
+      - name: Run tests (Linux)
+        if: matrix.arch == 'linux'
         working-directory: ./vscode
-        run: npm run test
+        run: 
+          xvfb-run -a npm run test
+
+      # Run tests on macOS
+      - name: Run tests (macOS)
+        if: matrix.arch == 'macos'
+        working-directory: ./vscode
+        run: npm test
+
+      # Run tests on Windows
+      - name: Run tests (Windows)
+        if: matrix.arch == 'windows'
+        working-directory: ./vscode
+        shell: cmd
+        run: npm test
 
       - name: Build Package
         working-directory: ./vscode
