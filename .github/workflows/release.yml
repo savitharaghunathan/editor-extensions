@@ -96,19 +96,37 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: List available artifacts
         run: |
           curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts
 
-      - name: Download VSIX Artifacts
+      # - name: Download VSIX Artifacts
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     path: ./artifacts
+      #     name: vscode-extension-*
+      
+      - name: Download Linux Artifact
         uses: actions/download-artifact@v4
         with:
+          name: vscode-extension-linux
           path: ./artifacts
-          name: vscode-extension-*
-      
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-extension-macos
+          path: ./artifacts
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-extension-windows
+          path: ./artifacts
+          
       - name: Rename VSIX Packages
         run: |
           mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
