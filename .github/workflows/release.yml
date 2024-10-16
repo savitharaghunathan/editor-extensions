@@ -86,7 +86,7 @@ jobs:
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-extension-${{ matrix.os }}
+          name: vscode-extension-${{ matrix.arch }}
           path: ./vscode/*.vsix
 
   release:
