@@ -1,5 +1,4 @@
 export interface Incident {
-  id: string;
   uri: string;
   lineNumber: number;
   severity: "High" | "Medium" | "Low";
@@ -76,11 +75,4 @@ export interface Link {
 
   // Title optional description
   title?: string;
-}
-
-export interface AnalysisConfig {
-  labelSelector?: string;
-  customRules?: string[];
-  overrideAnalyzerBinaryPath?: string;
-  inputPath: string;
 }
