@@ -126,7 +126,12 @@ jobs:
         with:
           name: vscode-extension-windows
           path: ./artifacts
-          
+    
+
+      - name: Verify Downloaded Artifacts
+        run: ls -R ./artifacts
+
+
       - name: Rename VSIX Packages
         run: |
           mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
