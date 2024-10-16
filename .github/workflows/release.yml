@@ -81,15 +81,7 @@ jobs:
           npm install @vscode/vsce
           npx vsce package
 
-      - name: Rename VSIX Package
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            mv vscode/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            mv vscode/*.vsix ./artifacts/konveyor-macos-${{ steps.get_version.outputs.version }}.vsix
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mv vscode/*.vsix ./artifacts/konveyor-windows-${{ steps.get_version.outputs.version }}.vsix
-          fi
+
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
@@ -109,6 +101,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vscode-extension-*
+      
+      - name: Rename VSIX Package
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            mv vscode/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            mv vscode/*.vsix ./artifacts/konveyor-macos-${{ steps.get_version.outputs.version }}.vsix
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            mv vscode/*.vsix ./artifacts/konveyor-windows-${{ steps.get_version.outputs.version }}.vsix
+          fi
 
       - name: Create Release
         uses: ncipollo/release-action@v1
