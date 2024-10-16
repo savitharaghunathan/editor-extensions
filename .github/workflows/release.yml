@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'  
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Enter Tag for the release'
+        required: true
+
+jobs:
+  release_prereq:
+    name: Build, Test, and Package (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: linux
+          - os: macos-latest
+            arch: macos
+          - os: windows-latest
+            arch: windows
+      max-parallel: 3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "vscode/.nvmrc"
+
+      - name: Determine the tag
+        id: determine_tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag_name=${{ inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag_name=${{ github.ref }}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Install dependencies
+        working-directory: ./vscode
+        run: npm ci
+
+      - name: Run Lint
+        working-directory: ./vscode
+        run: npm run lint
+
+      - name: Run Tests
+        working-directory: ./vscode
+        run: npm run test
+
+      - name: Build Package
+        working-directory: ./vscode
+        run: npm run package
+
+      - name: Generate .vsix package
+        working-directory: ./vscode
+        run: |
+          npm install @vscode/vsce
+          npx vsce package
+
+      - name: Rename VSIX Package
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            mv vscode/*.vsix ./artifacts/konveyor-linux-${{ steps.get_version.outputs.version }}.vsix
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            mv vscode/*.vsix ./artifacts/konveyor-macos-${{ steps.get_version.outputs.version }}.vsix
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            mv vscode/*.vsix ./artifacts/konveyor-windows-${{ steps.get_version.outputs.version }}.vsix
+          fi
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-extension-${{ matrix.os }}
+          path: ./artifacts/*.vsix
+
+  release:
+    name: Final Release
+    runs-on: ubuntu-latest
+    needs: release_prereq  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download VSIX Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vscode-extension-*
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ needs.release.outputs.tag_name }}
+          commit: ${{ github.sha }}
+          artifacts: |
+            ./artifacts/konveyor-linux-*.vsix
+            ./artifacts/konveyor-macos-*.vsix
+            ./artifacts/konveyor-windows-*.vsix
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
