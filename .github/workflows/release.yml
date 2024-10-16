@@ -113,19 +113,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vscode-extension-linux
-          path: ./artifacts
+          path: ./artifacts/vscode-extension-linux
 
       - name: Download macOS Artifact
         uses: actions/download-artifact@v4
         with:
           name: vscode-extension-macos
-          path: ./artifacts
+          path: ./artifacts/vscode-extension-macos
 
       - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
           name: vscode-extension-windows
-          path: ./artifacts
+          path: ./artifacts/vscode-extension-windows
     
 
       - name: Verify Downloaded Artifacts
