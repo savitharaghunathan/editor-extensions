@@ -40,6 +40,7 @@ jobs:
             echo "tag_name=${{ inputs.tag_name }}" >> $GITHUB_OUTPUT
           else
             echo "tag_name=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
         shell: bash
 
       - name: Install dependencies
