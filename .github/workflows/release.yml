@@ -10,6 +10,12 @@ on:
         description: 'Enter Tag for the release'
         required: true
 
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: true
+        type: boolean
+        default: false 
+
 jobs:
   release_prereq:
     name: Build, Test, and Package (${{ matrix.arch }})
@@ -140,6 +146,6 @@ jobs:
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
             ./artifacts/konveyor-windows-*.vsix
-          prerelease: false
+          prerelease: ${{ github.event.inputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
