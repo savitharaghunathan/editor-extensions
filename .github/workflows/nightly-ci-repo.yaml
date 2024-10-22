@@ -9,5 +9,3 @@ on:
 jobs:
   nightly:
     uses: ./.github/workflows/ci-repo.yml
-    with:
-      shouldRelease: true
