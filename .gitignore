@@ -1,8 +1,12 @@
-vscode/node_modules
-vscode/dist
-vscode/build
+node_modules/
+out/
+build/
+dist/
+
+# TypeScript build info
 vscode/tsconfig.tsbuildinfo
-vscode/tsbuildinfo
 vscode/.metadata
-vscode/org.eclipse*
-.aider*
+
+# Miscellaneous
+vscode/tsbuildinfo
+.vscode/*.aider*
