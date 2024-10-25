@@ -114,7 +114,8 @@ export const mockResults = [
   },
   {
     name: "camel3/camel2",
-    description: "Rules for changes in XML file (e.g. pom.xml) to run on Apache Camel 3",
+    description:
+      "Rules for changes in XML file (e.g. pom.xml) to run on Apache Camel 3",
     skipped: [
       "classes-removed-camel31-00001",
       "component-changes-00001",
@@ -577,8 +578,10 @@ export const mockResults = [
       },
     },
     errors: {
-      "discover-license": "could not run grep with provided pattern exit status 2",
-      "hardcoded-ip-address": "could not run grep with provided pattern exit status 2",
+      "discover-license":
+        "could not run grep with provided pattern exit status 2",
+      "hardcoded-ip-address":
+        "could not run grep with provided pattern exit status 2",
     },
     unmatched: [
       "discover-manifest-file",
@@ -617,7 +620,8 @@ export const mockResults = [
       "This ruleset provides generic migration knowledge from the Seam 2 UI controls to pure JSF 2 UI Controls",
     violations: {
       "seam-java-00270": {
-        description: "Seam API - org.jboss.seam.annotations.Transactional annotation",
+        description:
+          "Seam API - org.jboss.seam.annotations.Transactional annotation",
         category: "mandatory",
         labels: [
           "javaee",
@@ -658,8 +662,10 @@ export const mockResults = [
       },
     },
     errors: {
-      "environment-dependent-calls-04000": "unable to ask for Konveyor rule entry",
-      "environment-dependent-calls-04001": "unable to ask for Konveyor rule entry",
+      "environment-dependent-calls-04000":
+        "unable to ask for Konveyor rule entry",
+      "environment-dependent-calls-04001":
+        "unable to ask for Konveyor rule entry",
       "jsp-01000": "could not run grep with provided pattern exit status 2",
     },
     unmatched: [
@@ -872,11 +878,13 @@ export const mockResults = [
         links: [
           {
             url: "https://access.redhat.com/solutions/199863",
-            title: "How to expose a JavaEE 6 Singleton as a MBean in JMX in JBoss EAP",
+            title:
+              "How to expose a JavaEE 6 Singleton as a MBean in JMX in JBoss EAP",
           },
           {
             url: "https://access.redhat.com/solutions/196713",
-            title: "How to use @Service and @Management annotations in JBoss EAP",
+            title:
+              "How to use @Service and @Management annotations in JBoss EAP",
           },
           {
             url: "https://docs.jboss.org/ejb3/embedded/api/org/jboss/annotation/ejb/package-summary.html",
@@ -900,30 +908,52 @@ export const mockResults = [
       "eap6-08002": "could not run grep with provided pattern exit status 2",
       "eap6-11000": "could not run grep with provided pattern exit status 2",
       "eap6-12000": "could not run grep with provided pattern exit status 2",
-      "elytron-eap71-00000": "could not run grep with provided pattern exit status 2",
+      "elytron-eap71-00000":
+        "could not run grep with provided pattern exit status 2",
       "hibernate4-00021": "unable to ask for Konveyor rule entry",
-      "hibernate4-00039": "could not run grep with provided pattern exit status 2",
-      "hibernate4-xml-00001": "could not run grep with provided pattern exit status 2",
-      "hibernate4-xml-00002": "could not run grep with provided pattern exit status 2",
-      "hibernate4-xml-00004": "could not run grep with provided pattern exit status 2",
-      "hibernate4-xml-00005": "could not run grep with provided pattern exit status 2",
+      "hibernate4-00039":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate4-xml-00001":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate4-xml-00002":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate4-xml-00004":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate4-xml-00005":
+        "could not run grep with provided pattern exit status 2",
       "hsearch-00110": "unable to ask for Konveyor rule entry",
-      "jboss-eap5and6to7-java-01000": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00001": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00003": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00004": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00005": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00006": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00007": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00008": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00010": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00011": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00012": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00013": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00014": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00015": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00016": "could not run grep with provided pattern exit status 2",
-      "maven-javax-to-jakarta-00017": "could not run grep with provided pattern exit status 2",
+      "jboss-eap5and6to7-java-01000":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00001":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00003":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00004":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00005":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00006":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00007":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00008":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00010":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00011":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00012":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00013":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00014":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00015":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00016":
+        "could not run grep with provided pattern exit status 2",
+      "maven-javax-to-jakarta-00017":
+        "could not run grep with provided pattern exit status 2",
     },
     unmatched: [
       "base64-01000",
@@ -1325,7 +1355,8 @@ export const mockResults = [
         links: [
           {
             url: "https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#implicit-identifier-sequence-and-table-name",
-            title: "Hibernate ORM 6 migration guide - Implicit Identifier Sequence and Table Name",
+            title:
+              "Hibernate ORM 6 migration guide - Implicit Identifier Sequence and Table Name",
           },
         ],
         effort: 3,
@@ -1345,7 +1376,8 @@ export const mockResults = [
         incidents: [
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/OrderManagementAppInitializer.java",
-            message: "Replace the `javax.servlet` import statement with `jakarta.servlet`",
+            message:
+              "Replace the `javax.servlet` import statement with `jakarta.servlet`",
             codeSnip:
               " 1  package io.konveyor.demo.ordermanagement;\n 2  \n 3  import javax.servlet.ServletContext;\n 4  import javax.servlet.ServletException;\n 5  import javax.servlet.ServletRegistration;\n 6  \n 7  import org.springframework.web.WebApplicationInitializer;\n 8  import org.springframework.web.context.ContextLoaderListener;\n 9  import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;\n10  import org.springframework.web.servlet.DispatcherServlet;\n11  \n12  public class OrderManagementAppInitializer implements WebApplicationInitializer  {\n13  ",
             lineNumber: 3,
@@ -1359,7 +1391,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/OrderManagementAppInitializer.java",
-            message: "Replace the `javax.servlet` import statement with `jakarta.servlet`",
+            message:
+              "Replace the `javax.servlet` import statement with `jakarta.servlet`",
             codeSnip:
               " 1  package io.konveyor.demo.ordermanagement;\n 2  \n 3  import javax.servlet.ServletContext;\n 4  import javax.servlet.ServletException;\n 5  import javax.servlet.ServletRegistration;\n 6  \n 7  import org.springframework.web.WebApplicationInitializer;\n 8  import org.springframework.web.context.ContextLoaderListener;\n 9  import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;\n10  import org.springframework.web.servlet.DispatcherServlet;\n11  \n12  public class OrderManagementAppInitializer implements WebApplicationInitializer  {\n13  \n14  \t@Override",
             lineNumber: 4,
@@ -1373,7 +1406,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/OrderManagementAppInitializer.java",
-            message: "Replace the `javax.servlet` import statement with `jakarta.servlet`",
+            message:
+              "Replace the `javax.servlet` import statement with `jakarta.servlet`",
             codeSnip:
               " 1  package io.konveyor.demo.ordermanagement;\n 2  \n 3  import javax.servlet.ServletContext;\n 4  import javax.servlet.ServletException;\n 5  import javax.servlet.ServletRegistration;\n 6  \n 7  import org.springframework.web.WebApplicationInitializer;\n 8  import org.springframework.web.context.ContextLoaderListener;\n 9  import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;\n10  import org.springframework.web.servlet.DispatcherServlet;\n11  \n12  public class OrderManagementAppInitializer implements WebApplicationInitializer  {\n13  \n14  \t@Override\n15  \tpublic void onStartup(ServletContext container) throws ServletException {",
             lineNumber: 5,
@@ -1387,7 +1421,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {',
             lineNumber: 3,
@@ -1401,7 +1436,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {\n14  \t@Id',
             lineNumber: 4,
@@ -1415,7 +1451,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {\n14  \t@Id\n15      @SequenceGenerator(',
             lineNumber: 5,
@@ -1429,7 +1466,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {\n14  \t@Id\n15      @SequenceGenerator(\n16              name = "customersSequence",',
             lineNumber: 6,
@@ -1443,7 +1481,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {\n14  \t@Id\n15      @SequenceGenerator(\n16              name = "customersSequence",\n17              sequenceName = "customers_id_seq",',
             lineNumber: 7,
@@ -1457,7 +1496,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {\n14  \t@Id\n15      @SequenceGenerator(\n16              name = "customersSequence",\n17              sequenceName = "customers_id_seq",\n18              allocationSize = 1,',
             lineNumber: 8,
@@ -1471,7 +1511,8 @@ export const mockResults = [
           },
           {
             uri: "/Users/ibolton/Development/tackle-testapp-public/src/main/java/io/konveyor/demo/ordermanagement/model/Customer.java",
-            message: "Replace the `javax.persistence` import statement with `jakarta.persistence`",
+            message:
+              "Replace the `javax.persistence` import statement with `jakarta.persistence`",
             codeSnip:
               ' 1  package io.konveyor.demo.ordermanagement.model;\n 2  \n 3  import javax.persistence.Column;\n 4  import javax.persistence.Entity;\n 5  import javax.persistence.GeneratedValue;\n 6  import javax.persistence.GenerationType;\n 7  import javax.persistence.Id;\n 8  import javax.persistence.SequenceGenerator;\n 9  import javax.persistence.Table;\n10  \n11  @Entity\n12  @Table(name = "customers")\n13  public class Customer {\n14  \t@Id\n15      @SequenceGenerator(\n16              name = "customersSequence",\n17              sequenceName = "customers_id_seq",\n18              allocationSize = 1,\n19              initialValue = 6)',
             lineNumber: 9,
@@ -1490,83 +1531,160 @@ export const mockResults = [
     errors: {
       "deprecated-initialcontextfactory-is-removed-00001":
         "could not run grep with provided pattern exit status 2",
-      "eap8-faces-00009": "could not run grep with provided pattern exit status 2",
-      "eap8-resteasy-00001": "could not run grep with provided pattern exit status 2",
-      "eap8-resteasy-00003": "could not run grep with provided pattern exit status 2",
-      "eap8-resteasy-00011": "could not run grep with provided pattern exit status 2",
-      "eap8-xml-binding-00003": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00020": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00030": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00040": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00050": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00060": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00070": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00080": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00090": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00100": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00105": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00110": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00120": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00140": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00150": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00160": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00170": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00180": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00190": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00200": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00210": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00220": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00230": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00240": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00250": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00260": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00270": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00280": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00290": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00300": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00310": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00320": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00330": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00340": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00350": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00360": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00370": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00380": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00390": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00400": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00410": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00420": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00430": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00440": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00450": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00460": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00470": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00480": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00490": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00500": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00510": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00520": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00530": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00540": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00550": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00560": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00570": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00580": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00590": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00600": "could not run grep with provided pattern exit status 2",
-      "hibernate-search-00610": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00080": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00230": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00240": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00250": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00251": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00252": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00253": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00254": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00255": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00257": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00270": "could not run grep with provided pattern exit status 2",
-      "hibernate6-00280": "could not run grep with provided pattern exit status 2",
+      "eap8-faces-00009":
+        "could not run grep with provided pattern exit status 2",
+      "eap8-resteasy-00001":
+        "could not run grep with provided pattern exit status 2",
+      "eap8-resteasy-00003":
+        "could not run grep with provided pattern exit status 2",
+      "eap8-resteasy-00011":
+        "could not run grep with provided pattern exit status 2",
+      "eap8-xml-binding-00003":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00020":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00030":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00040":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00050":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00060":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00070":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00080":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00090":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00100":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00105":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00110":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00120":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00140":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00150":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00160":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00170":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00180":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00190":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00200":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00210":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00220":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00230":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00240":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00250":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00260":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00270":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00280":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00290":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00300":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00310":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00320":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00330":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00340":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00350":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00360":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00370":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00380":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00390":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00400":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00410":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00420":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00430":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00440":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00450":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00460":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00470":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00480":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00490":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00500":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00510":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00520":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00530":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00540":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00550":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00560":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00570":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00580":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00590":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00600":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate-search-00610":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00080":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00230":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00240":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00250":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00251":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00252":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00253":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00254":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00255":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00257":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00270":
+        "could not run grep with provided pattern exit status 2",
+      "hibernate6-00280":
+        "could not run grep with provided pattern exit status 2",
       "javaee-to-jakarta-namespaces-00001":
         "could not run grep with provided pattern exit status 2",
       "javaee-to-jakarta-namespaces-00002":
@@ -1693,11 +1811,16 @@ export const mockResults = [
         "could not run grep with provided pattern exit status 2",
       "javax-to-jakarta-dependencies-00008":
         "could not run grep with provided pattern exit status 2",
-      "javax-to-jakarta-properties-00001": "could not run grep with provided pattern exit status 2",
-      "legacy-vault-00010": "could not run grep with provided pattern exit status 2",
-      "log4j-removed-00004": "could not run grep with provided pattern exit status 2",
-      "log4j-removed-00005": "could not run grep with provided pattern exit status 2",
-      "picketlink-00010": "could not run grep with provided pattern exit status 2",
+      "javax-to-jakarta-properties-00001":
+        "could not run grep with provided pattern exit status 2",
+      "legacy-vault-00010":
+        "could not run grep with provided pattern exit status 2",
+      "log4j-removed-00004":
+        "could not run grep with provided pattern exit status 2",
+      "log4j-removed-00005":
+        "could not run grep with provided pattern exit status 2",
+      "picketlink-00010":
+        "could not run grep with provided pattern exit status 2",
     },
     unmatched: [
       "eap8-ejb-00001",
@@ -2112,7 +2235,8 @@ export const mockResults = [
   },
   {
     name: "openjdk17",
-    description: "This ruleset provides analysis regarding deprecated APIs in OpenJDK 21.",
+    description:
+      "This ruleset provides analysis regarding deprecated APIs in OpenJDK 21.",
     unmatched: [
       "deprecation-00000",
       "deprecation-00005",
@@ -2238,7 +2362,8 @@ export const mockResults = [
   },
   {
     name: "quarkus/springboot",
-    description: "This ruleset gives hints to migrate from SpringBoot devtools to Quarkus",
+    description:
+      "This ruleset gives hints to migrate from SpringBoot devtools to Quarkus",
     skipped: [
       "cdi-to-quarkus-00000",
       "cdi-to-quarkus-00020",
@@ -2392,7 +2517,12 @@ export const mockResults = [
       },
       "javaee-technology-usage-00120": {
         description: "Java Servlet",
-        labels: ["discovery", "konveyor.io/include=always", "tag=Java Servlet", "tag=Servlet"],
+        labels: [
+          "discovery",
+          "konveyor.io/include=always",
+          "tag=Java Servlet",
+          "tag=Servlet",
+        ],
         incidents: [
           {
             uri: "file:///opt/input/source/src/main/java/io/konveyor/demo/ordermanagement/OrderManagementAppInitializer.java",
@@ -2595,11 +2725,16 @@ export const mockResults = [
       },
     },
     errors: {
-      "configuration-management-0300": "could not run grep with provided pattern exit status 2",
-      "configuration-management-0400": "could not run grep with provided pattern exit status 2",
-      "embedded-framework-08600": "could not run grep with provided pattern exit status 2",
-      "technology-usage-database-01100": "could not run grep with provided pattern exit status 2",
-      "technology-usage-web-01100": "could not run grep with provided pattern exit status 2",
+      "configuration-management-0300":
+        "could not run grep with provided pattern exit status 2",
+      "configuration-management-0400":
+        "could not run grep with provided pattern exit status 2",
+      "embedded-framework-08600":
+        "could not run grep with provided pattern exit status 2",
+      "technology-usage-database-01100":
+        "could not run grep with provided pattern exit status 2",
+      "technology-usage-web-01100":
+        "could not run grep with provided pattern exit status 2",
       "web-01000": "could not run grep with provided pattern exit status 2",
     },
     unmatched: [

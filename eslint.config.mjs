@@ -54,12 +54,7 @@ const tsConfig = {
       ecmaFeatures: {
         jsx: true,
       },
-      project: [
-        "./tsconfig.json",
-        "./shared/tsconfig.json",
-        "./vscode/tsconfig.json",
-        "./webview-ui/tsconfig.json",
-      ],
+      projectService: true,
       tsconfigRootDir: ".",
     },
   },
@@ -95,6 +90,8 @@ export default [
       "**/node_modules/**",
       "**/.git/**",
       "**/build/**",
+      "**/.vscode-test/**",
+      "**/.vscode/**",
     ],
   },
 ];
