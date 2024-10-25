@@ -136,13 +136,13 @@ jobs:
       # Reuse Konveyor changelog
       - name: Generate Changelog
         id: changelog
-        uses: konveyor/release-tools/create-release@main
+        uses: savitharaghunathan/release-tools/create-release@main
         with:
           version: ${{ needs.release_prereq.outputs.tag_name }}
           prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
           repository: ${{ github.repository }}
           ref: ${{ github.sha }}
-          skip_release: true
+          skip_release: 'true'
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
