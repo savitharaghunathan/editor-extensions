@@ -7,17 +7,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "paths": {
-      "@shared/*": ["shared/src/*"]
-    },
     "composite": true,
     "declaration": true
   },
-  "include": [
-    "shared/src/**/*.ts",
-    "vscode/src/**/*.ts",
-    "webview-ui/src/**/*.ts"
-  ],
 
   "references": [
     { "path": "./shared" },
