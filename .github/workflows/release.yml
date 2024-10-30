@@ -136,7 +136,7 @@ jobs:
       # Reuse Konveyor changelog
       - name: Generate Changelog
         id: changelog
-        uses: savitharaghunathan/release-tools/create-release@main
+        uses: savitharaghunathan/release-tools/create-release@rel_flag
         with:
           version: ${{ needs.release_prereq.outputs.tag_name }}
           prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
@@ -150,7 +150,7 @@ jobs:
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
-          body: ${{ steps.changelog.outputs.changelog }}  
+          bodyFile: ${{ env.release_doc }}  
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
