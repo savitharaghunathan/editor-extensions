@@ -150,7 +150,7 @@ jobs:
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
-          body: ${{ steps.changelog.outputs.changelog }}  
+          bodyFile: ${{ env.release_doc }}  
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
