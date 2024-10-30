@@ -40,7 +40,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: "vscode/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Determine the tag
         id: determine_tag
@@ -53,31 +53,26 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        working-directory: ./vscode
         run: npm ci
 
       # Run tests on Linux
       - name: Run tests (Linux)
         if: matrix.arch == 'linux'
-        working-directory: ./vscode
         run: 
           xvfb-run -a npm run test
 
       # Run tests on macOS
       - name: Run tests (macOS)
         if: matrix.arch == 'macos'
-        working-directory: ./vscode
         run: npm test
 
       # Run tests on Windows
       - name: Run tests (Windows)
         if: matrix.arch == 'windows'
-        working-directory: ./vscode
         shell: cmd
         run: npm test
 
       - name: Build Package
-        working-directory: ./vscode
         run: npm run package
 
       - name: Generate .vsix package
@@ -133,11 +128,24 @@ jobs:
           mv ./artifacts/vscode-extension-macos/*.vsix ./artifacts/konveyor-macos-${{ needs.release_prereq.outputs.tag_name }}.vsix
           mv ./artifacts/vscode-extension-windows/*.vsix ./artifacts/konveyor-windows-${{ needs.release_prereq.outputs.tag_name }}.vsix
 
+      # Reuse Konveyor changelog
+      - name: Generate Changelog
+        id: changelog
+        uses: konveyor/release-tools/create-release@main
+        with:
+          version: ${{ needs.release_prereq.outputs.tag_name }}
+          prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          skip_release: 'true'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
+          bodyFile: ${{ env.release_doc }}  
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
