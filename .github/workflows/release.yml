@@ -142,7 +142,7 @@ jobs:
           prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
           repository: ${{ github.repository }}
           ref: ${{ github.sha }}
-          skip_release: true
+          skip_release: 'true'
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
