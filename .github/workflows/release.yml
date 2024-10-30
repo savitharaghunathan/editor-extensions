@@ -136,7 +136,7 @@ jobs:
       # Reuse Konveyor changelog
       - name: Generate Changelog
         id: changelog
-        uses: savitharaghunathan/release-tools/create-release.yml@main
+        uses: savitharaghunathan/release-tools/create-release@rel_flag
         with:
           version: ${{ needs.release_prereq.outputs.tag_name }}
           prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
