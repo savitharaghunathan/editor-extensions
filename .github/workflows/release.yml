@@ -92,7 +92,9 @@ jobs:
       prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
       repository: ${{ github.repository }}
       ref: ${{ github.sha }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
 
   release:
     name: Final Release
