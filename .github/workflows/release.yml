@@ -142,12 +142,25 @@ jobs:
           mv ./artifacts/vscode-extension-macos/*.vsix ./artifacts/konveyor-macos-${{ needs.release_prereq.outputs.tag_name }}.vsix
           mv ./artifacts/vscode-extension-windows/*.vsix ./artifacts/konveyor-windows-${{ needs.release_prereq.outputs.tag_name }}.vsix
 
+      # Reuse Konveyor changelog
+      - name: Generate Changelog
+        id: changelog
+        uses: savitharaghunathan/release-tools/create-release@rel_flag
+        with:
+          version: ${{ needs.release_prereq.outputs.tag_name }}
+          prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          skip_release: 'true'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
           bodyFile: ./artifacts/release.md  
+
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
