@@ -95,7 +95,6 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
-
   release:
     name: Final Release
     runs-on: ubuntu-latest
@@ -103,6 +102,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download Changelog Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog-artifact
+          path: ./artifacts
 
       - name: List available artifacts
         run: |
@@ -142,7 +147,7 @@ jobs:
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
-          bodyFile: ${{ needs.generate_changelog.outputs.changelog-file }}  
+          bodyFile: ./artifacts/release.md  
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
