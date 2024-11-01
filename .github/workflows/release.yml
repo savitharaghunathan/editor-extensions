@@ -131,7 +131,7 @@ jobs:
       # Reuse Konveyor changelog
       - name: Generate Changelog
         id: changelog
-        uses: konveyor/release-tools/create-release@main
+        uses: savitharaghunathan/release-tools/.github/workflows/generate-changelog.ym@test_change
         with:
           version: ${{ needs.release_prereq.outputs.tag_name }}
           prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
