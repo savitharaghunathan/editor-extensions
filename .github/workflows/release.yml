@@ -9,7 +9,6 @@ on:
       tag_name:
         description: 'Enter Tag for the release'
         required: true
-
       prerelease:
         description: 'Is this a pre-release?'
         required: true
@@ -31,7 +30,7 @@ jobs:
             arch: windows
       max-parallel: 3
     outputs:
-      tag_name: ${{ steps.determine_tag.outputs.tag_name }}  
+      tag_name: ${{ steps.determine_tag.outputs.tag_name }}
 
     steps:
       - name: Checkout code
@@ -40,7 +39,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: "vscode/.nvmrc"
+          node-version-file: ".nvmrc"
 
       - name: Determine the tag
         id: determine_tag
@@ -53,31 +52,23 @@ jobs:
         shell: bash
 
       - name: Install dependencies
-        working-directory: ./vscode
         run: npm ci
 
-      # Run tests on Linux
+      # Run tests on different OSes
       - name: Run tests (Linux)
         if: matrix.arch == 'linux'
-        working-directory: ./vscode
-        run: 
-          xvfb-run -a npm run test
+        run: xvfb-run -a npm run test
 
-      # Run tests on macOS
       - name: Run tests (macOS)
         if: matrix.arch == 'macos'
-        working-directory: ./vscode
         run: npm test
 
-      # Run tests on Windows
       - name: Run tests (Windows)
         if: matrix.arch == 'windows'
-        working-directory: ./vscode
         shell: cmd
         run: npm test
 
       - name: Build Package
-        working-directory: ./vscode
         run: npm run package
 
       - name: Generate .vsix package
@@ -92,10 +83,23 @@ jobs:
           name: vscode-extension-${{ matrix.arch }}
           path: ./vscode/*.vsix
 
+  generate_changelog:
+    name: Generate Changelog
+    needs: release_prereq
+    uses: savitharaghunathan/release-tools/.github/workflows/generate-changelog.yml@test_change
+    with:
+      version: ${{ needs.release_prereq.outputs.tag_name }}
+      prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+      repository: ${{ github.repository }}
+      ref: ${{ github.sha }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+
   release:
     name: Final Release
     runs-on: ubuntu-latest
-    needs: release_prereq  
+    needs: [release_prereq, generate_changelog]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -150,7 +154,8 @@ jobs:
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
-          bodyFile: ${{ env.release_doc }}  
+          bodyFile: ${{ needs.generate_changelog.outputs.changelog-file }}  
+
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix

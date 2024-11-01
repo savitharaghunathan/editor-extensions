@@ -1,14 +1,16 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "module": "Node16",
-    "target": "ES2023",
-    "lib": ["ES2023", "WebWorker", "DOM"],
-    "jsx": "react",
+    "module": "commonjs",
+    "target": "esnext",
+    "baseUrl": ".",
+    "outDir": "out",
+    "lib": ["ES2020"],
     "sourceMap": true,
     "rootDir": "src",
     "strict": true,
-    "skipLibCheck": true
+    "composite": true,
+    "declaration": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", ".vscode-test", "src/webviews"]
+  "include": ["src/**/*.ts"]
 }
