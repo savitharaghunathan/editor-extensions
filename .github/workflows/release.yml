@@ -86,7 +86,7 @@ jobs:
   generate_changelog:
     name: Generate Changelog
     needs: release_prereq
-    uses: savitharaghunathan/release-tools/.github/workflows/generate-changelog.yml@rel_flag
+    uses: konveyor/release-tools/.github/workflows/generate-changelog.yml@main
     with:
       version: ${{ needs.release_prereq.outputs.tag_name }}
       prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
