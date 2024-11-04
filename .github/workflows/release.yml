@@ -86,14 +86,13 @@ jobs:
   generate_changelog:
     name: Generate Changelog
     needs: release_prereq
-    uses: konveyor/release-tools/.github/workflows/generate-changelog.yml@main
+    uses: savitharaghunathan/release-tools/.github/workflows/generate-changelog.yml@rel_flag
     with:
       version: ${{ needs.release_prereq.outputs.tag_name }}
       prev_version: $(gh api repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
       repository: ${{ github.repository }}
       ref: ${{ github.sha }}
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     name: Final Release
