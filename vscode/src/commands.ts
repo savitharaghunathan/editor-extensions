@@ -11,6 +11,8 @@ import {
   ViewColumn,
   workspace,
 } from "vscode";
+import { cleanRuleSets, loadRuleSets, loadStaticResults } from "./data";
+import { RuleSet } from "@shared/types";
 
 let fullScreenPanel: WebviewPanel | undefined;
 
@@ -39,7 +41,6 @@ const commandsMap: (state: ExtensionState) => {
         window.showErrorMessage("Analyzer must be started before run!");
         return;
       }
-      analyzerClient.clearStoredRulesets();
 
       if (fullScreenPanel && fullScreenPanel.webview) {
         analyzerClient.runAnalysis(fullScreenPanel.webview);
@@ -95,17 +96,6 @@ const commandsMap: (state: ExtensionState) => {
       panel.webview.html = sidebarProvider._getHtmlForWebview(panel.webview);
 
       setupWebviewMessageListener(panel.webview, state);
-
-      panel.webview.onDidReceiveMessage(
-        (message) => {
-          if (message.command === "webviewReady") {
-            console.log("Webview is ready");
-            state.analyzerClient.populateWebviewWithStoredRulesets(panel.webview);
-          }
-        },
-        undefined,
-        extensionContext.subscriptions,
-      );
 
       if (state.sidebarProvider) {
         commands.executeCommand("workbench.action.closeSidebar");
@@ -303,6 +293,9 @@ const commandsMap: (state: ExtensionState) => {
       // Update the user settings
       await config.update("labelSelector", modifiedLabelSelector, ConfigurationTarget.Workspace);
     },
+    "konveyor.loadRuleSets": (ruleSets: RuleSet[]): void => loadRuleSets(state, ruleSets),
+    "konveyor.cleanRuleSets": () => cleanRuleSets(state),
+    "konveyor.loadStaticResults": loadStaticResults,
   };
 };
 

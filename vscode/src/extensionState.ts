@@ -19,5 +19,6 @@ export interface ExtensionState {
   sharedState: SharedState;
   webviewProviders: Set<KonveyorGUIWebviewViewProvider>;
   sidebarProvider: KonveyorGUIWebviewViewProvider;
-  extensionContext: vscode.ExtensionContext; // Add this line
+  extensionContext: vscode.ExtensionContext;
+  diagnosticCollection: vscode.DiagnosticCollection;
 }

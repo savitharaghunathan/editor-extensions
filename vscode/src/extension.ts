@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
-import { registerAllCommands } from "./commands";
+import { registerAllCommands as registerAllCommands } from "./commands";
 import { ExtensionState, SharedState } from "./extensionState";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
+import { RuleSet } from "@shared/types";
 
 class VsCodeExtension {
   private state: ExtensionState;
@@ -15,6 +16,7 @@ class VsCodeExtension {
       webviewProviders: new Set<KonveyorGUIWebviewViewProvider>(),
       sidebarProvider: undefined as any,
       extensionContext: context,
+      diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
     };
 
     this.initializeExtension(context);

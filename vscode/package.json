@@ -68,6 +68,21 @@
         "title": "Run Analysis",
         "category": "Konveyor",
         "icon": "$(play}"
+      },
+      {
+        "command": "konveyor.loadStaticResults",
+        "title": "Load results from files",
+        "category": "Konveyor"
+      },
+      {
+        "command": "konveyor.cleanRuleSets",
+        "title": "Reset analysis results",
+        "category": "Konveyor"
+      },
+      {
+        "command": "konveyor.loadRuleSets",
+        "title": "Load analysis results",
+        "category": "Konveyor"
       }
     ],
     "submenus": [
@@ -116,7 +131,13 @@
           "group": "navigation@1"
         }
       ],
-      "konveyor.submenu": []
+      "konveyor.submenu": [],
+      "commandPalette": [
+        {
+          "command": "konveyor.loadRuleSets",
+          "when": "never"
+        }
+      ]
     },
     "configuration": {
       "type": "object",

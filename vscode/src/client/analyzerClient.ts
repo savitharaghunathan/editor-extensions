@@ -2,7 +2,6 @@ import { ChildProcessWithoutNullStreams, exec, spawn } from "child_process";
 import * as vscode from "vscode";
 import * as os from "os";
 import * as fs from "fs";
-import { processIncidents } from "./analyzerResults";
 import { Incident, RuleSet } from "@shared/types";
 
 import path from "path";
@@ -14,13 +13,11 @@ export class AnalyzerClient {
   private outputChannel: vscode.OutputChannel;
   // private rpcConnection: rpc.MessageConnection | null = null;
   private requestId: number = 1;
-  private diagnosticCollection: vscode.DiagnosticCollection;
 
   constructor(context: vscode.ExtensionContext) {
     this.extContext = context;
     this.outputChannel = vscode.window.createOutputChannel("Konveyor-Analyzer");
     this.config = vscode.workspace.getConfiguration("konveyor");
-    this.diagnosticCollection = vscode.languages.createDiagnosticCollection("konveyor");
   }
 
   public start(): void {
@@ -130,25 +127,11 @@ export class AnalyzerClient {
                     this.outputChannel.appendLine("No RuleSets from analysis!");
                   }
 
-                  const diagnosticsMap: Map<string, vscode.Diagnostic[]> = new Map();
-                  processIncidents(rulesets, diagnosticsMap);
-
-                  diagnosticsMap.forEach((diagnostics, fileKey) => {
-                    const fileUri = vscode.Uri.parse(fileKey);
-                    this.diagnosticCollection.set(fileUri, diagnostics);
-                  });
+                  vscode.commands.executeCommand("konveyor.loadRuleSets", rulesets);
 
                   progress.report({ message: "Results processed!" });
 
-                  this.storeRulesets(rulesets);
-
                   resolve();
-                  if (webview) {
-                    webview.postMessage({
-                      type: "analysisComplete",
-                      data: rulesets,
-                    });
-                  }
                 }
               } catch (err: any) {
                 this.outputChannel.appendLine(`Error parsing analysis result: ${err.message}`);
@@ -307,17 +290,6 @@ export class AnalyzerClient {
       lspServerPath: path.join(this.extContext!.extensionPath, "assets/bin/jdtls/bin/jdtls"),
     };
   }
-  private storeRulesets(rulesets: RuleSet[]): void {
-    if (this.extContext) {
-      this.extContext.globalState.update("storedRulesets", JSON.stringify(rulesets));
-    }
-  }
-
-  public clearStoredRulesets(): void {
-    if (this.extContext) {
-      this.extContext.globalState.update("storedRulesets", undefined);
-    }
-  }
 
   // New method to retrieve stored rulesets
   public getStoredRulesets(): RuleSet[] | null {
@@ -326,25 +298,5 @@ export class AnalyzerClient {
       return storedRulesets ? JSON.parse(storedRulesets as string) : null;
     }
     return null;
-  }
-
-  // New method to populate webview with stored rulesets
-  public populateWebviewWithStoredRulesets(webview: vscode.Webview): void {
-    const storedRulesets = this.getStoredRulesets();
-    console.log("Stored rulesets: ", storedRulesets);
-    if (storedRulesets) {
-      const diagnosticsMap: Map<string, vscode.Diagnostic[]> = new Map();
-      processIncidents(storedRulesets, diagnosticsMap);
-
-      diagnosticsMap.forEach((diagnostics, fileKey) => {
-        const fileUri = vscode.Uri.parse(fileKey);
-        this.diagnosticCollection.set(fileUri, diagnostics);
-      });
-
-      webview.postMessage({
-        type: "loadStoredAnalysis",
-        data: storedRulesets,
-      });
-    }
   }
 }

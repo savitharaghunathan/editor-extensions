@@ -134,7 +134,11 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
 
   private _loadInitialContent() {
     if (this._isWebviewReady && this._view) {
-      this._extensionState.analyzerClient.populateWebviewWithStoredRulesets(this._view.webview);
+      const data = this._extensionState.extensionContext.workspaceState.get("storedRuleSets");
+      this._view.webview.postMessage({
+        type: "loadStoredAnalysis",
+        data,
+      });
     }
   }
 
