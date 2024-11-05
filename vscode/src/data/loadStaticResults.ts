@@ -46,12 +46,13 @@ export const loadStaticResults = async () => {
     }
   }
   if (solution) {
-    // TODO: implement
+    vscode.commands.executeCommand("konveyor.loadSolution", solution);
     vscode.window.showInformationMessage("Successfully loaded the solutions");
   }
 };
 
-//TODO: as for now analysis results are based on absolute paths which
+//TODO: as for now analysis results are based on absolute paths which need to be manually adjusted
+// run a check if the analyzed files in the workspace
 const filePathsCorrect = (ruleSets: RuleSet[]) =>
   ruleSets
     .flatMap((ruleSet) => Object.values(ruleSet.violations ?? {}))

@@ -1,15 +1,15 @@
-import { RuleSet } from "@shared/types";
+import { GetSolutionResult, RuleSet } from "@shared/types";
 
 const isString = (obj: unknown): obj is string => typeof obj === "string";
 const isEmpty = (obj: unknown) => isObject(obj) && Object.keys(obj).length === 0;
 const isObject = (obj: unknown): obj is object => typeof obj === "object";
 
-export function isSolution(object: unknown): object is Solution {
+export function isSolution(object: unknown): object is GetSolutionResult {
   if (!object || typeof object !== "object") {
     return false;
   }
 
-  const { errors, changes, ...rest } = object as Solution;
+  const { errors, changes, ...rest } = object as GetSolutionResult;
 
   return (
     Array.isArray(errors) &&
@@ -18,15 +18,10 @@ export function isSolution(object: unknown): object is Solution {
     errors.every(isString) &&
     changes.every(isObject) &&
     changes.every(
-      ({ diff, originalPath, modifiedPath, ...rest }) =>
-        isEmpty(rest) && isString(diff) && isString(originalPath) && isString(modifiedPath),
+      ({ diff, original, modified, ...rest }) =>
+        isEmpty(rest) && isString(diff) && isString(original) && isString(modified),
     )
   );
-}
-
-export interface Solution {
-  errors: string[];
-  changes: { diff: string; originalPath: string; modifiedPath: string }[];
 }
 
 export function isAnalysis(obj: unknown): obj is RuleSet {

@@ -83,6 +83,11 @@
         "command": "konveyor.loadRuleSets",
         "title": "Load analysis results",
         "category": "Konveyor"
+      },
+      {
+        "command": "konveyor.loadSolution",
+        "title": "Load solution",
+        "category": "Konveyor"
       }
     ],
     "submenus": [
@@ -135,6 +140,10 @@
       "commandPalette": [
         {
           "command": "konveyor.loadRuleSets",
+          "when": "never"
+        },
+        {
+          "command": "konveyor.loadSolution",
           "when": "never"
         }
       ]

@@ -11,8 +11,8 @@ import {
   ViewColumn,
   workspace,
 } from "vscode";
-import { cleanRuleSets, loadRuleSets, loadStaticResults } from "./data";
-import { RuleSet } from "@shared/types";
+import { cleanRuleSets, loadRuleSets, loadSolution, loadStaticResults } from "./data";
+import { GetSolutionResult, RuleSet } from "@shared/types";
 
 let fullScreenPanel: WebviewPanel | undefined;
 
@@ -296,6 +296,7 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.loadRuleSets": (ruleSets: RuleSet[]): void => loadRuleSets(state, ruleSets),
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
+    "konveyor.loadSolution": (solution: GetSolutionResult): void => loadSolution(state, solution),
   };
 };
 
