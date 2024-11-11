@@ -1,4 +1,6 @@
 import { AnalyzerClient } from "./client/analyzerClient";
+import { KonveyorFileModel } from "./diffView";
+import { MemFS } from "./data/fileSystemProvider";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import * as vscode from "vscode";
 
@@ -21,4 +23,6 @@ export interface ExtensionState {
   sidebarProvider: KonveyorGUIWebviewViewProvider;
   extensionContext: vscode.ExtensionContext;
   diagnosticCollection: vscode.DiagnosticCollection;
+  memFs: MemFS;
+  fileModel: KonveyorFileModel;
 }

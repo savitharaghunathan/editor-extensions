@@ -4,7 +4,8 @@ import { registerAllCommands as registerAllCommands } from "./commands";
 import { ExtensionState, SharedState } from "./extensionState";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
-import { RuleSet } from "@shared/types";
+import { registerDiffView, KonveyorFileModel } from "./diffView";
+import { MemFS } from "./data";
 
 class VsCodeExtension {
   private state: ExtensionState;
@@ -17,6 +18,8 @@ class VsCodeExtension {
       sidebarProvider: undefined as any,
       extensionContext: context,
       diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
+      memFs: new MemFS(),
+      fileModel: new KonveyorFileModel(),
     };
 
     this.initializeExtension(context);
@@ -26,6 +29,7 @@ class VsCodeExtension {
     try {
       this.checkWorkspace();
       this.registerWebviewProvider(context);
+      registerDiffView(this.state);
       this.registerCommands();
       this.registerLanguageProviders(context);
     } catch (error) {

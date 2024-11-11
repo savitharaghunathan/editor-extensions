@@ -13,6 +13,7 @@ import {
 } from "vscode";
 import { cleanRuleSets, loadRuleSets, loadSolution, loadStaticResults } from "./data";
 import { GetSolutionResult, RuleSet } from "@shared/types";
+import { applyAll, revertAll, copyDiff, copyPath, FileItem, viewFix } from "./diffView";
 
 let fullScreenPanel: WebviewPanel | undefined;
 
@@ -320,7 +321,14 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.loadRuleSets": (ruleSets: RuleSet[]): void => loadRuleSets(state, ruleSets),
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
-    "konveyor.loadSolution": (solution: GetSolutionResult): void => loadSolution(state, solution),
+    "konveyor.loadSolution": async (solution: GetSolutionResult) => loadSolution(state, solution),
+    "konveyor.applyAll": () => applyAll(state),
+    "konveyor.applyFile": (item: FileItem) => item.apply(),
+    "konveyor.copyDiff": copyDiff,
+    "konveyor.copyPath": copyPath,
+    "konveyor.diffView.viewFix": viewFix,
+    "konveyor.diffView.revertAll": () => revertAll(state),
+    "konveyor.diffView.revertFile": (item: FileItem) => item.revert(),
   };
 };
 

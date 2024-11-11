@@ -5,7 +5,7 @@
     "target": "esnext",
     "baseUrl": ".",
     "outDir": "out",
-    "lib": ["ES2021"],
+    "lib": ["ES2023"],
     "sourceMap": true,
     "rootDir": "src",
     "strict": true,
