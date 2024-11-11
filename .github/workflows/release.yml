@@ -3,17 +3,22 @@ name: Release
 on:
   push:
     tags:
-      - '*'  
+      - "*"
+
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Enter Tag for the release'
+        description: "Enter Tag for the release"
         required: true
       prerelease:
-        description: 'Is this a pre-release?'
+        description: "Is this a pre-release?"
         required: true
         type: boolean
-        default: false 
+        default: false
+
+# https://typicode.github.io/husky/how-to.html#ci-server-and-docker
+env:
+  HUSKY: 0
 
 jobs:
   release_prereq:
@@ -57,6 +62,7 @@ jobs:
       # Run tests on different OSes
       - name: Run tests (Linux)
         if: matrix.arch == 'linux'
+        working-directory: ./vscode
         run: xvfb-run -a npm run test
 
       - name: Run tests (macOS)

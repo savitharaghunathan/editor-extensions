@@ -11,6 +11,9 @@ import {
   ViewColumn,
   workspace,
 } from "vscode";
+import { cleanRuleSets, loadRuleSets, loadSolution, loadStaticResults } from "./data";
+import { GetSolutionResult, RuleSet } from "@shared/types";
+import { applyAll, revertAll, copyDiff, copyPath, FileItem, viewFix } from "./diffView";
 
 let fullScreenPanel: WebviewPanel | undefined;
 
@@ -39,7 +42,6 @@ const commandsMap: (state: ExtensionState) => {
         window.showErrorMessage("Analyzer must be started before run!");
         return;
       }
-      analyzerClient.clearStoredRulesets();
 
       if (fullScreenPanel && fullScreenPanel.webview) {
         analyzerClient.runAnalysis(fullScreenPanel.webview);
@@ -96,17 +98,6 @@ const commandsMap: (state: ExtensionState) => {
 
       setupWebviewMessageListener(panel.webview, state);
 
-      panel.webview.onDidReceiveMessage(
-        (message) => {
-          if (message.command === "webviewReady") {
-            console.log("Webview is ready");
-            state.analyzerClient.populateWebviewWithStoredRulesets(panel.webview);
-          }
-        },
-        undefined,
-        extensionContext.subscriptions,
-      );
-
       if (state.sidebarProvider) {
         commands.executeCommand("workbench.action.closeSidebar");
       }
@@ -144,6 +135,30 @@ const commandsMap: (state: ExtensionState) => {
         window.showInformationMessage(`Analyzer binary path updated to: ${filePath}`);
       } else {
         window.showInformationMessage("No analyzer binary selected.");
+      }
+    },
+    "konveyor.overrideKaiRpcServerBinaries": async () => {
+      const options: OpenDialogOptions = {
+        canSelectMany: false,
+        openLabel: "Select GenAI Binary",
+        filters: {
+          "Executable Files": ["exe", "sh", "bat", ""],
+          "All Files": ["*"],
+        },
+      };
+
+      const fileUri = await window.showOpenDialog(options);
+
+      if (fileUri && fileUri[0]) {
+        const filePath = fileUri[0].fsPath;
+
+        // Update the user settings
+        const config = workspace.getConfiguration("konveyor");
+        await config.update("kaiRpcServerPath", filePath, ConfigurationTarget.Global);
+
+        window.showInformationMessage(`Kai rpc server binary path updated to: ${filePath}`);
+      } else {
+        window.showInformationMessage("No Kai rpc-server binary selected.");
       }
     },
     "konveyor.configureCustomRules": async () => {
@@ -303,6 +318,17 @@ const commandsMap: (state: ExtensionState) => {
       // Update the user settings
       await config.update("labelSelector", modifiedLabelSelector, ConfigurationTarget.Workspace);
     },
+    "konveyor.loadRuleSets": (ruleSets: RuleSet[]): void => loadRuleSets(state, ruleSets),
+    "konveyor.cleanRuleSets": () => cleanRuleSets(state),
+    "konveyor.loadStaticResults": loadStaticResults,
+    "konveyor.loadSolution": async (solution: GetSolutionResult) => loadSolution(state, solution),
+    "konveyor.applyAll": () => applyAll(state),
+    "konveyor.applyFile": (item: FileItem) => item.apply(),
+    "konveyor.copyDiff": copyDiff,
+    "konveyor.copyPath": copyPath,
+    "konveyor.diffView.viewFix": viewFix,
+    "konveyor.diffView.revertAll": () => revertAll(state),
+    "konveyor.diffView.revertFile": (item: FileItem) => item.revert(),
   };
 };
 

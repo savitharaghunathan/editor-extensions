@@ -65,13 +65,20 @@ export interface KaiInitializeParams {
   analyzerLspJavaBundlePath: string;
 }
 
-interface GetSolutionParams {
+export interface GetSolutionParams {
   file_path: string;
   incidents: Incident[];
 }
+export interface Change {
+  // relative file path before the change, may be empty if file was created in this change
+  original: string;
+  // relative file path after the change, may be empty if file was deleted in this change
+  modified: string;
+  // diff in unified format - tested with git diffs
+  diff: string;
+}
 
-interface GetSolutionResult {
-  encountered_errors: string[]; // An array of error messages
-  modified_files: string[]; // An array of modified file paths
-  diff: string; // The concatenated diff content
+export interface GetSolutionResult {
+  errors: string[];
+  changes: Change[];
 }

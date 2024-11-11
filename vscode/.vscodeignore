@@ -60,4 +60,5 @@ bin/
 ../.prettierrc.mjs
 ../tsconfig.json
 ../shared/
+../mocks
 
