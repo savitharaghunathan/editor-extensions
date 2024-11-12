@@ -29,6 +29,7 @@
 
 import * as vscode from "vscode";
 import { FileItemNavigation } from "./diff-view";
+import { isUri } from "../utilities";
 
 export class KonveyorFileModel implements FileItemNavigation<FileItem> {
   private _onDidChange = new vscode.EventEmitter<FileItem | undefined>();
@@ -126,6 +127,13 @@ export class KonveyorFileModel implements FileItemNavigation<FileItem> {
     }
     return result;
   }
+
+  markedAsApplied(fileUri: vscode.Uri) {
+    const item = this.items.find((item) => item.uri.toString() === fileUri?.toString());
+    if (item) {
+      this.remove(item);
+    }
+  }
 }
 
 export class KonveyorTreeDataProvider implements vscode.TreeDataProvider<FileItem> {
@@ -183,7 +191,7 @@ export class FileItem {
   }
 
   apply(): void {
-    this.model.apply(this);
+    vscode.commands.executeCommand("konveyor.applyFile", this.uri);
   }
 
   revert(): void {
@@ -196,3 +204,14 @@ export class FileItem {
     return result;
   }
 }
+
+export const toUri = (item: FileItem | vscode.Uri | unknown): vscode.Uri | undefined => {
+  if (isUri(item)) {
+    return item;
+  }
+  const fileItem = item as FileItem;
+  if (isUri(fileItem?.uri)) {
+    return fileItem.uri;
+  }
+  return undefined;
+};

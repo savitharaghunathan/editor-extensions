@@ -12,13 +12,8 @@ export interface LocalChange {
   diff: string;
 }
 
-export const writeSolutionsToMemFs = async (
-  solution: GetSolutionResult,
-  { memFs }: ExtensionState,
-) => {
-  memFs.removeAll(KONVEYOR_SCHEME);
-  // TODO: implement logic for deleted/added files
-  const localChanges = solution.changes.map(({ modified, original, diff }) => ({
+export const toLocalChanges = (solution: GetSolutionResult) =>
+  solution.changes.map(({ modified, original, diff }) => ({
     modifiedUri: fromRelativeToKonveyor(modified),
     originalUri: Uri.from({
       scheme: "file",
@@ -26,6 +21,12 @@ export const writeSolutionsToMemFs = async (
     }),
     diff,
   }));
+
+export const writeSolutionsToMemFs = async (
+  localChanges: LocalChange[],
+  { memFs }: ExtensionState,
+) => {
+  // TODO: implement logic for deleted/added files
 
   // create all the dirs synchronously
   localChanges.forEach(({ modifiedUri }) =>

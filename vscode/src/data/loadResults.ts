@@ -2,12 +2,17 @@ import { GetSolutionResult, RuleSet } from "@shared/types";
 import { processIncidents } from "./analyzerResults";
 import { ExtensionState } from "src/extensionState";
 import { writeDataFile } from "./storage";
-import { writeSolutionsToMemFs } from "./virtualStorage";
+import { toLocalChanges, writeSolutionsToMemFs } from "./virtualStorage";
 import { Location, Position } from "vscode";
+import {
+  KONVEYOR_SCHEME,
+  RULE_SET_DATA_FILE_PREFIX,
+  SOLUTION_DATA_FILE_PREFIX,
+} from "../utilities";
 
 export const loadRuleSets = (state: ExtensionState, ruleSets: RuleSet[]): void => {
-  writeDataFile(ruleSets, "analysis");
-  state.extensionContext.workspaceState.update("storedRuleSets", ruleSets);
+  writeDataFile(ruleSets, RULE_SET_DATA_FILE_PREFIX);
+  state.ruleSets = ruleSets;
   state.diagnosticCollection.set(processIncidents(ruleSets));
   state.sidebarProvider?.webview?.postMessage({
     type: "loadStoredAnalysis",
@@ -15,7 +20,7 @@ export const loadRuleSets = (state: ExtensionState, ruleSets: RuleSet[]): void =
   });
 };
 export const cleanRuleSets = (state: ExtensionState) => {
-  state.extensionContext.workspaceState.update("storedRuleSets", undefined);
+  state.ruleSets = [];
   state.diagnosticCollection.clear();
   state.sidebarProvider?.webview?.postMessage({
     type: "loadStoredAnalysis",
@@ -24,9 +29,11 @@ export const cleanRuleSets = (state: ExtensionState) => {
 };
 
 export const loadSolution = async (state: ExtensionState, solution: GetSolutionResult) => {
-  writeDataFile(solution, "solution");
-  state.extensionContext.workspaceState.update("storedSolution", solution);
-  const localChanges = await writeSolutionsToMemFs(solution, state);
+  writeDataFile(solution, SOLUTION_DATA_FILE_PREFIX);
+  const localChanges = toLocalChanges(solution);
+  state.memFs.removeAll(KONVEYOR_SCHEME);
+  await writeSolutionsToMemFs(localChanges, state);
+  state.localChanges = localChanges;
   const locations = localChanges.map(
     ({ originalUri: uri }) => new Location(uri, new Position(0, 0)),
   );
