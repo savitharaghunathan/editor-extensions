@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
-import fs from "fs/promises";
 import { RuleSet } from "@shared/types";
-import { isAnalysis, isSolution } from "./typeGuards";
+import { loadStateFromDataFolder, readDataFiles } from "./storage";
 
 export const loadStaticResults = async () => {
   const options: vscode.OpenDialogOptions = {
@@ -17,20 +16,7 @@ export const loadStaticResults = async () => {
     return;
   }
 
-  let analysisResults = undefined;
-  let solution = undefined;
-  for (const uri of uris) {
-    if (!uri || (analysisResults && solution)) {
-      break;
-    }
-    const fileContent = await fs.readFile(uri.fsPath, { encoding: "utf8" });
-    const parsed = JSON.parse(fileContent);
-    solution = !solution && isSolution(parsed) ? parsed : solution;
-    analysisResults =
-      !analysisResults && Array.isArray(parsed) && parsed.every((item) => isAnalysis(item))
-        ? parsed
-        : analysisResults;
-  }
+  const [analysisResults, solution] = await readDataFiles(uris);
 
   if (!analysisResults && !solution) {
     vscode.window.showErrorMessage("Konveyor: failed to load data from selected file(s).");
@@ -61,3 +47,13 @@ const filePathsCorrect = (ruleSets: RuleSet[]) =>
       (incident) =>
         !incident.uri || vscode.workspace.getWorkspaceFolder(vscode.Uri.parse(incident.uri)),
     );
+
+export const loadResultsFromDataFolder = async () => {
+  const [analysisResults, solution] = await loadStateFromDataFolder();
+  if (analysisResults) {
+    vscode.commands.executeCommand("konveyor.loadRuleSets", analysisResults);
+  }
+  if (solution) {
+    vscode.commands.executeCommand("konveyor.loadSolution", solution);
+  }
+};

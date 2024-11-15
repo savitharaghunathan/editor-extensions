@@ -1,4 +1,5 @@
 import { GetSolutionResult, RuleSet } from "@shared/types";
+import { Uri } from "vscode";
 
 const isString = (obj: unknown): obj is string => typeof obj === "string";
 const isEmpty = (obj: unknown) => isObject(obj) && Object.keys(obj).length === 0;
@@ -43,4 +44,12 @@ export function isAnalysis(obj: unknown): obj is RuleSet {
       ([key, value]) => typeof value === (knownKeys as Record<string, string>)[key],
     )
   );
+}
+
+export function isUri(obj: unknown): obj is Uri {
+  if (!isObject(obj)) {
+    return false;
+  }
+  const uri = obj as Uri;
+  return !!(uri["toJSON"] && uri["with"] && uri.scheme);
 }

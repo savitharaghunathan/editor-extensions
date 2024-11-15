@@ -5,7 +5,7 @@ import { ExtensionState, SharedState } from "./extensionState";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
 import { registerDiffView, KonveyorFileModel } from "./diffView";
-import { MemFS } from "./data";
+import { MemFS, loadStateFromDataFolder } from "./data";
 
 class VsCodeExtension {
   private state: ExtensionState;
@@ -20,6 +20,8 @@ class VsCodeExtension {
       diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
       memFs: new MemFS(),
       fileModel: new KonveyorFileModel(),
+      localChanges: [],
+      ruleSets: [],
     };
 
     this.initializeExtension(context);
@@ -32,6 +34,8 @@ class VsCodeExtension {
       registerDiffView(this.state);
       this.registerCommands();
       this.registerLanguageProviders(context);
+      // async
+      vscode.commands.executeCommand("konveyor.loadResultsFromDataFolder");
     } catch (error) {
       console.error("Error initializing extension:", error);
       vscode.window.showErrorMessage(`Failed to initialize Konveyor extension: ${error}`);

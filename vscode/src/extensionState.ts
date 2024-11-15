@@ -3,6 +3,8 @@ import { KonveyorFileModel } from "./diffView";
 import { MemFS } from "./data/fileSystemProvider";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import * as vscode from "vscode";
+import { LocalChange } from "./data/virtualStorage";
+import { RuleSet } from "@shared/types";
 
 export class SharedState {
   private state: Map<string, any> = new Map();
@@ -25,4 +27,6 @@ export interface ExtensionState {
   diagnosticCollection: vscode.DiagnosticCollection;
   memFs: MemFS;
   fileModel: KonveyorFileModel;
+  localChanges: LocalChange[];
+  ruleSets: RuleSet[];
 }

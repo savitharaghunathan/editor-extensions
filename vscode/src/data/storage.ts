@@ -1,7 +1,14 @@
 import path from "path";
 import * as vscode from "vscode";
 import fs from "fs";
+
 import { RuleSet, GetSolutionResult } from "@shared/types";
+import {
+  isAnalysis,
+  isSolution,
+  RULE_SET_DATA_FILE_PREFIX,
+  SOLUTION_DATA_FILE_PREFIX,
+} from "../utilities";
 
 const MAX_FILES = 5;
 
@@ -82,3 +89,44 @@ export async function writeDataFile(
 
   deleteOldestDataFiles(prefix, MAX_FILES);
 }
+
+export const loadStateFromDataFolder = async (): Promise<
+  [RuleSet[] | undefined, GetSolutionResult | undefined]
+> => {
+  const dataFolder = getDataFolder();
+  if (!dataFolder) {
+    return [undefined, undefined];
+  }
+
+  const [analysisFiles, solutionFiles] = await Promise.all([
+    getDataFilesByPrefix(RULE_SET_DATA_FILE_PREFIX),
+    getDataFilesByPrefix(SOLUTION_DATA_FILE_PREFIX),
+  ]);
+
+  const [newestAnalysis] = analysisFiles.reverse();
+  const [newestSolution] = solutionFiles.reverse();
+  const uris = [newestAnalysis, newestSolution]
+    .filter(Boolean)
+    .map(([name]) => vscode.Uri.file(path.join(dataFolder, name)));
+  return readDataFiles(uris);
+};
+
+export const readDataFiles = async (
+  uris: vscode.Uri[],
+): Promise<[RuleSet[] | undefined, GetSolutionResult | undefined]> => {
+  let analysisResults = undefined;
+  let solution = undefined;
+  for (const uri of uris) {
+    if (!uri || (analysisResults && solution)) {
+      break;
+    }
+    const fileContent = await fs.promises.readFile(uri.fsPath, { encoding: "utf8" });
+    const parsed = JSON.parse(fileContent);
+    solution = !solution && isSolution(parsed) ? parsed : solution;
+    analysisResults =
+      !analysisResults && Array.isArray(parsed) && parsed.every((item) => isAnalysis(item))
+        ? parsed
+        : analysisResults;
+  }
+  return [analysisResults, solution];
+};

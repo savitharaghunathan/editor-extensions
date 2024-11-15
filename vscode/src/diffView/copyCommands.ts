@@ -1,22 +1,27 @@
 import * as vscode from "vscode";
-import { FileItem, KonveyorFileModel } from "./fileModel";
+import { FileItem, toUri } from "./fileModel";
+import { ExtensionState } from "src/extensionState";
 
-export async function copyDiff(item: KonveyorFileModel | FileItem | unknown) {
-  let val: string | undefined;
-  if (item instanceof FileItem) {
-    val = await item.asCopyText();
+export async function copyDiff(item: FileItem | vscode.Uri | unknown, state: ExtensionState) {
+  const localChanges = state.localChanges;
+  const uri = toUri(item);
+  if (!uri) {
+    console.error("Failed to copy diff. Unknown URI.", item, uri);
+    return;
   }
-  if (val) {
-    await vscode.env.clipboard.writeText(val);
+  const change = localChanges.find((change) => change.originalUri.toString() === uri.toString());
+  if (change) {
+    vscode.env.clipboard.writeText(change.diff);
+  } else {
+    console.error("Failed to copy diff. Unknown change.", item, uri);
   }
 }
 
-export async function copyPath(item: FileItem | unknown) {
-  if (item instanceof FileItem) {
-    if (item.uri.scheme === "file") {
-      vscode.env.clipboard.writeText(item.uri.fsPath);
-    } else {
-      vscode.env.clipboard.writeText(item.uri.toString(true));
-    }
+export async function copyPath(item: FileItem | vscode.Uri | unknown) {
+  const uri = toUri(item);
+  if (uri?.scheme === "file") {
+    vscode.env.clipboard.writeText(uri.fsPath);
+  } else if (uri) {
+    vscode.env.clipboard.writeText(uri.toString(true));
   }
 }

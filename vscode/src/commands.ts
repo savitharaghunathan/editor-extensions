@@ -11,9 +11,24 @@ import {
   ViewColumn,
   workspace,
 } from "vscode";
-import { cleanRuleSets, loadRuleSets, loadSolution, loadStaticResults } from "./data";
+import {
+  cleanRuleSets,
+  loadResultsFromDataFolder,
+  loadRuleSets,
+  loadSolution,
+  loadStaticResults,
+} from "./data";
 import { GetSolutionResult, RuleSet } from "@shared/types";
-import { applyAll, revertAll, copyDiff, copyPath, FileItem, viewFix } from "./diffView";
+import {
+  applyAll,
+  revertAll,
+  copyDiff,
+  copyPath,
+  FileItem,
+  viewFix,
+  applyFile,
+  revertFile,
+} from "./diffView";
 
 let fullScreenPanel: WebviewPanel | undefined;
 
@@ -321,14 +336,15 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.loadRuleSets": (ruleSets: RuleSet[]): void => loadRuleSets(state, ruleSets),
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
+    "konveyor.loadResultsFromDataFolder": loadResultsFromDataFolder,
     "konveyor.loadSolution": async (solution: GetSolutionResult) => loadSolution(state, solution),
     "konveyor.applyAll": () => applyAll(state),
-    "konveyor.applyFile": (item: FileItem) => item.apply(),
-    "konveyor.copyDiff": copyDiff,
+    "konveyor.applyFile": (item: FileItem | Uri) => applyFile(item, state),
+    "konveyor.copyDiff": (item: FileItem | Uri) => copyDiff(item, state),
     "konveyor.copyPath": copyPath,
     "konveyor.diffView.viewFix": viewFix,
     "konveyor.diffView.revertAll": () => revertAll(state),
-    "konveyor.diffView.revertFile": (item: FileItem) => item.revert(),
+    "konveyor.diffView.revertFile": (item: FileItem | Uri) => revertFile(item, state),
   };
 };
 
