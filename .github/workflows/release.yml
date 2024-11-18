@@ -62,7 +62,6 @@ jobs:
       # Run tests on different OSes
       - name: Run tests (Linux)
         if: matrix.arch == 'linux'
-        working-directory: ./vscode
         run: xvfb-run -a npm run test
 
       - name: Run tests (macOS)
@@ -153,7 +152,7 @@ jobs:
         with:
           tag: ${{ needs.release_prereq.outputs.tag_name }}
           commit: ${{ github.sha }}
-          bodyFile: ./artifacts/release.md  
+          bodyFile: ./artifacts/release.md
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
             ./artifacts/konveyor-macos-*.vsix
