@@ -2,6 +2,7 @@
   "name": "editor-extensions-vscode",
   "version": "0.0.1",
   "main": "./out/extension.js",
+  "publisher": "konveyor",
   "repository": {
     "type": "git",
     "url": "https://github.com/konveyor/editor-extensions"
@@ -67,13 +68,13 @@
         "command": "konveyor.startAnalyzer",
         "title": "Start Analyzer",
         "category": "Konveyor",
-        "icon": "$(play}"
+        "icon": "$(play)"
       },
       {
         "command": "konveyor.runAnalysis",
         "title": "Run Analysis",
         "category": "Konveyor",
-        "icon": "$(play}"
+        "icon": "$(play)"
       },
       {
         "command": "konveyor.loadStaticResults",
@@ -104,37 +105,31 @@
         "command": "konveyor.applyAll",
         "title": "Apply All",
         "category": "Konveyor",
-        "icon": {
-          "light": "resources/icons/light/check.svg",
-          "dark": "resources/icons/dark/check.svg"
-        }
+        "icon": "$(check)"
       },
       {
-        "command": "konveyor.diffView.revertAll",
-        "title": "Discard local changes to Resolutions",
+        "command": "konveyor.reloadLastResolutions",
+        "title": "Reload Last Resolutions",
+        "icon": "$(history)",
+        "category": "Konveyor"
+      },
+      {
+        "command": "konveyor.discardAll",
+        "title": "Discard All",
         "category": "Konveyor",
-        "icon": {
-          "light": "resources/icons/light/discard.svg",
-          "dark": "resources/icons/dark/discard.svg"
-        }
+        "icon": "$(discard)"
       },
       {
         "command": "konveyor.applyFile",
         "title": "Apply",
         "category": "Konveyor",
-        "icon": {
-          "light": "resources/icons/light/check.svg",
-          "dark": "resources/icons/dark/check.svg"
-        }
+        "icon": "$(check)"
       },
       {
-        "command": "konveyor.diffView.revertFile",
-        "title": "Discard local changes to Resolutions",
+        "command": "konveyor.discardFile",
+        "title": "Discard",
         "category": "Konveyor",
-        "icon": {
-          "light": "resources/icons/light/discard.svg",
-          "dark": "resources/icons/dark/discard.svg"
-        }
+        "icon": "$(discard)"
       },
       {
         "command": "konveyor.copyDiff",
@@ -160,6 +155,18 @@
         "command": "konveyor.diffView.viewFix",
         "category": "Konveyor",
         "title": "View suggested fix"
+      },
+      {
+        "command": "konveyor.diffView.applyBlockInline",
+        "icon": "$(check)",
+        "category": "diffEditor",
+        "title": "Apply Block"
+      },
+      {
+        "command": "konveyor.diffView.applyBlock",
+        "icon": "$(arrow-left)",
+        "category": "diffEditor",
+        "title": "Apply Block"
       }
     ],
     "submenus": [
@@ -204,8 +211,13 @@
           "when": "view == konveyor.diffView"
         },
         {
-          "command": "konveyor.diffView.revertAll",
+          "command": "konveyor.discardAll",
           "group": "navigation@2",
+          "when": "view == konveyor.diffView"
+        },
+        {
+          "command": "konveyor.reloadLastResolutions",
+          "group": "navigation@3",
           "when": "view == konveyor.diffView"
         }
       ],
@@ -216,7 +228,7 @@
           "when": "view == konveyor.diffView && viewItem == file-item"
         },
         {
-          "command": "konveyor.diffView.revertFile",
+          "command": "konveyor.discardFile",
           "group": "inline",
           "when": "view == konveyor.diffView && viewItem == file-item"
         },
@@ -226,7 +238,7 @@
           "when": "view == konveyor.diffView && viewItem == file-item"
         },
         {
-          "command": "konveyor.diffView.revertFile",
+          "command": "konveyor.discardFile",
           "group": "1@2",
           "when": "view == konveyor.diffView && viewItem == file-item"
         },
@@ -246,6 +258,30 @@
           "command": "konveyor.toggleFullScreen",
           "group": "navigation@1",
           "when": "activeWebviewPanelId == konveyor.konveyorAnalysisView"
+        }
+      ],
+      "diffEditor/gutter/selection": [
+        {
+          "command": "konveyor.diffView.applyBlockInline",
+          "group": "primary",
+          "when": "diffEditorModifiedWritable && diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+        },
+        {
+          "command": "konveyor.diffView.applyBlock",
+          "group": "primary",
+          "when": "diffEditorModifiedWritable && !diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+        }
+      ],
+      "diffEditor/gutter/hunk": [
+        {
+          "command": "konveyor.diffView.applyBlockInline",
+          "group": "primary",
+          "when": "diffEditorModifiedWritable && diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+        },
+        {
+          "command": "konveyor.diffView.applyBlock",
+          "group": "primary",
+          "when": "diffEditorModifiedWritable && !diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
         }
       ],
       "explorer/context": [
@@ -269,7 +305,7 @@
           "when": "never"
         },
         {
-          "command": "konveyor.diffView.revertFile",
+          "command": "konveyor.discardFile",
           "when": "never"
         },
         {

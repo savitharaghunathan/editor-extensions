@@ -17,17 +17,19 @@ import {
   loadRuleSets,
   loadSolution,
   loadStaticResults,
+  reloadLastResolutions,
 } from "./data";
 import { GetSolutionResult, RuleSet } from "@editor-extensions/shared";
 import {
   applyAll,
-  revertAll,
+  discardAll,
   copyDiff,
   copyPath,
   FileItem,
   viewFix,
   applyFile,
-  revertFile,
+  discardFile,
+  applyBlock,
 } from "./diffView";
 
 let fullScreenPanel: WebviewPanel | undefined;
@@ -342,12 +344,15 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.copyDiff": (item: FileItem | Uri) => copyDiff(item, state),
     "konveyor.copyPath": copyPath,
     "konveyor.diffView.viewFix": viewFix,
-    "konveyor.diffView.revertAll": () => revertAll(state),
-    "konveyor.diffView.revertFile": (item: FileItem | Uri) => revertFile(item, state),
+    "konveyor.discardAll": () => discardAll(state),
+    "konveyor.discardFile": (item: FileItem | Uri) => discardFile(item, state),
     "konveyor.showResolutionPanel": () => {
       const resolutionProvider = state.webviewProviders?.get("resolution");
       resolutionProvider?.showWebviewPanel();
     },
+    "konveyor.reloadLastResolutions": () => reloadLastResolutions(state),
+    "konveyor.diffView.applyBlock": applyBlock,
+    "konveyor.diffView.applyBlockInline": applyBlock,
   };
 };
 

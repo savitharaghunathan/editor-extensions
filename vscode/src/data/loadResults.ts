@@ -1,9 +1,9 @@
-import { GetSolutionResult, RuleSet } from "@editor-extensions/shared";
+import { LocalChange, GetSolutionResult, RuleSet } from "@editor-extensions/shared";
 import { processIncidents } from "./analyzerResults";
 import { ExtensionState } from "src/extensionState";
 import { writeDataFile } from "./storage";
 import { toLocalChanges, writeSolutionsToMemFs } from "./virtualStorage";
-import { Location, Position } from "vscode";
+import { Location, Position, window } from "vscode";
 import {
   KONVEYOR_SCHEME,
   RULE_SET_DATA_FILE_PREFIX,
@@ -33,9 +33,18 @@ export const cleanRuleSets = (state: ExtensionState) => {
 export const loadSolution = async (state: ExtensionState, solution: GetSolutionResult) => {
   writeDataFile(solution, SOLUTION_DATA_FILE_PREFIX);
   const localChanges = toLocalChanges(solution);
+  doLoadSolution(state, localChanges);
+  state.localChanges = localChanges;
+};
+
+export const reloadLastResolutions = async (state: ExtensionState) => {
+  doLoadSolution(state, state.localChanges);
+  window.showInformationMessage(`Loaded last available resolutions`);
+};
+
+const doLoadSolution = async (state: ExtensionState, localChanges: LocalChange[]) => {
   state.memFs.removeAll(KONVEYOR_SCHEME);
   await writeSolutionsToMemFs(localChanges, state);
-  state.localChanges = localChanges;
   const locations = localChanges.map(
     ({ originalUri: uri }) => new Location(uri, new Position(0, 0)),
   );
