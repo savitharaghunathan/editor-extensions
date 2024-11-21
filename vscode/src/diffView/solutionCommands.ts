@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ExtensionState } from "src/extensionState";
-import { fromRelativeToKonveyor } from "../utilities";
+import { fromRelativeToKonveyor, KONVEYOR_READ_ONLY_SCHEME } from "../utilities";
 import { FileItem, toUri } from "./fileModel";
 
 export const applyAll = async (state: ExtensionState) => {
@@ -31,12 +31,33 @@ export const discardAll = async (state: ExtensionState) => {
   vscode.window.showInformationMessage(`Discarded all resolutions`);
 };
 
-export const viewFix = (uri: vscode.Uri, preserveFocus: boolean = false) =>
+export const viewFix = async (uri: vscode.Uri, preserveFocus: boolean) =>
+  vscode.workspace.getConfiguration("konveyor")?.get("diffEditorType") === "merge"
+    ? viewFixInMergeEditor(uri, preserveFocus)
+    : viewFixInDiffEditor(uri, preserveFocus);
+
+export const viewFixInMergeEditor = async (uri: vscode.Uri, preserveFocus: boolean = false) => {
+  const readOnlyUri = vscode.Uri.from({ ...uri, scheme: KONVEYOR_READ_ONLY_SCHEME });
+  const options = {
+    base: readOnlyUri,
+    input1: { uri: readOnlyUri, title: "Current" },
+    input2: {
+      uri: fromRelativeToKonveyor(vscode.workspace.asRelativePath(uri)),
+      title: "Suggested",
+    },
+    output: uri,
+    options: { preserveFocus },
+  };
+
+  await vscode.commands.executeCommand("_open.mergeEditor", options);
+};
+
+export const viewFixInDiffEditor = async (uri: vscode.Uri, preserveFocus: boolean = false) =>
   vscode.commands.executeCommand(
     "vscode.diff",
     uri,
     fromRelativeToKonveyor(vscode.workspace.asRelativePath(uri)),
-    "Current file <-> Suggested changes",
+    "Current ↔ Suggested",
     {
       preserveFocus,
     },

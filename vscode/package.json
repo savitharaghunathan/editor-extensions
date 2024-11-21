@@ -163,10 +163,22 @@
         "title": "Apply Block"
       },
       {
+        "command": "konveyor.diffView.applySelectionInline",
+        "icon": "$(check)",
+        "category": "diffEditor",
+        "title": "Apply Selection"
+      },
+      {
         "command": "konveyor.diffView.applyBlock",
         "icon": "$(arrow-left)",
         "category": "diffEditor",
         "title": "Apply Block"
+      },
+      {
+        "command": "konveyor.diffView.applySelection",
+        "icon": "$(arrow-left)",
+        "category": "diffEditor",
+        "title": "Apply Selection"
       }
     ],
     "submenus": [
@@ -262,26 +274,26 @@
       ],
       "diffEditor/gutter/selection": [
         {
-          "command": "konveyor.diffView.applyBlockInline",
+          "command": "konveyor.diffView.applySelectionInline",
           "group": "primary",
-          "when": "diffEditorModifiedWritable && diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+          "when": "diffEditorInlineMode && ((diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ && diffEditorOriginalWritable) || (diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/ && diffEditorModifiedWritable))"
         },
         {
-          "command": "konveyor.diffView.applyBlock",
+          "command": "konveyor.diffView.applySelection",
           "group": "primary",
-          "when": "diffEditorModifiedWritable && !diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+          "when": "!diffEditorInlineMode && ((diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ && diffEditorOriginalWritable) || (diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/ && diffEditorModifiedWritable))"
         }
       ],
       "diffEditor/gutter/hunk": [
         {
           "command": "konveyor.diffView.applyBlockInline",
           "group": "primary",
-          "when": "diffEditorModifiedWritable && diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+          "when": "diffEditorInlineMode && ((diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ && diffEditorOriginalWritable) || (diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/ && diffEditorModifiedWritable))"
         },
         {
           "command": "konveyor.diffView.applyBlock",
           "group": "primary",
-          "when": "diffEditorModifiedWritable && !diffEditorInlineMode && (diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ || diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/)"
+          "when": "!diffEditorInlineMode && ((diffEditorModifiedUri =~ /^konveyorMemFs\\:.*$/ && diffEditorOriginalWritable) || (diffEditorOriginalUri =~ /^konveyorMemFs\\:.*$/ && diffEditorModifiedWritable))"
         }
       ],
       "explorer/context": [

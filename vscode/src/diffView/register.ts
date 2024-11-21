@@ -2,7 +2,8 @@ import * as vscode from "vscode";
 import { KonveyorTreeDataProvider } from "./fileModel";
 import { Navigation } from "./navigation";
 import { ExtensionState } from "src/extensionState";
-import { KONVEYOR_SCHEME } from "../utilities";
+import { KONVEYOR_READ_ONLY_SCHEME, KONVEYOR_SCHEME } from "../utilities";
+import KonveyorReadOnlyProvider from "../data/readOnlyStorage";
 
 export function registerDiffView({
   extensionContext: context,
@@ -29,4 +30,13 @@ export function registerDiffView({
   provider.onDidChangeTreeData(() => {
     treeView.message = model.message;
   });
+
+  const readOnlyProvider = new KonveyorReadOnlyProvider();
+
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(
+      KONVEYOR_READ_ONLY_SCHEME,
+      readOnlyProvider,
+    ),
+  );
 }

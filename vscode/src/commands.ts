@@ -355,6 +355,8 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.reloadLastResolutions": () => reloadLastResolutions(state),
     "konveyor.diffView.applyBlock": applyBlock,
     "konveyor.diffView.applyBlockInline": applyBlock,
+    "konveyor.diffView.applySelection": applyBlock,
+    "konveyor.diffView.applySelectionInline": applyBlock,
   };
 };
 
