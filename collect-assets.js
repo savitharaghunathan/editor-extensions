@@ -9,8 +9,8 @@ import {
 } from "fs";
 import { resolve as _resolve, join, dirname } from "path";
 import { fileURLToPath } from "url";
-import fetch from "node-fetch";
 import { Extract } from "unzipper";
+import { Readable } from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,8 +60,9 @@ async function downloadAndExtractAsset(asset, folder, platform) {
 
   const fileStream = createWriteStream(assetPath);
   await new Promise((resolve, reject) => {
-    response.body.pipe(fileStream);
-    response.body.on("error", reject);
+    const reader = Readable.fromWeb(response.body);
+    reader.pipe(fileStream);
+    reader.on("error", reject);
     fileStream.on("finish", resolve);
   });
 
