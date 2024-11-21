@@ -89,6 +89,7 @@ export interface LocalChange {
   modifiedUri: Uri;
   originalUri: Uri;
   diff: string;
+  state: "pending" | "applied" | "discarded";
 }
 
 export interface ResolutionMessage {

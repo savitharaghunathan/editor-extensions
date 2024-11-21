@@ -57,7 +57,7 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
       this.initializeWebview(this._panel.webview);
 
       if (this._viewType === KonveyorGUIWebviewViewProvider.RESOLUTION_VIEW_TYPE) {
-        const savedData = this._extensionState.sharedState.get("resolutionPanelData");
+        const savedData = this._extensionState.data.resolutionPanelData;
         if (savedData) {
           this._panel.webview.postMessage({ type: "loadResolutionState", data: savedData });
         }

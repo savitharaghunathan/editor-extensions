@@ -2,32 +2,26 @@ import * as vscode from "vscode";
 import { ExtensionState } from "src/extensionState";
 import { fromRelativeToKonveyor, KONVEYOR_READ_ONLY_SCHEME } from "../utilities";
 import { FileItem, toUri } from "./fileModel";
+import { LocalChange } from "@editor-extensions/shared";
+import { Immutable } from "immer";
 
 export const applyAll = async (state: ExtensionState) => {
-  const localChanges = state.localChanges;
-  await Promise.all(
-    localChanges.map(({ originalUri, modifiedUri }) =>
-      vscode.workspace.fs.copy(modifiedUri, originalUri, { overwrite: true }),
-    ),
-  );
-  const sidebarProvider = state.webviewProviders?.get("sidebar");
-  sidebarProvider?.webview?.postMessage({
-    type: "solutionConfirmation",
-    data: { confirmed: true, solution: null },
+  const localChanges = state.data.localChanges;
+
+  state.mutateData((draft) => {
+    draft.localChanges = localChanges.map((it) => ({ ...it, state: "applied" }));
   });
-  //TODO: need to keep solutions view and analysis view in sync based on these actions
+
   vscode.window.showInformationMessage(`All resolutions applied successfully`);
-  state.fileModel.updateLocations([]);
 };
 
 export const discardAll = async (state: ExtensionState) => {
-  const localChanges = state.localChanges;
-  await Promise.all(
-    localChanges.map(({ originalUri, modifiedUri }) =>
-      vscode.workspace.fs.copy(originalUri, modifiedUri, { overwrite: true }),
-    ),
-  );
-  state.fileModel.updateLocations([]);
+  const localChanges = state.data.localChanges;
+
+  state.mutateData((draft) => {
+    draft.localChanges = localChanges.map((it) => ({ ...it, state: "discarded" }));
+  });
+
   vscode.window.showInformationMessage(`Discarded all resolutions`);
 };
 
@@ -64,15 +58,12 @@ export const viewFixInDiffEditor = async (uri: vscode.Uri, preserveFocus: boolea
   );
 
 export const applyFile = async (item: FileItem | vscode.Uri | unknown, state: ExtensionState) => {
-  const originalUri = toUri(item);
-  if (!originalUri) {
-    vscode.window.showErrorMessage("Failed to apply changes");
-    console.error("Failed to apply changes", item, originalUri);
-    return;
+  const index = getChangeIndex(item, "Failed to apply changes", state.data.localChanges);
+  if (index > -1) {
+    state.mutateData((draft) => {
+      draft.localChanges[index].state = "applied";
+    });
   }
-  const modifiedUri = fromRelativeToKonveyor(vscode.workspace.asRelativePath(originalUri));
-  await vscode.workspace.fs.copy(modifiedUri, originalUri, { overwrite: true });
-  state.fileModel.markedAsApplied(originalUri);
 };
 
 interface ApplyBlockArgs {
@@ -102,13 +93,33 @@ export const applyBlock = async ({ originalUri, originalWithModifiedChanges }: A
 };
 
 export const discardFile = async (item: FileItem | vscode.Uri | unknown, state: ExtensionState) => {
+  const index = getChangeIndex(item, "Failed to discard changes", state.data.localChanges);
+  if (index > -1) {
+    state.mutateData((draft) => {
+      draft.localChanges[index].state = "discarded";
+    });
+  }
+};
+
+const getChangeIndex = (
+  item: FileItem | vscode.Uri | unknown,
+  errorMsg: string,
+  localChanges: Immutable<LocalChange[]>,
+) => {
   const originalUri = toUri(item);
   if (!originalUri) {
-    vscode.window.showErrorMessage("Failed to discard changes");
-    console.error("Failed to discard changes", item, originalUri);
-    return;
+    vscode.window.showErrorMessage(`${errorMsg}(unknown URI)`);
+    console.error(`${errorMsg}(unknown URI)`, item, originalUri);
+    return -1;
   }
-  const modifiedUri = fromRelativeToKonveyor(vscode.workspace.asRelativePath(originalUri));
-  await vscode.workspace.fs.copy(originalUri, modifiedUri, { overwrite: true });
-  state.fileModel.markedAsApplied(originalUri);
+  const index = localChanges.findIndex(
+    (it) => it.originalUri.toString() === originalUri.toString(),
+  );
+
+  if (index < 0) {
+    vscode.window.showErrorMessage(`${errorMsg}(unknown index)`);
+    console.error(`${errorMsg}(unknown index)`, item, originalUri);
+    return -1;
+  }
+  return index;
 };

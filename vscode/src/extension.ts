@@ -1,26 +1,43 @@
 import * as vscode from "vscode";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import { registerAllCommands as registerAllCommands } from "./commands";
-import { ExtensionState, SharedState } from "./extensionState";
+import { ExtensionData, ExtensionState } from "./extensionState";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
 import { registerDiffView, KonveyorFileModel } from "./diffView";
 import { MemFS } from "./data";
+import { Immutable, produce } from "immer";
 
 class VsCodeExtension {
   private state: ExtensionState;
+  private data: Immutable<ExtensionData>;
+  private _onDidChange = new vscode.EventEmitter<Immutable<ExtensionData>>();
+  readonly onDidChangeData = this._onDidChange.event;
 
   constructor(context: vscode.ExtensionContext) {
+    this.data = produce(
+      { localChanges: [], ruleSets: [], resolutionPanelData: undefined },
+      () => {},
+    );
+    const getData = () => this.data;
+    const setData = (data: Immutable<ExtensionData>) => {
+      this.data = data;
+      this._onDidChange.fire(this.data);
+    };
+
     this.state = {
       analyzerClient: new AnalyzerClient(context),
-      sharedState: new SharedState(),
       webviewProviders: new Map<string, KonveyorGUIWebviewViewProvider>(),
       extensionContext: context,
       diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
       memFs: new MemFS(),
       fileModel: new KonveyorFileModel(),
-      localChanges: [],
-      ruleSets: [],
+      get data() {
+        return getData();
+      },
+      mutateData: (recipe: (draft: ExtensionData) => void) => {
+        setData(produce(getData(), recipe));
+      },
     };
 
     this.initializeExtension(context);
@@ -30,7 +47,7 @@ class VsCodeExtension {
     try {
       this.checkWorkspace();
       this.registerWebviewProvider(context);
-      registerDiffView(this.state);
+      this.onDidChangeData(registerDiffView(this.state));
       this.registerCommands();
       this.registerLanguageProviders(context);
       vscode.commands.executeCommand("konveyor.loadResultsFromDataFolder");
@@ -54,6 +71,12 @@ class VsCodeExtension {
 
     const resolutionViewProvider = new KonveyorGUIWebviewViewProvider(this.state, "resolution");
     this.state.webviewProviders.set("resolution", resolutionViewProvider);
+
+    [sidebarProvider, resolutionViewProvider].forEach((provider) =>
+      this.onDidChangeData((data) =>
+        provider.sendMessageToWebview({ type: "onDidChangeData", value: data }),
+      ),
+    );
 
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(

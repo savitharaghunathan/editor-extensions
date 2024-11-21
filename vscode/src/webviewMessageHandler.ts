@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ExtensionState } from "./extensionState";
 import { loadStateFromDataFolder } from "./data";
-import { Change, GetSolutionResult } from "@editor-extensions/shared";
+import { Change } from "@editor-extensions/shared";
 import { fromRelativeToKonveyor } from "./utilities";
 import path from "path";
 
@@ -10,18 +10,7 @@ export function setupWebviewMessageListener(webview: vscode.Webview, state: Exte
     switch (message.command) {
       case "getSolution": {
         const { violation, incident } = message;
-        const [analysisResults, solution] = await loadStateFromDataFolder();
-
-        const mockSolution: GetSolutionResult = {
-          errors: [],
-          changes: [
-            {
-              original: "src/main/java/com/redhat/coolstore/service/CatalogService.java",
-              modified: "src/main/java/com/redhat/coolstore/service/CatalogService.java",
-              diff: "diff --git a/src/main/java/com/redhat/coolstore/service/CatalogService.java b/src/main/java/com/redhat/coolstore/service/CatalogService.java\nindex 422a3f4..9a6feff 100644\n--- a/src/main/java/com/redhat/coolstore/service/CatalogService.java\n+++ b/src/main/java/com/redhat/coolstore/service/CatalogService.java\n@@ -9,12 +9,12 @@ import javax.persistence.criteria.CriteriaBuilder;\n import javax.persistence.criteria.CriteriaQuery;\n import javax.persistence.criteria.Root;\n \n-import javax.ejb.Stateless;\n+import jakarta.enterprise.context.ApplicationScoped;\n import javax.persistence.EntityManager;\n \n import com.redhat.coolstore.model.*;\n \n-@Stateless\n+@ApplicationScoped\n public class CatalogService {\n \n     @Inject\n",
-            },
-          ],
-        };
+        const [, solution] = await loadStateFromDataFolder();
 
         vscode.commands.executeCommand("konveyor.diffView.focus");
         vscode.commands.executeCommand("konveyor.showResolutionPanel");

@@ -336,23 +336,23 @@ const commandsMap: (state: ExtensionState) => {
       // Update the user settings
       await config.update("labelSelector", modifiedLabelSelector, ConfigurationTarget.Workspace);
     },
-    "konveyor.loadRuleSets": (ruleSets: RuleSet[]): void => loadRuleSets(state, ruleSets),
+    "konveyor.loadRuleSets": async (ruleSets: RuleSet[]) => loadRuleSets(state, ruleSets),
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
     "konveyor.loadResultsFromDataFolder": loadResultsFromDataFolder,
     "konveyor.loadSolution": async (solution: GetSolutionResult) => loadSolution(state, solution),
-    "konveyor.applyAll": () => applyAll(state),
-    "konveyor.applyFile": (item: FileItem | Uri) => applyFile(item, state),
-    "konveyor.copyDiff": (item: FileItem | Uri) => copyDiff(item, state),
+    "konveyor.applyAll": async () => applyAll(state),
+    "konveyor.applyFile": async (item: FileItem | Uri) => applyFile(item, state),
+    "konveyor.copyDiff": async (item: FileItem | Uri) => copyDiff(item, state),
     "konveyor.copyPath": copyPath,
     "konveyor.diffView.viewFix": viewFix,
-    "konveyor.discardAll": () => discardAll(state),
-    "konveyor.discardFile": (item: FileItem | Uri) => discardFile(item, state),
+    "konveyor.discardAll": async () => discardAll(state),
+    "konveyor.discardFile": async (item: FileItem | Uri) => discardFile(item, state),
     "konveyor.showResolutionPanel": () => {
       const resolutionProvider = state.webviewProviders?.get("resolution");
       resolutionProvider?.showWebviewPanel();
     },
-    "konveyor.reloadLastResolutions": () => reloadLastResolutions(state),
+    "konveyor.reloadLastResolutions": async () => reloadLastResolutions(state),
     "konveyor.diffView.applyBlock": applyBlock,
     "konveyor.diffView.applyBlockInline": applyBlock,
     "konveyor.diffView.applySelection": applyBlock,

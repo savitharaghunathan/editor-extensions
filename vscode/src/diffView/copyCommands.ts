@@ -3,7 +3,7 @@ import { FileItem, toUri } from "./fileModel";
 import { ExtensionState } from "src/extensionState";
 
 export async function copyDiff(item: FileItem | vscode.Uri | unknown, state: ExtensionState) {
-  const localChanges = state.localChanges;
+  const localChanges = state.data.localChanges;
   const uri = toUri(item);
   if (!uri) {
     console.error("Failed to copy diff. Unknown URI.", item, uri);
