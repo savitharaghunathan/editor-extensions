@@ -18,7 +18,7 @@ const __dirname = dirname(__filename);
 const GITHUB_API = "https://api.github.com";
 const REPOSITORY = "konveyor/kai";
 const RELEASE_TAG = "v0.0.1";
-const DOWNLOAD_DIR = _resolve(__dirname, "downloaded_assets");
+const DOWNLOAD_DIR = _resolve(__dirname, "../downloaded_assets");
 const META_FILE = _resolve(DOWNLOAD_DIR, "collect.json");
 
 const ASSETS_TO_DOWNLOAD = [
