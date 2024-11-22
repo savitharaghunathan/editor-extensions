@@ -81,38 +81,47 @@ async function downloadAndExtractAsset(asset, folder, platform) {
   console.log(`Extracted files for: ${asset.name}`);
 }
 
-(async function () {
-  try {
-    const releaseData = await getReleaseMetadata();
-    const commitId = releaseData.target_commitish;
-    const assets = releaseData.assets;
+try {
+  const releaseData = await getReleaseMetadata();
+  const commitId = await getReleaseTagSha();
+  const assets = releaseData.assets;
 
-    const metadata = {
-      releaseTag: RELEASE_TAG,
-      commitId,
-      collectedAt: new Date().toISOString(),
-      assets: [],
-    };
+  const metadata = {
+    releaseTag: RELEASE_TAG,
+    commitId,
+    collectedAt: new Date().toISOString(),
+    assets: [],
+  };
 
-    for (const { name, folder, platform } of ASSETS_TO_DOWNLOAD) {
-      const asset = assets.find((a) => a.name === name);
-      if (asset) {
-        await downloadAndExtractAsset(asset, folder, platform);
-        metadata.assets.push({
-          name: asset.name,
-          updatedAt: asset.updated_at,
-          folder: folder,
-          platform: platform,
-        });
-      } else {
-        console.warn(`Asset not found: ${name}`);
-      }
+  for (const { name, folder, platform } of ASSETS_TO_DOWNLOAD) {
+    const asset = assets.find((a) => a.name === name);
+    if (asset) {
+      await downloadAndExtractAsset(asset, folder, platform);
+      metadata.assets.push({
+        name: asset.name,
+        updatedAt: asset.updated_at,
+        folder: folder,
+        platform: platform,
+      });
+    } else {
+      console.warn(`Asset not found: ${name}`);
     }
-
-    writeFileSync(META_FILE, JSON.stringify(metadata, null, 2));
-    console.log(`Metadata written to ${META_FILE}`);
-    console.log(`All assets downloaded to: ${DOWNLOAD_DIR}`);
-  } catch (error) {
-    console.error("Error:", error.message);
   }
-})();
+
+  writeFileSync(META_FILE, JSON.stringify(metadata, null, 2));
+  console.log(`Metadata written to ${META_FILE}`);
+  console.log(`All assets downloaded to: ${DOWNLOAD_DIR}`);
+} catch (error) {
+  console.error("Error:", error.message);
+}
+
+async function getReleaseTagSha() {
+  const url = `${GITHUB_API}/repos/${REPOSITORY}/commits/${RELEASE_TAG}`;
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github.sha",
+    },
+  });
+
+  return await response.text();
+}
