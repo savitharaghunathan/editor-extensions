@@ -72,6 +72,10 @@ jobs:
         shell: cmd
         run: npm test
 
+      # clean
+      - name: Clean build
+        run: npm run clean
+
       # Collect assets
       - name: Collect assets
         run: npm run collect-assets
