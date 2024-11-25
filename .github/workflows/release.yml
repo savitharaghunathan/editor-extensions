@@ -78,7 +78,7 @@ jobs:
 
       # Copy files to dist folder
       - name: Copy files to dist folder
-        run: npm run copy-dist
+        run: npm run dist
 
       # Build VSIX package
       - name: Build VSIX package
