@@ -74,7 +74,9 @@ jobs:
 
       # clean
       - name: Clean build
-        run: npm run clean
+        run: |
+          npm run clean
+          npm run build
 
       # Collect assets
       - name: Collect assets
