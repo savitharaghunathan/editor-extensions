@@ -2,7 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import fs from "fs";
 
-import { RuleSet, GetSolutionResult } from "@editor-extensions/shared";
+import { RuleSet, GetSolutionResult, SolutionResponse } from "@editor-extensions/shared";
 import {
   isAnalysis,
   isSolution,
@@ -12,7 +12,7 @@ import {
 
 const MAX_FILES = 5;
 
-const buildDataFolderPath = () => {
+export const buildDataFolderPath = () => {
   const firstWorkspace = vscode.workspace.workspaceFolders?.[0];
   if (!firstWorkspace) {
     return;
@@ -65,7 +65,7 @@ const deleteOldestDataFiles = async (prefix: string, maxCount: number) => {
 };
 
 export async function writeDataFile(
-  content: RuleSet[] | GetSolutionResult,
+  content: RuleSet[] | SolutionResponse,
   prefix: string,
   format: "json" = "json",
 ) {
@@ -87,7 +87,7 @@ export async function writeDataFile(
     Buffer.from(JSON.stringify(content, undefined, 2)),
   );
 
-  deleteOldestDataFiles(prefix, MAX_FILES);
+  // deleteOldestDataFiles(prefix, MAX_FILES);
 }
 
 export const loadStateFromDataFolder = async (): Promise<
