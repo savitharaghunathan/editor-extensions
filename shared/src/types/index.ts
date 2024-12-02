@@ -81,8 +81,9 @@ export interface Change {
 }
 
 export interface GetSolutionResult {
-  errors: string[];
+  encountered_errors: string[];
   changes: Change[];
+  scope: Scope;
 }
 
 export interface LocalChange {
@@ -104,8 +105,11 @@ export interface SolutionResponse {
   diff: string;
   encountered_errors: string[];
   modified_files: string[];
+}
+
+export interface Scope {
   incident: Incident;
-  violation: Violation;
+  violation?: Violation;
 }
 
 export type Solution = GetSolutionResult | SolutionResponse;

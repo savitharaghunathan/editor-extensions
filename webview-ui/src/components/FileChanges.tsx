@@ -16,34 +16,24 @@ import {
   FileIcon,
   EyeIcon,
 } from "@patternfly/react-icons";
+import { LocalChange } from "@editor-extensions/shared";
+import * as path from "path-browserify";
 
 interface FileChangesProps {
-  files: string[];
-  diff: string;
-  onFileClick: (filePath: string) => void;
-  onApplyFix?: (filePath: string) => void;
-  onRejectChanges?: (filePath: string) => void;
+  changes: LocalChange[];
+  onFileClick: (change: LocalChange) => void;
+  onApplyFix?: (change: LocalChange) => void;
+  onRejectChanges?: (change: LocalChange) => void;
 }
 
 export function FileChanges({
-  files,
-  diff,
+  changes,
   onFileClick,
   onApplyFix = () => {},
   onRejectChanges = () => {},
 }: FileChangesProps) {
-  const getFileChangeSummary = (filePath: string): string => {
-    const fileName = filePath.split("/").pop() || "";
-    const diffSections = diff.split("\ndiff --git");
-
-    const fileSection = diffSections.find((section) => {
-      const fullSection = section.startsWith(" a/") ? "diff --git" + section : section;
-      return fullSection.includes(`/${fileName} `) || fullSection.includes(`/${fileName}\n`);
-    });
-
-    if (!fileSection) return "No changes found";
-
-    const lines = fileSection.split("\n");
+  const getFileChangeSummary = ({ diff }: LocalChange): string => {
+    const lines = diff.split("\n");
     const additions = lines.filter(
       (line) => line.startsWith("+") && !line.startsWith("+++"),
     ).length;
@@ -53,11 +43,11 @@ export function FileChanges({
 
     return `${additions} addition${additions !== 1 ? "s" : ""}, ${deletions} deletion${deletions !== 1 ? "s" : ""}`;
   };
-  console.log("files", files);
 
+  console.log("FileChanges", changes);
   return (
     <List isPlain>
-      {files.map((filePath, index) => (
+      {changes.map((change, index) => (
         <ListItem key={index}>
           <Flex alignItems={{ default: "alignItemsCenter" }}>
             <FlexItem grow={{ default: "grow" }}>
@@ -76,7 +66,9 @@ export function FileChanges({
                       alignItems: "center",
                     }}
                   />
-                  <span style={{ lineHeight: "1.5" }}>{filePath.split("/").pop()}</span>
+                  <span style={{ lineHeight: "1.5" }}>
+                    {path.basename(change.originalUri.fsPath)}
+                  </span>
                 </FlexItem>
                 <FlexItem>
                   <ArrowRightIcon
@@ -90,7 +82,7 @@ export function FileChanges({
                   />
                 </FlexItem>
                 <FlexItem className="pf-v5-u-color-200 pf-v5-u-font-size-sm">
-                  {getFileChangeSummary(filePath)}
+                  {getFileChangeSummary(change)}
                 </FlexItem>
               </Flex>
             </FlexItem>
@@ -103,7 +95,7 @@ export function FileChanges({
                   <Tooltip content="View changes">
                     <Button
                       variant={ButtonVariant.plain}
-                      onClick={() => onFileClick(filePath)}
+                      onClick={() => onFileClick(change)}
                       icon={<EyeIcon color="#6A6E73" />}
                       style={{
                         display: "flex",
@@ -119,7 +111,7 @@ export function FileChanges({
                     <Button
                       variant={ButtonVariant.plain}
                       icon={<CheckCircleIcon color="#d1f1bb" />}
-                      onClick={() => onApplyFix(filePath)}
+                      onClick={() => onApplyFix(change)}
                       style={{
                         color: "#3E8635",
                         display: "flex",
@@ -135,7 +127,7 @@ export function FileChanges({
                     <Button
                       variant={ButtonVariant.plain}
                       icon={<TimesCircleIcon color="#f9a8a8" />}
-                      onClick={() => onRejectChanges(filePath)}
+                      onClick={() => onRejectChanges(change)}
                       style={{
                         color: "#C9190B",
                         display: "flex",
@@ -151,7 +143,7 @@ export function FileChanges({
           </Flex>
         </ListItem>
       ))}
-      {files.length === 0 && (
+      {changes.length === 0 && (
         <ListItem>
           <EmptyState>
             <EmptyStateBody>No pending file changes</EmptyStateBody>

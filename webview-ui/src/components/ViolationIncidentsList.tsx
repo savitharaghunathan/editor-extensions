@@ -28,12 +28,7 @@ import {
   CardExpandableContent,
   CardFooter,
 } from "@patternfly/react-core";
-import {
-  SortAmountDownIcon,
-  TimesIcon,
-  FileIcon,
-  LightbulbIcon,
-} from "@patternfly/react-icons";
+import { SortAmountDownIcon, TimesIcon, FileIcon, LightbulbIcon } from "@patternfly/react-icons";
 import { Incident, Violation } from "@editor-extensions/shared";
 
 type SortOption = "description" | "incidentCount" | "severity";
@@ -83,10 +78,8 @@ const ViolationIncidentsList: React.FC<ViolationIncidentsListProps> = ({
   const getHighestSeverity = (incidents: Incident[]): string => {
     const severityOrder = { high: 3, medium: 2, low: 1 };
     return incidents.reduce((highest, incident) => {
-      const currentSeverity =
-        severityOrder[incident.severity as keyof typeof severityOrder] || 0;
-      const highestSeverity =
-        severityOrder[highest as keyof typeof severityOrder] || 0;
+      const currentSeverity = severityOrder[incident.severity as keyof typeof severityOrder] || 0;
+      const highestSeverity = severityOrder[highest as keyof typeof severityOrder] || 0;
       return currentSeverity > highestSeverity ? incident.severity : highest;
     }, "low");
   };
@@ -129,13 +122,9 @@ const ViolationIncidentsList: React.FC<ViolationIncidentsListProps> = ({
         case "severity": {
           const severityOrder = { high: 3, medium: 2, low: 1 };
           const aMaxSeverity =
-            severityOrder[
-              getHighestSeverity(a.incidents) as keyof typeof severityOrder
-            ];
+            severityOrder[getHighestSeverity(a.incidents) as keyof typeof severityOrder];
           const bMaxSeverity =
-            severityOrder[
-              getHighestSeverity(b.incidents) as keyof typeof severityOrder
-            ];
+            severityOrder[getHighestSeverity(b.incidents) as keyof typeof severityOrder];
           return bMaxSeverity - aMaxSeverity;
         }
         default:
@@ -163,11 +152,7 @@ const ViolationIncidentsList: React.FC<ViolationIncidentsListProps> = ({
               dataListCells={[
                 <DataListCell key="icon" width={1}>
                   <FileIcon />
-                  <Button
-                    component="a"
-                    variant="link"
-                    onClick={() => onIncidentSelect(incident)}
-                  >
+                  <Button component="a" variant="link" onClick={() => onIncidentSelect(incident)}>
                     {fileName}
                   </Button>
                 </DataListCell>,
@@ -237,9 +222,7 @@ const ViolationIncidentsList: React.FC<ViolationIncidentsListProps> = ({
             onExpand={() => toggleViolation(violation.description)}
           >
             <Tooltip content={violation.description}>
-              <Content style={{ marginBottom: "5px" }}>
-                {truncatedDescription}
-              </Content>
+              <Content style={{ marginBottom: "5px" }}>{truncatedDescription}</Content>
             </Tooltip>
             <Flex>
               <Label color="blue" isCompact>
@@ -310,11 +293,7 @@ const ViolationIncidentsList: React.FC<ViolationIncidentsListProps> = ({
                 onChange={(_event, value) => setSearchTerm(value)}
               />
               {searchTerm && (
-                <Button
-                  variant="control"
-                  onClick={clearSearch}
-                  aria-label="Clear search"
-                >
+                <Button variant="control" onClick={clearSearch} aria-label="Clear search">
                   <TimesIcon />
                 </Button>
               )}
@@ -345,9 +324,7 @@ const ViolationIncidentsList: React.FC<ViolationIncidentsListProps> = ({
             overflowY: "auto",
           }}
         >
-          {filteredAndSortedViolations.map((violation) =>
-            renderViolation(violation),
-          )}
+          {filteredAndSortedViolations.map((violation) => renderViolation(violation))}
         </div>
       </StackItem>
     </Stack>

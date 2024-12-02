@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { ExtensionState } from "./extensionState";
-import path from "path";
+import { LocalChange } from "@editor-extensions/shared";
 
 export function setupWebviewMessageListener(webview: vscode.Webview, state: ExtensionState) {
   webview.onDidReceiveMessage(async (message) => {
@@ -25,47 +25,29 @@ export function setupWebviewMessageListener(webview: vscode.Webview, state: Exte
         break;
       }
       case "viewFix": {
-        const { change, incident } = message;
-        let incidentUri: vscode.Uri;
-
-        if (incident.uri.startsWith("file://")) {
-          incidentUri = vscode.Uri.parse(incident.uri);
-        } else {
-          incidentUri = vscode.Uri.file(incident.uri);
-        }
-        vscode.commands.executeCommand("konveyor.diffView.viewFix", incidentUri, true);
+        vscode.commands.executeCommand(
+          "konveyor.diffView.viewFix",
+          vscode.Uri.from((message.change as LocalChange).originalUri),
+          true,
+        );
         break;
       }
       case "applyFile": {
-        console.log("applyFile WHAT IS CHANGE", message.filePath, message);
-        const filePath = message.filePath;
-
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          vscode.window.showErrorMessage("No workspace folder is open.");
-          break;
-        }
-
-        let currentURI: vscode.Uri;
-
-        console.log("applyFile WHAT IS FILEPATH", filePath);
-
-        if (path.isAbsolute(filePath)) {
-          console.log("applyFile IS ABSOLUTE");
-          currentURI = vscode.Uri.file(filePath);
-          console.log("applyFile WHAT IS CURRENTURI", currentURI);
-        } else {
-          console.log("applyFile IS NOT ABSOLUTE");
-          const absolutePath = path.resolve(workspaceFolder.uri.fsPath, filePath);
-          currentURI = vscode.Uri.file(absolutePath);
-          console.log("applyFile WHAT IS CURRENTURI", currentURI);
-        }
-
-        vscode.commands.executeCommand("konveyor.applyFile", currentURI, true);
-
+        vscode.commands.executeCommand(
+          "konveyor.applyFile",
+          vscode.Uri.from((message.change as LocalChange).originalUri),
+          true,
+        );
         break;
       }
-
+      case "discardFile": {
+        vscode.commands.executeCommand(
+          "konveyor.discardFile",
+          vscode.Uri.from((message.change as LocalChange).originalUri),
+          true,
+        );
+        break;
+      }
       case "requestQuickfix": {
         const { uri, line } = message.data;
         await handleRequestQuickFix(uri, line);

@@ -17,10 +17,7 @@ interface ViolationCardProps {
   violation: Violation | null;
 }
 
-export const ViolationCard: React.FC<ViolationCardProps> = ({
-  incident,
-  violation,
-}) => {
+export const ViolationCard: React.FC<ViolationCardProps> = ({ incident, violation }) => {
   if (!violation) {
     // Handle the case where violation data is not available
     return (

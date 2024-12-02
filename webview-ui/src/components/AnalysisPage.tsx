@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Button,
   ButtonVariant,
@@ -49,16 +49,6 @@ const AnalysisPage: React.FC = () => {
       line: incident.lineNumber,
     });
   };
-
-  const fetchServerStatus = () => {
-    vscode.postMessage({ command: "checkServerStatus" });
-  };
-
-  useEffect(() => {
-    fetchServerStatus();
-    const interval = setInterval(fetchServerStatus, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const messageHandler = (message: any) => {
     console.log("Received message from VS Code:", message);
@@ -119,7 +109,7 @@ const AnalysisPage: React.FC = () => {
     );
   }
 
-  if (!serverRunning) {
+  if (!serverRunning && !hasViolations) {
     return (
       <Page>
         <PageSection>

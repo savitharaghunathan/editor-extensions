@@ -17,10 +17,7 @@ interface SolutionCardProps {
   onViewFix: (change: Change) => void;
 }
 
-export const SolutionCard: React.FC<SolutionCardProps> = ({
-  changes,
-  onViewFix,
-}) => (
+export const SolutionCard: React.FC<SolutionCardProps> = ({ changes, onViewFix }) => (
   <Card>
     <CardHeader>
       <CardTitle>File Changes</CardTitle>

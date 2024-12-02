@@ -1,4 +1,5 @@
-import { ChildProcessWithoutNullStreams, exec, spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, exec as callbackExec, spawn } from "child_process";
+import util from "node:util";
 import * as vscode from "vscode";
 import * as os from "os";
 import * as fs from "fs";
@@ -6,47 +7,61 @@ import * as rpc from "vscode-jsonrpc/node";
 import path from "path";
 import { Incident, RuleSet, SolutionResponse, Violation } from "@editor-extensions/shared";
 import { buildDataFolderPath } from "../data";
-import { ExtensionState } from "src/extensionState";
+import { ExtensionData, ExtensionState, ServerState } from "../extensionState";
+import { setTimeout } from "timers/promises";
 
+const exec = util.promisify(callbackExec);
 export class AnalyzerClient {
   private config: vscode.WorkspaceConfiguration | null = null;
-  private extContext: vscode.ExtensionContext | null = null;
   private kaiRpcServer: ChildProcessWithoutNullStreams | null = null;
   private outputChannel: vscode.OutputChannel;
   private rpcConnection: rpc.MessageConnection | null = null;
   private requestId: number = 1;
   private kaiDir: string;
   private kaiConfigToml: string;
+  private fireStateChange: (state: ServerState) => void;
+  private fireAnalysisStateChange: (flag: boolean) => void;
+  private fireSolutionStateChange: (flag: boolean) => void;
 
-  constructor(context: vscode.ExtensionContext) {
-    this.extContext = context;
+  constructor(
+    private extContext: vscode.ExtensionContext,
+    mutateExtensionState: (recipe: (draft: ExtensionData) => void) => void,
+  ) {
+    this.fireStateChange = (state: ServerState) =>
+      mutateExtensionState((draft) => {
+        draft.serverState = state;
+        draft.isStartingServer = state === ServerState.Starting;
+      });
+    this.fireAnalysisStateChange = (flag: boolean) =>
+      mutateExtensionState((draft) => {
+        draft.isAnalyzing = flag;
+      });
+    this.fireSolutionStateChange = (flag: boolean) =>
+      mutateExtensionState((draft) => {
+        draft.isFetchingSolution = flag;
+      });
     this.outputChannel = vscode.window.createOutputChannel("Konveyor-Analyzer");
     this.config = vscode.workspace.getConfiguration("konveyor");
     this.kaiDir = path.join(buildDataFolderPath()!, "kai");
     this.kaiConfigToml = path.join(this.kaiDir, "kai-config.toml");
   }
 
-  public async start(state: ExtensionState): Promise<void> {
-    state.mutateData((draft) => {
-      draft.isStartingServer = true;
-    });
-
+  public async start(): Promise<void> {
     if (!this.canAnalyze()) {
+      vscode.window.showErrorMessage("Cannot start the server due to missing configuration.");
       return;
     }
 
-    exec("java -version", (err) => {
-      if (err) {
-        vscode.window.showErrorMessage("Java is not installed. Please install it to continue.");
-        return;
-      }
-    });
-    exec("mvn -version", (err) => {
-      if (err) {
-        vscode.window.showErrorMessage("Maven is not installed. Please install it to continue.");
-        return;
-      }
-    });
+    try {
+      Promise.all([exec("java -version"), exec("mvn -version")]);
+    } catch {
+      vscode.window.showErrorMessage("Java or Maven is missing. Please install it to continue.");
+      return;
+    }
+
+    this.fireStateChange(ServerState.Starting);
+    this.outputChannel.appendLine(`Starting the server ...`);
+
     this.kaiRpcServer = spawn(this.getKaiRpcServerPath(), this.getKaiRpcServerArgs(), {
       cwd: this.extContext!.extensionPath,
       env: { ...process.env, GENAI_KEY: "BWAHAHA" },
@@ -66,28 +81,22 @@ export class AnalyzerClient {
       new rpc.StreamMessageWriter(this.kaiRpcServer.stdin),
     );
     this.rpcConnection.listen();
-    await new Promise<void>((res) => {
-      setTimeout(() => {
-        state.mutateData((draft) => {
-          draft.isStartingServer = false;
-        });
-        res();
-      }, 30000);
-    });
-
-    this.outputChannel.appendLine(`Successfully waited 30 seconds`);
   }
 
   // Stops the analyzer server
   public stop(): void {
+    this.fireStateChange(ServerState.Stopping);
+    this.outputChannel.appendLine(`Stopping the server ...`);
     if (this.kaiRpcServer) {
       this.kaiRpcServer.kill();
     }
     this.rpcConnection?.dispose();
     this.kaiRpcServer = null;
+    this.fireStateChange(ServerState.Stopped);
+    this.outputChannel.appendLine(`Server stopped`);
   }
 
-  public async initialize(state: ExtensionState): Promise<void> {
+  public async initialize(): Promise<void> {
     if (!this.rpcConnection) {
       vscode.window.showErrorMessage("RPC connection is not established.");
       return;
@@ -150,27 +159,25 @@ export class AnalyzerClient {
             );
             this.outputChannel.appendLine(`${response}`);
             progress.report({ message: "RPC Server initialized" });
-            break;
+            this.fireStateChange(ServerState.Running);
+            return;
           } catch (err: any) {
             this.outputChannel.appendLine(`Error: ${err}`);
-            await new Promise((res) => setTimeout(res, 1000));
+            await setTimeout(1000);
             continue;
           }
         }
         progress.report({ message: "Kai initialization failed!" });
+        this.fireStateChange(ServerState.StartFailed);
       },
     );
   }
 
-  public async runAnalysis(webview: vscode.Webview, state: ExtensionState): Promise<any> {
+  public async runAnalysis(): Promise<any> {
     if (!this.rpcConnection) {
       vscode.window.showErrorMessage("RPC connection is not established.");
       return;
     }
-
-    state.mutateData((draft) => {
-      draft.isAnalyzing = true;
-    });
 
     await vscode.window.withProgress(
       {
@@ -178,87 +185,67 @@ export class AnalyzerClient {
         title: "Running Analysis",
         cancellable: false,
       },
-      (progress) => {
-        return new Promise<void>((resolve, reject) => {
-          (async () => {
-            try {
-              progress.report({ message: "Running..." });
+      async (progress) => {
+        try {
+          progress.report({ message: "Running..." });
+          this.fireAnalysisStateChange(true);
 
-              const requestParams = {
-                label_selector: this.getLabelSelector(),
-              };
+          const requestParams = {
+            label_selector: this.getLabelSelector(),
+          };
 
-              this.outputChannel.appendLine(
-                `Sending 'analysis_engine.Analyze' request with params: ${JSON.stringify(
-                  requestParams,
-                )}`,
-              );
+          this.outputChannel.appendLine(
+            `Sending 'analysis_engine.Analyze' request with params: ${JSON.stringify(
+              requestParams,
+            )}`,
+          );
 
-              const response: any = await this.rpcConnection!.sendRequest(
-                "analysis_engine.Analyze",
-                requestParams,
-              );
+          const response: any = await this.rpcConnection!.sendRequest(
+            "analysis_engine.Analyze",
+            requestParams,
+          );
 
-              this.outputChannel.appendLine(`Response: ${JSON.stringify(response)}`);
+          this.outputChannel.appendLine(`Response: ${JSON.stringify(response)}`);
 
-              // Handle the result
-              const rulesets = response?.Rulesets as RuleSet[];
-              if (!rulesets || rulesets.length === 0) {
-                vscode.window.showInformationMessage(
-                  "Analysis completed, but no RuleSets were found.",
-                );
-                state.mutateData((draft) => {
-                  draft.isAnalyzing = false;
-                });
+          // Handle the result
+          const rulesets = response?.Rulesets as RuleSet[];
+          if (!rulesets || rulesets.length === 0) {
+            vscode.window.showInformationMessage("Analysis completed, but no RuleSets were found.");
+            this.fireAnalysisStateChange(false);
+            return;
+          }
 
-                resolve();
-                return;
-              }
-
-              vscode.commands.executeCommand("konveyor.loadRuleSets", rulesets);
-              state.mutateData((draft) => {
-                draft.isAnalyzing = false;
-              });
-              progress.report({ message: "Results processed!" });
-              vscode.window.showInformationMessage("Analysis completed successfully!");
-              resolve();
-            } catch (err: any) {
-              this.outputChannel.appendLine(`Error during analysis: ${err.message}`);
-              state.mutateData((draft) => {
-                draft.isAnalyzing = false;
-              });
-              vscode.window.showErrorMessage(
-                "Analysis failed. See the output channel for details.",
-              );
-              reject(err);
-            }
-          })();
-        });
+          vscode.commands.executeCommand("konveyor.loadRuleSets", rulesets);
+          progress.report({ message: "Results processed!" });
+          vscode.window.showInformationMessage("Analysis completed successfully!");
+        } catch (err: any) {
+          this.outputChannel.appendLine(`Error during analysis: ${err.message}`);
+          vscode.window.showErrorMessage("Analysis failed. See the output channel for details.");
+        }
+        this.fireAnalysisStateChange(false);
       },
     );
   }
 
   public async getSolution(
-    _state: ExtensionState,
-    _incident: Incident,
-    _violation: Violation,
+    state: ExtensionState,
+    incident: Incident,
+    violation: Violation,
   ): Promise<any> {
     if (!this.rpcConnection) {
       vscode.window.showErrorMessage("RPC connection is not established.");
       return;
     }
 
-    _state.mutateData((draft) => {
-      draft.isFetchingSolution = true;
-    });
+    this.fireSolutionStateChange(true);
 
     const enhancedIncident = {
-      ..._incident,
-      ruleset_name: _violation.category || "default_ruleset", // You may adjust the default value as necessary
-      violation_name: _violation.description || "default_violation", // You may adjust the default value as necessary
+      ...incident,
+      ruleset_name: violation.category || "default_ruleset", // You may adjust the default value as necessary
+      violation_name: violation.description || "default_violation", // You may adjust the default value as necessary
     };
-    console.log("what is the violation? ", _violation);
-    console.log("what is the incident? ", _incident);
+    console.log("what is the violation? ", violation);
+    console.log("what is the incident? ", incident);
 
     try {
       const response: SolutionResponse = await this.rpcConnection!.sendRequest(
@@ -272,23 +259,15 @@ export class AnalyzerClient {
         },
       );
 
-      console.log("response", response, _incident, _state);
-      const enhancedResponse: SolutionResponse = {
-        ...response,
-        incident: _incident,
-        violation: _violation,
-      };
-      vscode.commands.executeCommand("konveyor.loadSolution", enhancedResponse);
-      _state.mutateData((draft) => {
-        draft.solutionData = enhancedResponse;
-        draft.isFetchingSolution = false;
-      });
+      console.log("response", response, incident, state);
+      vscode.commands.executeCommand("konveyor.loadSolution", response, { incident, violation });
     } catch (err: any) {
       console.log("response err", err);
-      console.log("err incident", _incident);
+      console.log("err incident", incident);
       this.outputChannel.appendLine(`Error during getSolution: ${err.message}`);
       vscode.window.showErrorMessage("Get solution failed. See the output channel for details.");
     }
+    this.fireSolutionStateChange(false);
   }
 
   // Shutdown the server
@@ -311,7 +290,11 @@ export class AnalyzerClient {
     }
   }
 
-  public async canAnalyze(): Promise<boolean> {
+  public canAnalyze(): boolean {
+    return !!this.config?.get("labelSelector") && this.getRules().length !== 0;
+  }
+
+  public async canAnalyzeInteractive(): Promise<boolean> {
     const labelSelector = this.config!.get("labelSelector") as string;
 
     if (!labelSelector) {

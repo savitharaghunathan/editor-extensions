@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Page,
   PageSection,
@@ -21,35 +21,15 @@ import IncidentList from "./IncidentList";
 import { FileChanges } from "./FileChanges";
 import { CodePreview } from "./CodePreview";
 import { LoadingScreen } from "./LoadingScreen";
-import { Incident, Violation } from "@editor-extensions/shared";
+import { LocalChange, Scope, Solution } from "@editor-extensions/shared";
 import { useVscodeMessages } from "../hooks/useVscodeMessages";
 import { sendVscodeMessage } from "../utils/vscodeMessaging";
 
-interface SolutionResponse {
-  diff: string;
-  encountered_errors: string[];
-  modified_files: string[];
-  incident: Incident;
-  violation: Violation;
-}
-
 const ResolutionPage: React.FC = () => {
-  const [resolution, setResolution] = useState<SolutionResponse | null>(null);
+  const [localChanges, setLocalChanges] = useState<LocalChange[]>([]);
+  const [resolution, setResolution] = useState<(Solution & Scope) | null>(null);
   const [isResolved, setIsResolved] = useState(false);
-  const [processedFiles, setProcessedFiles] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
-
-  // Effect to check if all files are processed
-  useEffect(() => {
-    if (resolution && processedFiles.size > 0) {
-      const allFilesProcessed = resolution.modified_files.every((file) => processedFiles.has(file));
-
-      if (allFilesProcessed) {
-        setIsResolved(true);
-        sendVscodeMessage("solutionResolved", {});
-      }
-    }
-  }, [processedFiles, resolution]);
 
   const messageHandler = (message: any) => {
     switch (message.type) {
@@ -57,21 +37,20 @@ const ResolutionPage: React.FC = () => {
         const {
           isAnalyzing,
           isFetchingSolution,
-          errorMessage,
-          ruleSets,
           isStartingServer,
           solutionData,
+          solutionScope,
+          localChanges,
         } = message.value;
 
         setIsLoading(isAnalyzing || isFetchingSolution || isStartingServer);
-
+        setLocalChanges(localChanges);
         if (solutionData) {
-          handleSolutionResult(solutionData);
+          handleSolutionResult({ ...solutionData, ...solutionScope });
         } else {
           console.log("No solution found for the incident.");
           setResolution(null);
           setIsResolved(false);
-          setProcessedFiles(new Set());
         }
         break;
       }
@@ -80,59 +59,34 @@ const ResolutionPage: React.FC = () => {
 
   useVscodeMessages(messageHandler);
 
-  const handleSolutionResult = (solutionResponse: SolutionResponse) => {
+  const handleSolutionResult = (solutionResponse: Solution & Scope) => {
     // Only reset states if it's a different solution
     if (!resolution || resolution.incident.uri !== solutionResponse.incident.uri) {
       setResolution(solutionResponse);
       setIsResolved(false);
-      setProcessedFiles(new Set());
     }
   };
 
-  const handleFileClick = (filePath: string) => {
-    if (!resolution) return;
-
+  const handleFileClick = (change: LocalChange) =>
     sendVscodeMessage("viewFix", {
-      filePath,
-      diff: resolution.diff,
-      incident: resolution.incident,
+      change,
     });
-  };
 
-  const handleAcceptClick = (filePath: string) => {
-    if (!resolution) return;
-
+  const handleAcceptClick = (change: LocalChange) =>
     sendVscodeMessage("applyFile", {
-      filePath,
-      diff: resolution.diff,
-      incident: resolution.incident,
+      change,
     });
 
-    setProcessedFiles((prev) => {
-      const newProcessedFiles = new Set(prev);
-      newProcessedFiles.add(filePath);
-      return newProcessedFiles;
+  const handleRejectClick = (change: LocalChange) =>
+    sendVscodeMessage("discardFile", {
+      change,
     });
-  };
-
-  const handleRejectClick = (filePath: string) => {
-    if (!resolution) return;
-
-    sendVscodeMessage("revertFile", {
-      filePath,
-      incident: resolution.incident,
-    });
-
-    setProcessedFiles((prev) => {
-      const newProcessedFiles = new Set(prev);
-      newProcessedFiles.add(filePath);
-      return newProcessedFiles;
-    });
-  };
 
   const getRemainingFiles = () => {
-    if (!resolution) return [];
-    return resolution.modified_files.filter((file) => !processedFiles.has(file));
+    if (!resolution) {
+      return [];
+    }
+    return localChanges.filter(({ state }) => state === "pending");
   };
 
   // Display loading screen when fetching solution
@@ -209,8 +163,10 @@ const ResolutionPage: React.FC = () => {
           <SplitItem>
             <Card isFullHeight className="incident-list-card">
               <CardTitle>
-                {resolution.violation.description || "No Violation Data"}
-                <Badge className={spacing.mSm}>{resolution.violation.category}</Badge>
+                {resolution.violation?.description || "No Violation Data"}
+                <Badge className={spacing.mSm}>
+                  {resolution.violation?.category ?? "optional"}
+                </Badge>
               </CardTitle>
               <CardBody>
                 <IncidentList
@@ -227,8 +183,7 @@ const ResolutionPage: React.FC = () => {
               <CardTitle>Affected Files</CardTitle>
               <CardBody>
                 <FileChanges
-                  files={getRemainingFiles()}
-                  diff={resolution.diff}
+                  changes={getRemainingFiles()}
                   onFileClick={handleFileClick}
                   onApplyFix={handleAcceptClick}
                   onRejectChanges={handleRejectClick}

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import { registerAllCommands as registerAllCommands } from "./commands";
-import { ExtensionData, ExtensionState } from "./extensionState";
+import { ExtensionData, ExtensionState, ServerState } from "./extensionState";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
 import { registerDiffView, KonveyorFileModel } from "./diffView";
@@ -24,6 +24,8 @@ class VsCodeExtension {
         isFetchingSolution: false,
         isStartingServer: false,
         solutionData: undefined,
+        serverState: ServerState.Initial,
+        solutionScope: undefined,
       },
       () => {},
     );
@@ -33,9 +35,12 @@ class VsCodeExtension {
       this.data = data;
       this._onDidChange.fire(this.data);
     };
+    const mutateData = (recipe: (draft: ExtensionData) => void) => {
+      setData(produce(getData(), recipe));
+    };
 
     this.state = {
-      analyzerClient: new AnalyzerClient(context),
+      analyzerClient: new AnalyzerClient(context, mutateData),
       webviewProviders: new Map<string, KonveyorGUIWebviewViewProvider>(),
       extensionContext: context,
       diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
@@ -44,9 +49,7 @@ class VsCodeExtension {
       get data() {
         return getData();
       },
-      mutateData: (recipe: (draft: ExtensionData) => void) => {
-        setData(produce(getData(), recipe));
-      },
+      mutateData,
     };
 
     this.initializeExtension(context);

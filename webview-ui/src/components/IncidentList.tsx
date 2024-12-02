@@ -72,15 +72,10 @@ const IncidentList: React.FC<IncidentListProps> = ({
                       </Content>
                     </FlexItem>
                     <FlexItem className="line-number">
-                      <Content component={"small"}>
-                        :{incident.lineNumber}
-                      </Content>
+                      <Content component={"small"}>:{incident.lineNumber}</Content>
                     </FlexItem>
                     <FlexItem>
-                      <Label
-                        isCompact
-                        color={getSeverityColor(incident.severity)}
-                      >
+                      <Label isCompact color={getSeverityColor(incident.severity)}>
                         {incident.severity || "Low"}
                       </Label>
                     </FlexItem>

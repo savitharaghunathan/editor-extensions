@@ -19,7 +19,7 @@ import {
   loadStaticResults,
   reloadLastResolutions,
 } from "./data";
-import { Incident, RuleSet, SolutionResponse, Violation } from "@editor-extensions/shared";
+import { Incident, RuleSet, Scope, Solution, Violation } from "@editor-extensions/shared";
 import {
   applyAll,
   discardAll,
@@ -49,26 +49,20 @@ const commandsMap: (state: ExtensionState) => {
   return {
     "konveyor.startAnalyzer": async () => {
       const analyzerClient = state.analyzerClient;
-      if (!(await analyzerClient.canAnalyze())) {
+      if (!(await analyzerClient.canAnalyzeInteractive())) {
         return;
       }
 
-      await analyzerClient.start(state);
-      await analyzerClient.initialize(state);
+      await analyzerClient.start();
+      await analyzerClient.initialize();
     },
     "konveyor.runAnalysis": async () => {
       const analyzerClient = state.analyzerClient;
-      if (!analyzerClient || !(await analyzerClient.canAnalyze())) {
-        window.showErrorMessage("Analyzer must be started before run!");
+      if (!analyzerClient || !analyzerClient.canAnalyze()) {
+        window.showErrorMessage("Analyzer must be started and configured before run!");
         return;
       }
-      if (fullScreenPanel && fullScreenPanel.webview) {
-        analyzerClient.runAnalysis(fullScreenPanel.webview, state);
-      } else if (sidebarProvider?.webview) {
-        analyzerClient.runAnalysis(sidebarProvider.webview, state);
-      } else {
-        window.showErrorMessage("No webview available to run analysis!");
-      }
+      analyzerClient.runAnalysis();
     },
     "konveyor.getSolution": async (incident: Incident, violation: Violation) => {
       const analyzerClient = state.analyzerClient;
@@ -351,7 +345,8 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
     "konveyor.loadResultsFromDataFolder": loadResultsFromDataFolder,
-    "konveyor.loadSolution": async (solution: SolutionResponse) => loadSolution(state, solution),
+    "konveyor.loadSolution": async (solution: Solution, scope?: Scope) =>
+      loadSolution(state, solution, scope),
     "konveyor.applyAll": async () => applyAll(state),
     "konveyor.applyFile": async (item: FileItem | Uri) => applyFile(item, state),
     "konveyor.copyDiff": async (item: FileItem | Uri) => copyDiff(item, state),

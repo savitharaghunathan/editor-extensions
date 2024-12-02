@@ -10,13 +10,14 @@ export function isGetSolutionResult(object: unknown): object is GetSolutionResul
     return false;
   }
 
-  const { errors, changes, ...rest } = object as GetSolutionResult;
+  const { encountered_errors, changes, scope, ...rest } = object as GetSolutionResult;
 
   return (
-    Array.isArray(errors) &&
+    Array.isArray(encountered_errors) &&
     Array.isArray(changes) &&
+    isObject(scope) &&
     isEmpty(rest) &&
-    errors.every(isString) &&
+    encountered_errors.every(isString) &&
     changes.every(isObject) &&
     changes.every(
       ({ diff, original, modified, ...rest }) =>
