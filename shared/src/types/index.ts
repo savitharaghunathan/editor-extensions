@@ -94,7 +94,7 @@ export interface LocalChange {
 
 export interface ResolutionMessage {
   type: string;
-  solution: GetSolutionResult;
+  solution: Solution;
   violation: Violation;
   incident: Incident;
   isRelevantSolution: boolean;
@@ -107,3 +107,5 @@ export interface SolutionResponse {
   incident: Incident;
   violation: Violation;
 }
+
+export type Solution = GetSolutionResult | SolutionResponse;

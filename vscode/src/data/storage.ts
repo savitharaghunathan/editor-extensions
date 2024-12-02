@@ -2,7 +2,7 @@ import path from "path";
 import * as vscode from "vscode";
 import fs from "fs";
 
-import { RuleSet, GetSolutionResult, SolutionResponse } from "@editor-extensions/shared";
+import { RuleSet, Solution } from "@editor-extensions/shared";
 import {
   isAnalysis,
   isSolution,
@@ -65,7 +65,7 @@ const deleteOldestDataFiles = async (prefix: string, maxCount: number) => {
 };
 
 export async function writeDataFile(
-  content: RuleSet[] | SolutionResponse,
+  content: RuleSet[] | Solution,
   prefix: string,
   format: "json" = "json",
 ) {
@@ -87,11 +87,11 @@ export async function writeDataFile(
     Buffer.from(JSON.stringify(content, undefined, 2)),
   );
 
-  // deleteOldestDataFiles(prefix, MAX_FILES);
+  deleteOldestDataFiles(prefix, MAX_FILES);
 }
 
 export const loadStateFromDataFolder = async (): Promise<
-  [RuleSet[] | undefined, GetSolutionResult | undefined]
+  [RuleSet[] | undefined, Solution | undefined]
 > => {
   const dataFolder = getDataFolder();
   if (!dataFolder) {
@@ -113,7 +113,7 @@ export const loadStateFromDataFolder = async (): Promise<
 
 export const readDataFiles = async (
   uris: vscode.Uri[],
-): Promise<[RuleSet[] | undefined, GetSolutionResult | undefined]> => {
+): Promise<[RuleSet[] | undefined, Solution | undefined]> => {
   let analysisResults = undefined;
   let solution = undefined;
   for (const uri of uris) {

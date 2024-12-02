@@ -1,4 +1,4 @@
-import { LocalChange, RuleSet, SolutionResponse } from "@editor-extensions/shared";
+import { LocalChange, RuleSet, Solution } from "@editor-extensions/shared";
 import { processIncidents } from "./analyzerResults";
 import { ExtensionState } from "src/extensionState";
 import { writeDataFile } from "./storage";
@@ -24,7 +24,7 @@ export const cleanRuleSets = (state: ExtensionState) => {
   });
 };
 
-export const loadSolution = async (state: ExtensionState, solution: SolutionResponse) => {
+export const loadSolution = async (state: ExtensionState, solution: Solution) => {
   console.log("what is solution here in loadSolution", solution);
 
   await writeDataFile(solution, SOLUTION_DATA_FILE_PREFIX);
