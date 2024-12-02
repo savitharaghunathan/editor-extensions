@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Page,
   PageSection,
@@ -21,73 +21,34 @@ import IncidentList from "./IncidentList";
 import { FileChanges } from "./FileChanges";
 import { CodePreview } from "./CodePreview";
 import { LoadingScreen } from "./LoadingScreen";
-import { LocalChange, Scope, Solution } from "@editor-extensions/shared";
-import { useVscodeMessages } from "../hooks/useVscodeMessages";
-import { sendVscodeMessage } from "../utils/vscodeMessaging";
+import { LocalChange } from "@editor-extensions/shared";
+import { useExtensionState } from "../hooks/useExtensionState";
+import { applyFile, discardFile, viewFix } from "../hooks/actions";
 
 const ResolutionPage: React.FC = () => {
-  const [localChanges, setLocalChanges] = useState<LocalChange[]>([]);
-  const [resolution, setResolution] = useState<(Solution & Scope) | null>(null);
-  const [isResolved, setIsResolved] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const messageHandler = (message: any) => {
-    switch (message.type) {
-      case "onDidChangeData": {
-        const {
-          isAnalyzing,
-          isFetchingSolution,
-          isStartingServer,
-          solutionData,
-          solutionScope,
-          localChanges,
-        } = message.value;
-
-        setIsLoading(isAnalyzing || isFetchingSolution || isStartingServer);
-        setLocalChanges(localChanges);
-        if (solutionData) {
-          handleSolutionResult({ ...solutionData, ...solutionScope });
-        } else {
-          console.log("No solution found for the incident.");
-          setResolution(null);
-          setIsResolved(false);
-        }
-        break;
-      }
-    }
-  };
-
-  useVscodeMessages(messageHandler);
-
-  const handleSolutionResult = (solutionResponse: Solution & Scope) => {
-    // Only reset states if it's a different solution
-    if (!resolution || resolution.incident.uri !== solutionResponse.incident.uri) {
-      setResolution(solutionResponse);
-      setIsResolved(false);
-    }
-  };
-
-  const handleFileClick = (change: LocalChange) =>
-    sendVscodeMessage("viewFix", {
-      change,
-    });
-
-  const handleAcceptClick = (change: LocalChange) =>
-    sendVscodeMessage("applyFile", {
-      change,
-    });
-
-  const handleRejectClick = (change: LocalChange) =>
-    sendVscodeMessage("discardFile", {
-      change,
-    });
-
+  const [state, dispatch] = useExtensionState();
+  const {
+    localChanges,
+    isAnalyzing,
+    isFetchingSolution,
+    isStartingServer,
+    solutionData: resolution,
+    solutionScope,
+  } = state;
+  const isLoading = isAnalyzing || isFetchingSolution || isStartingServer;
   const getRemainingFiles = () => {
     if (!resolution) {
       return [];
     }
     return localChanges.filter(({ state }) => state === "pending");
   };
+  const isResolved = !!resolution && getRemainingFiles().length === 0;
+
+  const handleFileClick = (change: LocalChange) => dispatch(viewFix(change));
+
+  const handleAcceptClick = (change: LocalChange) => dispatch(applyFile(change));
+
+  const handleRejectClick = (change: LocalChange) => dispatch(discardFile(change));
 
   // Display loading screen when fetching solution
   if (isLoading) {
@@ -163,15 +124,15 @@ const ResolutionPage: React.FC = () => {
           <SplitItem>
             <Card isFullHeight className="incident-list-card">
               <CardTitle>
-                {resolution.violation?.description || "No Violation Data"}
+                {solutionScope?.violation?.description || "No Violation Data"}
                 <Badge className={spacing.mSm}>
-                  {resolution.violation?.category ?? "optional"}
+                  {solutionScope?.violation?.category ?? "optional"}
                 </Badge>
               </CardTitle>
               <CardBody>
                 <IncidentList
-                  incidents={[resolution.incident]}
-                  selectedIncident={resolution.incident}
+                  incidents={solutionScope?.incident ? [solutionScope?.incident] : []}
+                  selectedIncident={solutionScope?.incident}
                   onSelectIncident={() => {}}
                 />
               </CardBody>
@@ -190,11 +151,11 @@ const ResolutionPage: React.FC = () => {
                 />
               </CardBody>
             </Card>
-            {resolution.incident && (
+            {solutionScope?.incident && (
               <Card className="pf-v5-u-mb-md">
                 <CardTitle>Incident Details</CardTitle>
                 <CardBody>
-                  <CodePreview incident={resolution.incident} />
+                  <CodePreview incident={solutionScope?.incident} />
                 </CardBody>
               </Card>
             )}

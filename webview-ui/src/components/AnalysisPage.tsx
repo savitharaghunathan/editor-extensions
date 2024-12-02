@@ -22,64 +22,36 @@ import {
 } from "@patternfly/react-core";
 import spacing from "@patternfly/react-styles/css/utilities/Spacing/spacing";
 
-import { vscode } from "../utils/vscode";
 import ProgressIndicator from "./ProgressIndicator";
 import ViolationIncidentsList from "./ViolationIncidentsList";
-import { Incident, RuleSet } from "@editor-extensions/shared";
-import { useVscodeMessages } from "../hooks/useVscodeMessages";
-import { sendVscodeMessage } from "../utils/vscodeMessaging";
+import { Incident } from "@editor-extensions/shared";
+import { useExtensionState } from "../hooks/useExtensionState";
 import { WarningTriangleIcon } from "@patternfly/react-icons";
+import { cancelSolution, getSolution, openFile, startServer } from "../hooks/actions";
 
 const AnalysisPage: React.FC = () => {
-  const [analysisResults, setAnalysisResults] = useState<RuleSet[] | undefined>(undefined);
+  const [state, dispatch] = useExtensionState();
+  const {
+    isAnalyzing,
+    isStartingServer,
+    isFetchingSolution: isWaitingForSolution,
+    ruleSets: analysisResults,
+  } = state;
+  const serverRunning = state.serverState === "running";
+
   const [analysisMessage, setAnalysisMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [focusedIncident, setFocusedIncident] = useState<Incident | null>(null);
   const [expandedViolations, setExpandedViolations] = useState<Set<string>>(new Set());
-  const [serverRunning, setServerRunning] = useState(false);
-  const [isStartingServer, setIsStartingServer] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isWaitingForSolution, setIsWaitingForSolution] = useState(false);
 
   const handleIncidentSelect = (incident: Incident) => {
     setFocusedIncident(incident);
-    vscode.postMessage({
-      command: "openFile",
-      file: incident.uri,
-      line: incident.lineNumber,
-    });
+    dispatch(openFile(incident.uri, incident.lineNumber));
   };
 
-  const messageHandler = (message: any) => {
-    console.log("Received message from VS Code:", message);
+  const startAnalysis = () => dispatch(startAnalysis());
 
-    switch (message.type) {
-      case "onDidChangeData": {
-        const { isAnalyzing, isFetchingSolution, errorMessage, ruleSets, isStartingServer } =
-          message.value;
-        setIsAnalyzing(isAnalyzing);
-        setIsWaitingForSolution(isFetchingSolution);
-        setIsStartingServer(isStartingServer);
-        setErrorMessage(errorMessage);
-        setAnalysisResults(ruleSets);
-        break;
-      }
-      case "serverStatus":
-        setServerRunning(message.isRunning);
-        break;
-    }
-  };
-
-  useVscodeMessages(messageHandler);
-
-  const startAnalysis = () => {
-    vscode.postMessage({ command: "startAnalysis" });
-  };
-
-  const cancelSolutionRequest = () => {
-    vscode.postMessage({ command: "cancelSolution" });
-    setIsWaitingForSolution(false);
-  };
+  const cancelSolutionRequest = () => dispatch(cancelSolution());
 
   const violations = useMemo(() => {
     if (!analysisResults?.length) {
@@ -123,7 +95,7 @@ const AnalysisPage: React.FC = () => {
             <Button
               className={spacing.mtMd}
               variant={ButtonVariant.primary}
-              onClick={() => sendVscodeMessage("startServer", {})}
+              onClick={() => dispatch(startServer())}
             >
               Start Server
             </Button>
@@ -209,21 +181,10 @@ const AnalysisPage: React.FC = () => {
                     violations={violations}
                     focusedIncident={focusedIncident}
                     onIncidentSelect={handleIncidentSelect}
-                    onGetSolution={(incident, violation) => {
-                      setIsWaitingForSolution(true);
-                      vscode.postMessage({
-                        command: "getSolution",
-                        incident,
-                        violation,
-                      });
-                    }}
-                    onGetAllSolutions={(selectedViolations) => {
-                      setIsWaitingForSolution(true);
-                      vscode.postMessage({
-                        command: "getAllSolutions",
-                        selectedViolations,
-                      });
-                    }}
+                    onGetSolution={(incident, violation) =>
+                      dispatch(getSolution(incident, violation))
+                    }
+                    onGetAllSolutions={() => {}}
                     compact={false}
                     expandedViolations={expandedViolations}
                     setExpandedViolations={setExpandedViolations}

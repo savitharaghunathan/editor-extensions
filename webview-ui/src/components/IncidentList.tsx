@@ -16,7 +16,7 @@ import { Incident } from "@editor-extensions/shared";
 
 interface IncidentListProps {
   incidents: Incident[];
-  selectedIncident: Incident | null;
+  selectedIncident?: Incident;
   onSelectIncident: (incident: Incident) => void;
 }
 

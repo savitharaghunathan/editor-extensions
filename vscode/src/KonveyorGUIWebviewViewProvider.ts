@@ -58,7 +58,7 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
       if (this._viewType === KonveyorGUIWebviewViewProvider.RESOLUTION_VIEW_TYPE) {
         const savedData = this._extensionState.data.resolutionPanelData;
         if (savedData) {
-          this._panel.webview.postMessage({ type: "loadResolutionState", data: savedData });
+          this._panel.webview.postMessage(this._extensionState.data);
         }
       }
 
@@ -75,10 +75,10 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
     // Assuming the analysis webview is tracked and can be accessed via the ExtensionState or similar
     const sidebarProvider = this._extensionState.webviewProviders.get("sidebar");
     if (sidebarProvider?.webview && sidebarProvider._isWebviewReady) {
-      sidebarProvider.webview.postMessage({
-        type: "solutionConfirmation",
-        data: { confirmed: true, solution: null },
-      });
+      // sidebarProvider.webview.postMessage({
+      //   type: "solutionConfirmation",
+      //   data: { confirmed: true, solution: null },
+      // });
     } else {
       console.error("Analysis webview is not ready or not available.");
     }

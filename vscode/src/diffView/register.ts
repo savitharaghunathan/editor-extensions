@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
 import { KonveyorTreeDataProvider } from "./fileModel";
 import { Navigation } from "./navigation";
-import { ExtensionData, ExtensionState } from "src/extensionState";
+import { ExtensionState } from "src/extensionState";
 import { KONVEYOR_READ_ONLY_SCHEME, KONVEYOR_SCHEME } from "../utilities";
 import KonveyorReadOnlyProvider from "../data/readOnlyStorage";
 import { Immutable } from "immer";
-import { LocalChange } from "@editor-extensions/shared";
+import { LocalChange, ExtensionData } from "@editor-extensions/shared";
 
 export function registerDiffView({
   extensionContext: context,

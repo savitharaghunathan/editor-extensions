@@ -3,29 +3,8 @@ import { KonveyorFileModel } from "./diffView";
 import { MemFS } from "./data/fileSystemProvider";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import * as vscode from "vscode";
-import { LocalChange, RuleSet, Scope, Solution } from "@editor-extensions/shared";
+import { ExtensionData } from "@editor-extensions/shared";
 import { Immutable } from "immer";
-
-export interface ExtensionData {
-  localChanges: LocalChange[];
-  ruleSets: RuleSet[];
-  resolutionPanelData: any;
-  isAnalyzing: boolean;
-  isFetchingSolution: boolean;
-  isStartingServer: boolean;
-  serverState: ServerState;
-  solutionData?: Solution;
-  solutionScope?: Scope;
-}
-
-export enum ServerState {
-  Initial = "initial",
-  Starting = "starting",
-  StartFailed = "startFailed",
-  Running = "running",
-  Stopping = "stopping",
-  Stopped = "stopped",
-}
 
 export interface ExtensionState {
   analyzerClient: AnalyzerClient;

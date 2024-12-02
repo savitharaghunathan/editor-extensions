@@ -7,7 +7,8 @@ import * as rpc from "vscode-jsonrpc/node";
 import path from "path";
 import { Incident, RuleSet, SolutionResponse, Violation } from "@editor-extensions/shared";
 import { buildDataFolderPath } from "../data";
-import { ExtensionData, ExtensionState, ServerState } from "../extensionState";
+import { ExtensionState } from "../extensionState";
+import { ExtensionData, ServerState } from "@editor-extensions/shared";
 import { setTimeout } from "timers/promises";
 
 const exec = util.promisify(callbackExec);
@@ -30,7 +31,7 @@ export class AnalyzerClient {
     this.fireStateChange = (state: ServerState) =>
       mutateExtensionState((draft) => {
         draft.serverState = state;
-        draft.isStartingServer = state === ServerState.Starting;
+        draft.isStartingServer = state === "starting";
       });
     this.fireAnalysisStateChange = (flag: boolean) =>
       mutateExtensionState((draft) => {
@@ -59,7 +60,7 @@ export class AnalyzerClient {
       return;
     }
 
-    this.fireStateChange(ServerState.Starting);
+    this.fireStateChange("starting");
     this.outputChannel.appendLine(`Starting the server ...`);
 
     this.kaiRpcServer = spawn(this.getKaiRpcServerPath(), this.getKaiRpcServerArgs(), {
@@ -85,14 +86,14 @@ export class AnalyzerClient {
 
   // Stops the analyzer server
   public stop(): void {
-    this.fireStateChange(ServerState.Stopping);
+    this.fireStateChange("stopping");
     this.outputChannel.appendLine(`Stopping the server ...`);
     if (this.kaiRpcServer) {
       this.kaiRpcServer.kill();
     }
     this.rpcConnection?.dispose();
     this.kaiRpcServer = null;
-    this.fireStateChange(ServerState.Stopped);
+    this.fireStateChange("stopped");
     this.outputChannel.appendLine(`Server stopped`);
   }
 
@@ -159,7 +160,7 @@ export class AnalyzerClient {
             );
             this.outputChannel.appendLine(`${response}`);
             progress.report({ message: "RPC Server initialized" });
-            this.fireStateChange(ServerState.Running);
+            this.fireStateChange("running");
             return;
           } catch (err: any) {
             this.outputChannel.appendLine(`Error: ${err}`);
@@ -168,7 +169,7 @@ export class AnalyzerClient {
           }
         }
         progress.report({ message: "Kai initialization failed!" });
-        this.fireStateChange(ServerState.StartFailed);
+        this.fireStateChange("startFailed");
       },
     );
   }

@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import { registerAllCommands as registerAllCommands } from "./commands";
-import { ExtensionData, ExtensionState, ServerState } from "./extensionState";
+import { ExtensionState } from "./extensionState";
+import { ExtensionData } from "@editor-extensions/shared";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
 import { registerDiffView, KonveyorFileModel } from "./diffView";
@@ -24,7 +25,7 @@ class VsCodeExtension {
         isFetchingSolution: false,
         isStartingServer: false,
         solutionData: undefined,
-        serverState: ServerState.Initial,
+        serverState: "initial",
         solutionScope: undefined,
       },
       () => {},
@@ -88,7 +89,7 @@ class VsCodeExtension {
       this.onDidChangeData((data) => {
         console.log("State changed, sending data to webview:", data); // Log the state being sent
 
-        provider.sendMessageToWebview({ type: "onDidChangeData", value: data });
+        provider.sendMessageToWebview(data);
       }),
     );
 
