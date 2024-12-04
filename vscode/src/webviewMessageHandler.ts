@@ -7,9 +7,10 @@ import {
   LocalChange,
   OPEN_FILE,
   Scope,
-  START_ANALYSIS,
+  RUN_ANALYSIS,
   START_SERVER,
   VIEW_FIX,
+  WEBVIEW_READY,
   WebviewAction,
   WebviewActionType,
 } from "@editor-extensions/shared";
@@ -21,6 +22,9 @@ export function setupWebviewMessageListener(webview: vscode.Webview, state: Exte
 const actions: {
   [name: string]: (payload: any) => void;
 } = {
+  [WEBVIEW_READY]() {
+    console.log("Webview is ready");
+  },
   [GET_SOLUTION](scope: Scope) {
     vscode.commands.executeCommand("konveyor.getSolution", scope.incident, scope.violation);
 
@@ -56,7 +60,8 @@ const actions: {
   // action.isPreferred = true;
   // vscode.commands.executeCommand("vscode.executeCodeActionProvider", message.documentUri, message.range, action);
   // },
-  [START_ANALYSIS]() {
+  [RUN_ANALYSIS]() {
+    console.log("Running analysis...");
     vscode.commands.executeCommand("konveyor.runAnalysis");
   },
   async [OPEN_FILE]({ file, line }) {
@@ -75,11 +80,12 @@ const actions: {
     }
   },
   [START_SERVER]() {
-    vscode.commands.executeCommand("konveyor.startAnalyzer");
+    vscode.commands.executeCommand("konveyor.startServer");
   },
 };
 
 export const messageHandler = async (message: WebviewAction<WebviewActionType, unknown>) => {
+  console.log("Received message inside message handler...", message);
   const handler = actions?.[message?.type];
   if (handler) {
     await handler(message.payload);

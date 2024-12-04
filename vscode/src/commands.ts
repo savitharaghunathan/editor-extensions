@@ -46,7 +46,7 @@ const commandsMap: (state: ExtensionState) => {
   const { extensionContext } = state;
   const sidebarProvider = state.webviewProviders?.get("sidebar");
   return {
-    "konveyor.startAnalyzer": async () => {
+    "konveyor.startServer": async () => {
       const analyzerClient = state.analyzerClient;
       if (!(await analyzerClient.canAnalyzeInteractive())) {
         return;
@@ -56,6 +56,7 @@ const commandsMap: (state: ExtensionState) => {
       await analyzerClient.initialize();
     },
     "konveyor.runAnalysis": async () => {
+      console.log("run analysis command called");
       const analyzerClient = state.analyzerClient;
       if (!analyzerClient || !analyzerClient.canAnalyze()) {
         window.showErrorMessage("Analyzer must be started and configured before run!");
