@@ -90,8 +90,9 @@ jobs:
       - name: Build VSIX package
         run: npm run package
 
-      # Upload VSIX artifact
+      # Upload VSIX artifact (linux )
       - name: Upload VSIX artifact
+        if: matrix.arch == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: vscode-extension-${{ matrix.arch }}
@@ -135,26 +136,12 @@ jobs:
           name: vscode-extension-linux
           path: ./artifacts/vscode-extension-linux
 
-      - name: Download macOS Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: vscode-extension-macos
-          path: ./artifacts/vscode-extension-macos
-
-      - name: Download Windows Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: vscode-extension-windows
-          path: ./artifacts/vscode-extension-windows
-
       - name: Verify Downloaded Artifacts
         run: ls -R ./artifacts
 
       - name: Rename VSIX Packages
         run: |
-          mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-linux-${{ needs.release_prereq.outputs.tag_name }}.vsix
-          mv ./artifacts/vscode-extension-macos/*.vsix ./artifacts/konveyor-macos-${{ needs.release_prereq.outputs.tag_name }}.vsix
-          mv ./artifacts/vscode-extension-windows/*.vsix ./artifacts/konveyor-windows-${{ needs.release_prereq.outputs.tag_name }}.vsix
+          mv ./artifacts/vscode-extension-linux/*.vsix ./artifacts/konveyor-${{ needs.release_prereq.outputs.tag_name }}.vsix
 
       - name: Create Release
         uses: ncipollo/release-action@v1
@@ -164,8 +151,6 @@ jobs:
           bodyFile: ./artifacts/release.md
           artifacts: |
             ./artifacts/konveyor-linux-*.vsix
-            ./artifacts/konveyor-macos-*.vsix
-            ./artifacts/konveyor-windows-*.vsix
           prerelease: ${{ github.event.inputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
