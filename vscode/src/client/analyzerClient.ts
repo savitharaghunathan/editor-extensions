@@ -21,6 +21,9 @@ import {
   getConfigKaiRpcServerPath,
   getConfigAnalyzerPath,
   getGenAiKey,
+  getConfigMaxDepth,
+  getConfigMaxIterations,
+  getConfigMaxPriority,
 } from "../utilities";
 
 export class AnalyzerClient {
@@ -344,20 +347,30 @@ export class AnalyzerClient {
 
     const enhancedIncident = {
       ...incident,
-      ruleset_name: violation.category || "default_ruleset", // You may adjust the default value as necessary
-      violation_name: violation.description || "default_violation", // You may adjust the default value as necessary
+      ruleset_name: violation.category || "default_ruleset",
+      violation_name: violation.description || "default_violation",
     };
 
+    const maxPriority = getConfigMaxPriority();
+    const maxDepth = getConfigMaxDepth();
+    const maxIterations = getConfigMaxIterations();
+
     try {
+      const request = {
+        file_path: "",
+        incidents: [enhancedIncident],
+        max_priority: maxPriority,
+        max_depth: maxDepth,
+        max_iterations: maxIterations,
+      };
+
+      this.outputChannel.appendLine(
+        `getCodeplanAgentSolution request: ${JSON.stringify(request, null, 2)}`,
+      );
+
       const response: SolutionResponse = await this.rpcConnection!.sendRequest(
         "getCodeplanAgentSolution",
-        {
-          file_path: "",
-          incidents: [enhancedIncident],
-          max_priority: 0,
-          max_depth: 0,
-          max_iterations: 1,
-        },
+        request,
       );
 
       vscode.commands.executeCommand("konveyor.loadSolution", response, {
@@ -368,6 +381,7 @@ export class AnalyzerClient {
       this.outputChannel.appendLine(`Error during getSolution: ${err.message}`);
       vscode.window.showErrorMessage("Get solution failed. See the output channel for details.");
     }
+
     this.fireSolutionStateChange(false);
   }
 
