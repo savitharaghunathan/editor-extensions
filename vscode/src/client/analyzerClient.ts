@@ -265,9 +265,9 @@ export class AnalyzerClient {
       {
         location: vscode.ProgressLocation.Notification,
         title: "Running Analysis",
-        cancellable: false,
+        cancellable: true,
       },
-      async (progress) => {
+      async (progress, token) => {
         try {
           progress.report({ message: "Running..." });
           this.fireAnalysisStateChange(true);
@@ -283,11 +283,31 @@ export class AnalyzerClient {
             )}`,
           );
 
-          const response: any = await this.rpcConnection!.sendRequest(
-            "analysis_engine.Analyze",
-            requestParams,
-          );
+          if (token.isCancellationRequested) {
+            this.outputChannel.appendLine("Analysis was canceled by the user.");
+            this.fireAnalysisStateChange(false);
+            return;
+          }
 
+          const cancellationPromise = new Promise((resolve) => {
+            token.onCancellationRequested(() => {
+              resolve({ isCancelled: true });
+            });
+          });
+
+          const { response, isCancelled }: any = await Promise.race([
+            this.rpcConnection!.sendRequest("analysis_engine.Analyze", requestParams).then(
+              (response) => ({ response }),
+            ),
+            cancellationPromise,
+          ]);
+
+          if (isCancelled) {
+            this.outputChannel.appendLine("Analysis operation was canceled.");
+            vscode.window.showInformationMessage("Analysis was canceled.");
+            this.fireAnalysisStateChange(false);
+            return;
+          }
           this.outputChannel.appendLine(`Response: ${JSON.stringify(response)}`);
 
           // Handle the result
