@@ -69,6 +69,10 @@ export function getConfigKaiProviderArgs(): object {
   return getConfigValue<object>("kai.providerArgs") || {};
 }
 
+export function getConfigKaiDemoMode(): boolean {
+  return getConfigValue<boolean>("kai.demoMode") ?? false;
+}
+
 async function updateConfigValue<T>(
   key: string,
   value: T | undefined,
