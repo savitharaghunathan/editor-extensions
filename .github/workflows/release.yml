@@ -150,7 +150,7 @@ jobs:
           commit: ${{ github.sha }}
           bodyFile: ./artifacts/release.md
           artifacts: |
-            ./artifacts/konveyor-linux-*.vsix
+            ./artifacts/konveyor-*.vsix
           prerelease: ${{ github.event.inputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
