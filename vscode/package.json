@@ -1,6 +1,6 @@
 {
   "name": "editor-extensions-vscode",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "main": "./out/extension.js",
   "publisher": "konveyor",
   "repository": {
@@ -29,10 +29,34 @@
   "contributes": {
     "commands": [
       {
-        "command": "konveyor.toggleFullScreen",
-        "title": "Toggle Fullscreen",
+        "command": "konveyor.configureGenAiKey",
+        "title": "Configure GenAI Key",
         "category": "Konveyor",
-        "icon": "$(fullscreen)"
+        "icon": "$(key)"
+      },
+      {
+        "command": "konveyor.showAnalysisPanel",
+        "title": "Open Konveyor Analysis View",
+        "category": "Konveyor",
+        "icon": "$(book)"
+      },
+      {
+        "command": "konveyor.expandAllIssues",
+        "title": "Expand All",
+        "category": "Konveyor",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "konveyor.expandSingleIssue",
+        "title": "Expand All",
+        "category": "Konveyor",
+        "icon": "$(expand-all)"
+      },
+      {
+        "command": "konveyor.openAnalysisDetails",
+        "title": "Open Details",
+        "category": "Konveyor",
+        "icon": "$(book)"
       },
       {
         "command": "konveyor.overrideAnalyzerBinaries",
@@ -74,6 +98,18 @@
         "title": "Start Server",
         "category": "Konveyor",
         "icon": "$(play)"
+      },
+      {
+        "command": "konveyor.stopServer",
+        "title": "Stop Server",
+        "category": "Konveyor",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "konveyor.restartServer",
+        "title": "Restart Server",
+        "category": "Konveyor",
+        "icon": "$(restart)"
       },
       {
         "command": "konveyor.runAnalysis",
@@ -184,6 +220,12 @@
         "icon": "$(arrow-left)",
         "category": "diffEditor",
         "title": "Apply Selection"
+      },
+      {
+        "command": "konveyor.configureGetSolutionParams",
+        "title": "Configure getSolution Parameters",
+        "category": "Konveyor",
+        "icon": "$(gear)"
       }
     ],
     "submenus": [
@@ -204,10 +246,8 @@
     "views": {
       "konveyor": [
         {
-          "type": "webview",
-          "id": "konveyor.konveyorAnalysisView",
-          "name": "Konveyor Analysis View",
-          "visibility": "visible"
+          "id": "konveyor.issueView",
+          "name": "Konveyor Issues"
         },
         {
           "id": "konveyor.diffView",
@@ -218,9 +258,14 @@
     "menus": {
       "view/title": [
         {
-          "command": "konveyor.toggleFullScreen",
+          "command": "konveyor.showAnalysisPanel",
           "group": "navigation@1",
-          "when": "view == konveyor.konveyorAnalysisView"
+          "when": "view == konveyor.issueView"
+        },
+        {
+          "command": "konveyor.expandAllIssues",
+          "group": "navigation@2",
+          "when": "view == konveyor.issueView"
         },
         {
           "command": "konveyor.applyAll",
@@ -239,6 +284,16 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "konveyor.expandSingleIssue",
+          "group": "inline@2",
+          "when": "view == konveyor.issueView && viewItem == incident-type-item"
+        },
+        {
+          "command": "konveyor.openAnalysisDetails",
+          "group": "inline@1",
+          "when": "view == konveyor.issueView && viewItem == incident-type-item"
+        },
         {
           "command": "konveyor.applyFile",
           "group": "inline",
@@ -268,13 +323,6 @@
           "command": "konveyor.copyPath",
           "group": "2@2",
           "when": "view == konveyor.diffView && viewItem == file-item"
-        }
-      ],
-      "editor/title": [
-        {
-          "command": "konveyor.toggleFullScreen",
-          "group": "navigation@1",
-          "when": "activeWebviewPanelId == konveyor.konveyorAnalysisView"
         }
       ],
       "diffEditor/gutter/selection": [
@@ -309,6 +357,10 @@
       ],
       "konveyor.submenu": [],
       "commandPalette": [
+        {
+          "command": "konveyor.expandSingleIssue",
+          "when": "never"
+        },
         {
           "command": "konveyor.loadRuleSets",
           "when": "never"
@@ -466,6 +518,27 @@
           },
           "description": "Kai provider arguments",
           "scope": "window"
+        },
+        "konveyor.kai.genAiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Generative AI Key",
+          "scope": "window"
+        },
+        "konveyor.kai.getSolutionMaxPriority": {
+          "type": "number",
+          "default": 0,
+          "description": "Maximum priority for the getSolution request"
+        },
+        "konveyor.kai.getSolutionMaxDepth": {
+          "type": "number",
+          "default": 0,
+          "description": "Max depth for the getSolution request"
+        },
+        "konveyor.kai.getSolutionMaxIterations": {
+          "type": "number",
+          "default": 1,
+          "description": "Max iterations for the getSolution request"
         }
       }
     },
@@ -508,6 +581,28 @@
             }
           },
           {
+            "id": "configure-gen",
+            "title": "Configure Generative AI",
+            "description": "Configure Generative AI for your project\n[Configure GenAI Key](command:konveyor.configureGenAiKey)",
+            "completionEvents": [
+              "onCommand:konveyor.configureGenAiKey"
+            ],
+            "media": {
+              "markdown": "media/walkthroughs/gen-ai.md"
+            }
+          },
+          {
+            "id": "configure-get-solution",
+            "title": "Configure Get Solution Parameters",
+            "description": "Set up getSolution parameters\n[Configure Get Solution Parameters](command:konveyor.configureGetSolutionParams)",
+            "completionEvents": [
+              "onCommand:konveyor.configureGetSolutionParams"
+            ],
+            "media": {
+              "markdown": "media/walkthroughs/get-solution-params.md"
+            }
+          },
+          {
             "id": "start-server",
             "title": "Start Server",
             "description": "Start the analyzer\n[Start Analyzer](command:konveyor.startServer)",
@@ -547,26 +642,27 @@
     "compile": "tsc -b && webpack --mode production",
     "dev": "npm run watch",
     "watch": "webpack --watch --mode development",
-    "test": "npm run compile && vscode-test"
+    "test:local": "mocha --require ts-node/register src/**/__tests__/*test.ts",
+    "test": "npm run test:local && npm run compile && vscode-test"
   },
   "lint-staged": {
     "*.{js,cjs,mjs,ts,cts,mts}": "eslint --fix",
     "*.{css,json,md,yaml,yml}": "prettier --write"
   },
   "devDependencies": {
-    "@types/chai": "^5.0.0",
     "@types/diff": "^6.0.0",
     "@types/mocha": "^10.0.9",
     "@types/uuid": "^10.0.0",
     "@types/vscode": "^1.93.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
-    "chai": "^5.1.1",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
+    "expect": "^29.7.0",
     "mocha": "^10.7.3",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
+    "ts-node": "10.9.2",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4"
   },

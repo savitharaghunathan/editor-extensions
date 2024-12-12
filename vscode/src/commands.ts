@@ -1,7 +1,6 @@
-import { setupWebviewMessageListener } from "./webviewMessageHandler";
 import { ExtensionState } from "./extensionState";
 import { sourceOptions, targetOptions } from "./config/labels";
-import { WebviewPanel, window, commands, Uri, OpenDialogOptions, ViewColumn } from "vscode";
+import { WebviewPanel, window, commands, Uri, OpenDialogOptions } from "vscode";
 import {
   cleanRuleSets,
   loadResultsFromDataFolder,
@@ -29,7 +28,13 @@ import {
   updateUseDefaultRuleSets,
   getConfigLabelSelector,
   updateLabelSelector,
+  updateGenAiKey,
+  updateGetSolutionMaxDepth,
+  updateGetSolutionMaxIterations,
+  updateGetSolutionMaxPriority,
 } from "./utilities/configuration";
+import { runPartialAnalysis } from "./analysis";
+import { IncidentTypeItem } from "./issueView";
 
 let fullScreenPanel: WebviewPanel | undefined;
 
@@ -44,19 +49,43 @@ const commandsMap: (state: ExtensionState) => {
   [command: string]: (...args: any) => any;
 } = (state) => {
   const { extensionContext } = state;
-  const sidebarProvider = state.webviewProviders?.get("sidebar");
   return {
     "konveyor.startServer": async () => {
       const analyzerClient = state.analyzerClient;
       if (!(await analyzerClient.canAnalyzeInteractive())) {
         return;
       }
-
       try {
         await analyzerClient.start();
         await analyzerClient.initialize();
       } catch (e) {
-        console.error("Could not start the analyzer", e);
+        console.error("Could not start the server", e);
+      }
+    },
+    "konveyor.stopServer": async () => {
+      const analyzerClient = state.analyzerClient;
+      try {
+        await analyzerClient.shutdown();
+        await analyzerClient.stop();
+      } catch (e) {
+        console.error("Could not shutdown and stop the server", e);
+      }
+    },
+    "konveyor.restartServer": async () => {
+      const analyzerClient = state.analyzerClient;
+      try {
+        if (analyzerClient.isServerRunning()) {
+          await analyzerClient.shutdown();
+          await analyzerClient.stop();
+        }
+
+        if (!(await analyzerClient.canAnalyzeInteractive())) {
+          return;
+        }
+        await analyzerClient.start();
+        await analyzerClient.initialize();
+      } catch (e) {
+        console.error("Could not restart the server", e);
       }
     },
     "konveyor.runAnalysis": async () => {
@@ -79,64 +108,52 @@ const commandsMap: (state: ExtensionState) => {
       //   window.showErrorMessage("No webview available to run analysis!");
       // }
     },
-    "konveyor.focusKonveyorInput": async () => {
-      const fullScreenTab = getFullScreenTab();
-      if (!fullScreenTab) {
-        commands.executeCommand("konveyor.konveyorAnalysisView.focus");
-      } else {
-        fullScreenPanel?.reveal();
-      }
-      // sidebar.webviewProtocol?.request("focusInput", undefined);
-      // await addHighlightedCodeToContext(sidebar.webviewProtocol);
-    },
     "konveyor.toggleFullScreen": () => {
-      // TODO: refactor this to use showWebviewPanel
-      // Check if full screen is already open by checking open tabs
-      const fullScreenTab = getFullScreenTab();
-
-      // Check if the active editor is the GUI View
-      if (fullScreenTab && fullScreenTab.isActive) {
-        //Full screen open and focused - close it
-        commands.executeCommand("workbench.action.closeActiveEditor"); //this will trigger the onDidDispose listener below
-        return;
-      }
-
-      if (fullScreenTab && fullScreenPanel) {
-        //Full screen open, but not focused - focus it
-        fullScreenPanel.reveal();
-        return;
-      }
-
-      //create the full screen panel
-      const panel = window.createWebviewPanel(
-        "konveyor.konveyorFullScreenView",
-        "Konveyor",
-        ViewColumn.One,
-        {
-          retainContextWhenHidden: true,
-          enableScripts: true,
-          localResourceRoots: [
-            Uri.joinPath(extensionContext.extensionUri, "media"),
-            Uri.joinPath(extensionContext.extensionUri, "out"),
-          ],
-        },
-      );
-      fullScreenPanel = panel;
-      if (sidebarProvider) {
-        panel.webview.html = sidebarProvider.getHtmlForWebview(panel.webview);
-        setupWebviewMessageListener(panel.webview, state);
-        commands.executeCommand("workbench.action.closeSidebar");
-        //When panel closes, reset the webview and focus
-        panel.onDidDispose(
-          () => {
-            state.webviewProviders.delete("sidebar");
-            fullScreenPanel = undefined;
-            commands.executeCommand("konveyor.focusKonveyorInput");
-          },
-          null,
-          extensionContext.subscriptions,
-        );
-      }
+      // // TODO: refactor this to use showWebviewPanel
+      // // Check if full screen is already open by checking open tabs
+      // const fullScreenTab = getFullScreenTab();
+      // // Check if the active editor is the GUI View
+      // if (fullScreenTab && fullScreenTab.isActive) {
+      //   //Full screen open and focused - close it
+      //   commands.executeCommand("workbench.action.closeActiveEditor"); //this will trigger the onDidDispose listener below
+      //   return;
+      // }
+      // if (fullScreenTab && fullScreenPanel) {
+      //   //Full screen open, but not focused - focus it
+      //   fullScreenPanel.reveal();
+      //   return;
+      // }
+      // //create the full screen panel
+      // const panel = window.createWebviewPanel(
+      //   "konveyor.konveyorFullScreenView",
+      //   "Konveyor",
+      //   ViewColumn.One,
+      //   {
+      //     retainContextWhenHidden: true,
+      //     enableScripts: true,
+      //     localResourceRoots: [
+      //       Uri.joinPath(extensionContext.extensionUri, "media"),
+      //       Uri.joinPath(extensionContext.extensionUri, "out"),
+      //     ],
+      //   },
+      // );
+      // fullScreenPanel = panel;
+      // const sidebarProvider = state.webviewProviders?.get("sidebar");
+      // if (sidebarProvider) {
+      // panel.webview.html = sidebarProvider.getHtmlForWebview(panel.webview);
+      // setupWebviewMessageListener(panel.webview, state);
+      //   commands.executeCommand("workbench.action.closeSidebar");
+      //   //When panel closes, reset the webview and focus
+      //   panel.onDidDispose(
+      //     () => {
+      //       state.webviewProviders.delete("sidebar");
+      //       fullScreenPanel = undefined;
+      //       commands.executeCommand("konveyor.focusKonveyorInput");
+      //     },
+      //     null,
+      //     extensionContext.subscriptions,
+      //   );
+      // }
     },
     "konveyor.overrideAnalyzerBinaries": async () => {
       const options: OpenDialogOptions = {
@@ -185,6 +202,22 @@ const commandsMap: (state: ExtensionState) => {
         await updateKaiRpcServerPath(undefined);
         window.showInformationMessage("No Kai rpc-server binary selected.");
       }
+    },
+    "konveyor.configureGenAiKey": async () => {
+      const newKey = await window.showInputBox({
+        prompt: "Enter your GENAI_KEY",
+        placeHolder: "Your GenAI key...",
+        ignoreFocusOut: true,
+        password: true,
+      });
+
+      if (newKey === undefined) {
+        window.showInformationMessage("No GENAI_KEY entered. Configuration cancelled.");
+        return;
+      }
+
+      await updateGenAiKey(state.extensionContext, newKey);
+      window.showInformationMessage("GENAI_KEY updated successfully!");
     },
     "konveyor.configureCustomRules": async () => {
       const options: OpenDialogOptions = {
@@ -357,11 +390,73 @@ const commandsMap: (state: ExtensionState) => {
       const resolutionProvider = state.webviewProviders?.get("resolution");
       resolutionProvider?.showWebviewPanel();
     },
+    "konveyor.showAnalysisPanel": () => {
+      const resolutionProvider = state.webviewProviders?.get("sidebar");
+      resolutionProvider?.showWebviewPanel();
+    },
+    "konveyor.openAnalysisDetails": async (item: IncidentTypeItem) => {
+      //TODO: pass the item to webview and move the focus
+      console.log("Open details for ", item);
+      const resolutionProvider = state.webviewProviders?.get("sidebar");
+      resolutionProvider?.showWebviewPanel();
+    },
     "konveyor.reloadLastResolutions": async () => reloadLastResolutions(state),
     "konveyor.diffView.applyBlock": applyBlock,
     "konveyor.diffView.applyBlockInline": applyBlock,
     "konveyor.diffView.applySelection": applyBlock,
     "konveyor.diffView.applySelectionInline": applyBlock,
+    "konveyor.partialAnalysis": async (filePaths: string[]) => runPartialAnalysis(state, filePaths),
+    "konveyor.configureGetSolutionParams": async () => {
+      const maxPriorityInput = await window.showInputBox({
+        prompt: "Enter max_priority for getSolution",
+        placeHolder: "0",
+        validateInput: (value) => {
+          return isNaN(Number(value)) ? "Please enter a valid number" : null;
+        },
+      });
+
+      if (maxPriorityInput === undefined) {
+        return;
+      }
+
+      const maxPriority = Number(maxPriorityInput);
+
+      const maxDepthInput = await window.showInputBox({
+        prompt: "Enter max_depth for getSolution",
+        placeHolder: "0",
+        validateInput: (value) => {
+          return isNaN(Number(value)) ? "Please enter a valid number" : null;
+        },
+      });
+
+      if (maxDepthInput === undefined) {
+        return;
+      }
+
+      const maxDepth = Number(maxDepthInput);
+
+      const maxIterationsInput = await window.showInputBox({
+        prompt: "Enter max_iterations for getSolution",
+        placeHolder: "1",
+        validateInput: (value) => {
+          return isNaN(Number(value)) ? "Please enter a valid number" : null;
+        },
+      });
+
+      if (maxIterationsInput === undefined) {
+        return;
+      }
+
+      const maxIterations = Number(maxIterationsInput);
+
+      await updateGetSolutionMaxPriority(maxPriority);
+      await updateGetSolutionMaxDepth(maxDepth);
+      await updateGetSolutionMaxIterations(maxIterations);
+
+      window.showInformationMessage(
+        `getSolution parameters updated: max_priority=${maxPriority}, max_depth=${maxDepth}, max_iterations=${maxIterations}`,
+      );
+    },
   };
 };
 

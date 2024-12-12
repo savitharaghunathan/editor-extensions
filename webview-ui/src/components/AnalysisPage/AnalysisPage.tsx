@@ -1,3 +1,4 @@
+import "./styles.css";
 import React, { useState, useMemo } from "react";
 import {
   Button,
@@ -19,15 +20,25 @@ import {
   PageSection,
   Stack,
   StackItem,
+  Flex,
+  FlexItem,
 } from "@patternfly/react-core";
 import spacing from "@patternfly/react-styles/css/utilities/Spacing/spacing";
 
-import ProgressIndicator from "./ProgressIndicator";
-import ViolationIncidentsList from "./ViolationIncidentsList";
+import ProgressIndicator from "../ProgressIndicator";
+import ViolationIncidentsList from "../ViolationIncidentsList";
 import { Incident } from "@editor-extensions/shared";
-import { useExtensionState } from "../hooks/useExtensionState";
-import { cancelSolution, getSolution, openFile, startServer, runAnalysis } from "../hooks/actions";
-import { ServerStatusToggle } from "./ServerStatusToggle/ServerStatusToggle";
+import { useExtensionState } from "../../hooks/useExtensionState";
+import {
+  cancelSolution,
+  getSolution,
+  openFile,
+  startServer,
+  runAnalysis,
+  stopServer,
+} from "../../hooks/actions";
+import { ServerStatusToggle } from "../ServerStatusToggle/ServerStatusToggle";
+import { ViolationsCount } from "../ViolationsCount/ViolationsCount";
 
 const AnalysisPage: React.FC = () => {
   const [state, dispatch] = useExtensionState();
@@ -39,14 +50,13 @@ const AnalysisPage: React.FC = () => {
   } = state;
   const serverRunning = state.serverState === "running";
 
-  const [analysisMessage, setAnalysisMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [focusedIncident, setFocusedIncident] = useState<Incident | null>(null);
   const [expandedViolations, setExpandedViolations] = useState<Set<string>>(new Set());
 
   const handleIncidentSelect = (incident: Incident) => {
     setFocusedIncident(incident);
-    dispatch(openFile(incident.uri, incident.lineNumber));
+    dispatch(openFile(incident.uri, incident.lineNumber ?? 0));
   };
 
   const runAnalysisRequest = () => dispatch(runAnalysis());
@@ -54,10 +64,7 @@ const AnalysisPage: React.FC = () => {
   const cancelSolutionRequest = () => dispatch(cancelSolution());
 
   const handleServerToggle = () => {
-    if (!serverRunning) {
-      dispatch(startServer());
-    }
-    // Add stopServer action when available
+    dispatch(serverRunning ? stopServer() : startServer());
   };
 
   const violations = useMemo(() => {
@@ -105,7 +112,11 @@ const AnalysisPage: React.FC = () => {
           <StackItem>
             <Card>
               <CardHeader>
-                <CardTitle>Analysis Actions</CardTitle>
+                <Flex>
+                  <FlexItem>
+                    <CardTitle>Analysis Actions</CardTitle>
+                  </FlexItem>
+                </Flex>
               </CardHeader>
               <CardBody>
                 <Stack hasGutter>
@@ -134,7 +145,21 @@ const AnalysisPage: React.FC = () => {
           <StackItem>
             <Card>
               <CardHeader>
-                <CardTitle>Analysis Results</CardTitle>
+                <Flex className="header-layout">
+                  <FlexItem>
+                    <CardTitle>Analysis Results</CardTitle>
+                    <ViolationsCount
+                      violationsCount={violations.length}
+                      incidentsCount={violations.reduce(
+                        (prev, curr) => curr.incidents.length + prev,
+                        0,
+                      )}
+                    />
+                  </FlexItem>
+                  <>
+                    <FlexItem></FlexItem>
+                  </>
+                </Flex>
               </CardHeader>
               <CardBody>
                 {isAnalyzing && <ProgressIndicator progress={50} />}
@@ -147,7 +172,7 @@ const AnalysisPage: React.FC = () => {
                     <EmptyStateBody>
                       {hasAnalysisResults
                         ? "Great job! Your analysis didn't find any violations."
-                        : analysisMessage || "Run an analysis to see results here."}
+                        : "Run an analysis to see results here."}
                     </EmptyStateBody>
                   </EmptyState>
                 )}

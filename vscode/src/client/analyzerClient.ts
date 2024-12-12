@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from "node:child_process";
-import * as fs from "node:fs";
 import * as path from "node:path";
 import { setTimeout } from "node:timers/promises";
+import * as fs from "fs-extra";
 import * as vscode from "vscode";
 import * as rpc from "vscode-jsonrpc/node";
 import { Incident, RuleSet, SolutionResponse, Violation } from "@editor-extensions/shared";
@@ -11,7 +11,6 @@ import { Extension } from "../helpers/Extension";
 import { ExtensionState } from "../extensionState";
 import { buildAssetPaths, AssetPaths } from "./paths";
 import {
-  KONVEYOR_CONFIG_KEY,
   getConfigKaiBackendURL,
   getConfigLogLevel,
   getConfigKaiProviderName,
@@ -20,6 +19,11 @@ import {
   updateUseDefaultRuleSets,
   getConfigKaiRpcServerPath,
   getConfigAnalyzerPath,
+  getGenAiKey,
+  getConfigMaxDepth,
+  getConfigMaxIterations,
+  getConfigMaxPriority,
+  getConfigKaiDemoMode,
 } from "../utilities";
 
 export class AnalyzerClient {
@@ -29,6 +33,7 @@ export class AnalyzerClient {
   private outputChannel: vscode.OutputChannel;
   private assetPaths: AssetPaths;
   private kaiDir: string;
+  private kaiRuntimeDir: string;
   private kaiConfigToml: string;
   private fireStateChange: (state: ServerState) => void;
   private fireAnalysisStateChange: (flag: boolean) => void;
@@ -56,7 +61,11 @@ export class AnalyzerClient {
 
     this.assetPaths = buildAssetPaths(extContext);
     this.kaiDir = path.join(buildDataFolderPath()!, "kai");
+    this.kaiRuntimeDir = path.join(buildDataFolderPath()!, "kai-runtime");
     this.kaiConfigToml = path.join(this.kaiDir, "kai-config.toml");
+
+    fs.ensureDirSync(this.kaiDir);
+    fs.ensureDirSync(this.kaiRuntimeDir);
 
     this.outputChannel.appendLine(
       `current asset paths: ${JSON.stringify(this.assetPaths, null, 2)}`,
@@ -73,29 +82,37 @@ export class AnalyzerClient {
       return;
     }
 
-    // TODO: If the server generates files in cwd, we should set this to something else
-    const serverCwd = this.extContext.extensionPath;
+    const serverCwd = this.kaiRuntimeDir;
+    const serverEnv = await this.getKaiRpcServerEnv();
+    const serverPath = this.getKaiRpcServerPath();
+    const serverArgs = this.getKaiRpcServerArgs();
 
     this.fireStateChange("starting");
     this.outputChannel.appendLine(`Starting the kai rpc server ...`);
     this.outputChannel.appendLine(`server cwd: ${serverCwd}`);
-    this.outputChannel.appendLine(`server path: ${this.getKaiRpcServerPath()}`);
+    this.outputChannel.appendLine(`server path: ${serverPath}`);
     this.outputChannel.appendLine(`server args:`);
-    this.getKaiRpcServerArgs().forEach((arg) => this.outputChannel.appendLine(`   ${arg}`));
+    serverArgs.forEach((arg) => this.outputChannel.appendLine(`   ${arg}`));
 
-    this.kaiRpcServer = spawn(this.getKaiRpcServerPath(), this.getKaiRpcServerArgs(), {
+    const kaiRpcServer = spawn(serverPath, serverArgs, {
       cwd: serverCwd,
-      env: this.getKaiRpcServerEnv(),
+      env: serverEnv,
     });
+    this.kaiRpcServer = kaiRpcServer;
 
-    this.kaiRpcServer.on("spawn", () => {
-      this.outputChannel.appendLine(`kai rpc server has been spawned! [${this.kaiRpcServer?.pid}]`);
-    });
+    const pid = await new Promise<number | undefined>((resolve, reject) => {
+      kaiRpcServer.on("spawn", () => {
+        this.outputChannel.appendLine(
+          `kai rpc server has been spawned! [${this.kaiRpcServer?.pid}]`,
+        );
+        resolve(this.kaiRpcServer?.pid);
+      });
 
-    this.kaiRpcServer.on("error", (err) => {
-      this.outputChannel.appendLine(
-        `[error] - error in process[${this.kaiRpcServer?.spawnfile}]: ${err}`,
-      );
+      kaiRpcServer.on("error", (err) => {
+        const message = `error in process[${this.kaiRpcServer?.spawnfile}]: ${err}`;
+        this.outputChannel.appendLine(`[error] - ${message}`);
+        reject(err);
+      });
     });
 
     this.kaiRpcServer.on("exit", (code, signal) => {
@@ -104,10 +121,18 @@ export class AnalyzerClient {
 
     this.kaiRpcServer.on("close", (code, signal) => {
       this.outputChannel.appendLine(`kai rpc server closed with signal ${signal}, code ${code}`);
+      this.fireStateChange("stopped");
     });
 
+    let seenServerIsReady = false;
     this.kaiRpcServer.stderr.on("data", (data) => {
-      this.outputChannel.appendLine(`${data.toString()}`);
+      const asString: string = data.toString();
+      this.outputChannel.appendLine(`${asString}`);
+
+      if (!seenServerIsReady && asString.match(/kai-rpc-logger .*Started kai RPC Server/)) {
+        seenServerIsReady = true;
+        this.kaiRpcServer?.emit("serverReportsReady", pid);
+      }
     });
 
     // Set up the JSON-RPC connection
@@ -117,35 +142,49 @@ export class AnalyzerClient {
     );
     this.rpcConnection.listen();
 
-    this.outputChannel.appendLine(`Started the kai rpc server, pid: ${this.kaiRpcServer.pid}`);
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        kaiRpcServer.on("serverReportsReady", (pid) => {
+          this.outputChannel.appendLine(`*** kai rpc server [${pid}] reports ready`);
+          resolve();
+        });
+      }),
+      setTimeout(5000),
+    ]);
+
+    this.outputChannel.appendLine(`Started the kai rpc server, pid: [${pid}]`);
   }
 
   // Stops the analyzer server
   public stop(): void {
     this.fireStateChange("stopping");
     this.outputChannel.appendLine(`Stopping the kai rpc server ...`);
-    if (this.kaiRpcServer) {
+    if (this.kaiRpcServer && !this.kaiRpcServer.killed) {
       this.kaiRpcServer.kill();
     }
     this.rpcConnection?.dispose();
     this.kaiRpcServer = null;
-    this.fireStateChange("stopped");
     this.outputChannel.appendLine(`kai rpc server stopped`);
   }
 
-  // This config value is intentionally excluded from package.json
   protected isDemoMode(): boolean {
-    const configDemoMode = vscode.workspace
-      .getConfiguration(KONVEYOR_CONFIG_KEY)
-      ?.get<boolean>("konveyor.kai.demoMode");
+    const configDemoMode = getConfigKaiDemoMode();
 
-    let demoMode: boolean;
-    if (configDemoMode !== undefined) {
-      demoMode = configDemoMode;
-    } else {
-      demoMode = !Extension.getInstance(this.extContext).isProductionMode;
-    }
-    return demoMode;
+    return configDemoMode !== undefined
+      ? configDemoMode
+      : !Extension.getInstance(this.extContext).isProductionMode;
+  }
+
+  protected buildModelProviderConfig() {
+    const config = vscode.workspace.getConfiguration("konveyor.kai");
+    const userProviderArgs = getConfigKaiProviderArgs();
+    const providerArgs = userProviderArgs || config.get<object>("providerArgs");
+
+    const modelProviderSection = {
+      provider: getConfigKaiProviderName(),
+      args: providerArgs,
+    };
+    return modelProviderSection;
   }
 
   public async initialize(): Promise<void> {
@@ -161,10 +200,8 @@ export class AnalyzerClient {
       root_path: vscode.workspace.workspaceFolders![0].uri.fsPath,
       log_level: getConfigLogLevel(),
       log_dir_path: this.kaiDir,
-      model_provider: {
-        provider: getConfigKaiProviderName(),
-        args: getConfigKaiProviderArgs(),
-      },
+      model_provider: this.buildModelProviderConfig(),
+
       file_log_level: getConfigLogLevel(),
       demo_mode: this.isDemoMode(),
       cache_dir: "",
@@ -206,7 +243,9 @@ export class AnalyzerClient {
               "initialize",
               initializeParams,
             );
-            this.outputChannel.appendLine(`${response}`);
+            this.outputChannel.appendLine(
+              `'initialize' response: ${JSON.stringify(response, null, 2)}`,
+            );
             progress.report({ message: "RPC Server initialized" });
             this.fireStateChange("running");
             return;
@@ -226,7 +265,7 @@ export class AnalyzerClient {
     return !!this.kaiRpcServer && !this.kaiRpcServer.killed;
   }
 
-  public async runAnalysis(): Promise<any> {
+  public async runAnalysis(filePaths?: string[]): Promise<any> {
     if (!this.rpcConnection) {
       vscode.window.showErrorMessage("RPC connection is not established.");
       return;
@@ -236,15 +275,16 @@ export class AnalyzerClient {
       {
         location: vscode.ProgressLocation.Notification,
         title: "Running Analysis",
-        cancellable: false,
+        cancellable: true,
       },
-      async (progress) => {
+      async (progress, token) => {
         try {
           progress.report({ message: "Running..." });
           this.fireAnalysisStateChange(true);
 
           const requestParams = {
             label_selector: getConfigLabelSelector(),
+            included_paths: filePaths,
           };
 
           this.outputChannel.appendLine(
@@ -253,11 +293,31 @@ export class AnalyzerClient {
             )}`,
           );
 
-          const response: any = await this.rpcConnection!.sendRequest(
-            "analysis_engine.Analyze",
-            requestParams,
-          );
+          if (token.isCancellationRequested) {
+            this.outputChannel.appendLine("Analysis was canceled by the user.");
+            this.fireAnalysisStateChange(false);
+            return;
+          }
 
+          const cancellationPromise = new Promise((resolve) => {
+            token.onCancellationRequested(() => {
+              resolve({ isCancelled: true });
+            });
+          });
+
+          const { response, isCancelled }: any = await Promise.race([
+            this.rpcConnection!.sendRequest("analysis_engine.Analyze", requestParams).then(
+              (response) => ({ response }),
+            ),
+            cancellationPromise,
+          ]);
+
+          if (isCancelled) {
+            this.outputChannel.appendLine("Analysis operation was canceled.");
+            vscode.window.showInformationMessage("Analysis was canceled.");
+            this.fireAnalysisStateChange(false);
+            return;
+          }
           this.outputChannel.appendLine(`Response: ${JSON.stringify(response)}`);
 
           // Handle the result
@@ -268,7 +328,7 @@ export class AnalyzerClient {
             return;
           }
 
-          vscode.commands.executeCommand("konveyor.loadRuleSets", rulesets);
+          vscode.commands.executeCommand("konveyor.loadRuleSets", rulesets, filePaths);
           progress.report({ message: "Results processed!" });
           vscode.window.showInformationMessage("Analysis completed successfully!");
         } catch (err: any) {
@@ -294,20 +354,30 @@ export class AnalyzerClient {
 
     const enhancedIncident = {
       ...incident,
-      ruleset_name: violation.category || "default_ruleset", // You may adjust the default value as necessary
-      violation_name: violation.description || "default_violation", // You may adjust the default value as necessary
+      ruleset_name: violation.category || "default_ruleset",
+      violation_name: violation.description || "default_violation",
     };
 
+    const maxPriority = getConfigMaxPriority();
+    const maxDepth = getConfigMaxDepth();
+    const maxIterations = getConfigMaxIterations();
+
     try {
+      const request = {
+        file_path: "",
+        incidents: [enhancedIncident],
+        max_priority: maxPriority,
+        max_depth: maxDepth,
+        max_iterations: maxIterations,
+      };
+
+      this.outputChannel.appendLine(
+        `getCodeplanAgentSolution request: ${JSON.stringify(request, null, 2)}`,
+      );
+
       const response: SolutionResponse = await this.rpcConnection!.sendRequest(
         "getCodeplanAgentSolution",
-        {
-          file_path: "",
-          incidents: [enhancedIncident],
-          max_priority: 0,
-          max_depth: 0,
-          max_iterations: 1,
-        },
+        request,
       );
 
       vscode.commands.executeCommand("konveyor.loadSolution", response, {
@@ -318,13 +388,15 @@ export class AnalyzerClient {
       this.outputChannel.appendLine(`Error during getSolution: ${err.message}`);
       vscode.window.showErrorMessage("Get solution failed. See the output channel for details.");
     }
+
     this.fireSolutionStateChange(false);
   }
 
   // Shutdown the server
   public async shutdown(): Promise<void> {
     try {
-      await this.rpcConnection!.sendRequest("shutdown", {});
+      this.outputChannel.appendLine(`Requesting kai rpc server shutdown...`);
+      await this.rpcConnection?.sendRequest("shutdown", {});
     } catch (err: any) {
       this.outputChannel.appendLine(`Error during shutdown: ${err.message}`);
       vscode.window.showErrorMessage("Shutdown failed. See the output channel for details.");
@@ -334,7 +406,8 @@ export class AnalyzerClient {
   // Exit the server
   public async exit(): Promise<void> {
     try {
-      await this.rpcConnection!.sendRequest("exit", {});
+      this.outputChannel.appendLine(`Requesting kai rpc server exit...`);
+      await this.rpcConnection?.sendRequest("exit", {});
     } catch (err: any) {
       this.outputChannel.appendLine(`Error during exit: ${err.message}`);
       vscode.window.showErrorMessage("Exit failed. See the output channel for details.");
@@ -405,10 +478,12 @@ export class AnalyzerClient {
   /**
    * Build the process environment variables to be setup for the kai rpc server process.
    */
-  public getKaiRpcServerEnv(): NodeJS.ProcessEnv {
+  public async getKaiRpcServerEnv(): Promise<NodeJS.ProcessEnv> {
+    const genAiKey = await getGenAiKey(this.extContext);
+
     return {
       ...process.env,
-      // TODO: If/when necessary, add new envvars here from configuration
+      GENAI_KEY: genAiKey,
     };
   }
 
@@ -467,10 +542,6 @@ export class AnalyzerClient {
   }
 
   public getKaiConfigTomlPath(): string {
-    if (!fs.existsSync(this.kaiDir)) {
-      fs.mkdirSync(this.kaiDir, { recursive: true });
-    }
-
     // Ensure the file exists with default content if it doesn't
     // Consider making this more robust, maybe this is an asset we can get from kai?
     if (!fs.existsSync(this.kaiConfigToml)) {
@@ -484,14 +555,6 @@ export class AnalyzerClient {
     return `log_level = "info"
 file_log_level = "debug"
 log_dir = "${log_dir}"
-
-[models]
-provider = "ChatIBMGenAI"
-
-[models.args]
-model_id = "meta-llama/llama-3-70b-instruct"
-parameters.max_new_tokens = "2048"
-
 `;
   }
 }

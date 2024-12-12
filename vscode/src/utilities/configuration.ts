@@ -30,7 +30,7 @@ export function getConfigCodeSnipLimit(): number {
 }
 
 export function getConfigUseDefaultRulesets(): boolean {
-  return getConfigValue<boolean>("analysis.useDefaultRulesets") || true;
+  return getConfigValue<boolean>("analysis.useDefaultRulesets") ?? true;
 }
 
 export function getConfigCustomRules(): string[] {
@@ -42,15 +42,15 @@ export function getConfigLabelSelector(): string {
 }
 
 export function getConfigAnalyzeKnownLibraries(): boolean {
-  return getConfigValue<boolean>("analysis.analyzeKnownLibraries") || false;
+  return getConfigValue<boolean>("analysis.analyzeKnownLibraries") ?? false;
 }
 
 export function getConfigAnalyzeDependencies(): boolean {
-  return getConfigValue<boolean>("analysis.analyzeDependencies") || true;
+  return getConfigValue<boolean>("analysis.analyzeDependencies") ?? true;
 }
 
 export function getConfigAnalyzeOnSave(): boolean {
-  return getConfigValue<boolean>("analysis.analyzeOnSave") || true;
+  return getConfigValue<boolean>("analysis.analyzeOnSave") ?? true;
 }
 
 export function getConfigDiffEditorType(): string {
@@ -65,8 +65,41 @@ export function getConfigKaiProviderName(): string {
   return getConfigValue<string>("kai.providerName") || "ChatIBMGenAI";
 }
 
-export function getConfigKaiProviderArgs(): object {
-  return getConfigValue<object>("kai.providerArgs") || {};
+export function getConfigKaiProviderArgs(): object | undefined {
+  const config = vscode.workspace.getConfiguration("konveyor.kai");
+  const providerArgsConfig = config.inspect<object>("providerArgs");
+
+  if (!providerArgsConfig) {
+    console.log("No configuration found for providerArgs.");
+    return undefined;
+  }
+
+  const userDefinedValue =
+    providerArgsConfig.globalValue !== undefined ||
+    providerArgsConfig.workspaceValue !== undefined ||
+    providerArgsConfig.workspaceFolderValue !== undefined;
+
+  if (userDefinedValue) {
+    if (providerArgsConfig.workspaceFolderValue) {
+      console.log("Using workspaceFolder providerArgs:", providerArgsConfig.workspaceFolderValue);
+      return providerArgsConfig.workspaceFolderValue;
+    }
+    if (providerArgsConfig.workspaceValue) {
+      console.log("Using workspace providerArgs:", providerArgsConfig.workspaceValue);
+      return providerArgsConfig.workspaceValue;
+    }
+    if (providerArgsConfig.globalValue) {
+      console.log("Using global providerArgs:", providerArgsConfig.globalValue);
+      return providerArgsConfig.globalValue;
+    }
+  }
+
+  console.log("No user overrides for providerArgs. Using defaults from package.json.");
+  return undefined;
+}
+
+export function getConfigKaiDemoMode(): boolean {
+  return getConfigValue<boolean>("kai.demoMode") ?? false;
 }
 
 async function updateConfigValue<T>(
@@ -143,4 +176,66 @@ export async function updateKaiProviderName(value: string): Promise<void> {
 
 export async function updateKaiProviderModel(value: string): Promise<void> {
   await updateConfigValue("kai.providerModel", value, vscode.ConfigurationTarget.Workspace);
+}
+
+export async function getGenAiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
+  try {
+    const key = await context.secrets.get("genAiKey");
+
+    if (!key) {
+      await vscode.window.showWarningMessage("No GenAI key found in secure storage.");
+      return undefined;
+    }
+
+    return key;
+  } catch (error: any) {
+    console.error("Failed to retrieve GenAI key:", error);
+    await vscode.window.showErrorMessage("An error occurred while retrieving the GenAI key.");
+    return undefined;
+  }
+}
+
+export async function updateGenAiKey(
+  context: vscode.ExtensionContext,
+  newKey: string | undefined,
+): Promise<void> {
+  if (newKey) {
+    await context.secrets.store("genAiKey", newKey);
+    vscode.window.showInformationMessage("Key stored securely.");
+  } else {
+    await context.secrets.delete("genAiKey");
+    vscode.window.showInformationMessage("Key removed.");
+  }
+}
+
+export function getConfigMaxPriority(): number {
+  return getConfigValue<number>("kai.getSolutionMaxPriority") || 0;
+}
+
+export function getConfigMaxDepth(): number {
+  return getConfigValue<number>("kai.getSolutionMaxDepth") || 0;
+}
+
+export function getConfigMaxIterations(): number {
+  return getConfigValue<number>("kai.getSolutionMaxIterations") || 1;
+}
+
+export async function updateGetSolutionMaxPriority(value: number): Promise<void> {
+  await updateConfigValue(
+    "kai.getSolutionMaxPriority",
+    value,
+    vscode.ConfigurationTarget.Workspace,
+  );
+}
+
+export async function updateGetSolutionMaxDepth(value: number): Promise<void> {
+  await updateConfigValue("kai.getSolutionMaxDepth", value, vscode.ConfigurationTarget.Workspace);
+}
+
+export async function updateGetSolutionMaxIterations(value: number): Promise<void> {
+  await updateConfigValue(
+    "kai.getSolutionMaxIterations",
+    value,
+    vscode.ConfigurationTarget.Workspace,
+  );
 }

@@ -117,11 +117,7 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: linux
-          - os: macos-latest
-            arch: macos
-          - os: windows-latest
-            arch: windows
-      max-parallel: 3
+      max-parallel: 1
 
     steps:
       - name: Checkout code
@@ -147,5 +143,5 @@ jobs:
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-extension-${{ matrix.arch }}
+          name: vscode-extension
           path: "dist/*.vsix"
