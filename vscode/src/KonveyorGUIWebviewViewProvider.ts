@@ -15,6 +15,7 @@ import {
 import { getNonce } from "./utilities/getNonce";
 import { ExtensionData, WebviewType } from "@editor-extensions/shared";
 import { Immutable } from "immer";
+import jsesc from "jsesc";
 
 export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
   public static readonly SIDEBAR_VIEW_TYPE = "konveyor.konveyorAnalysisView";
@@ -131,7 +132,7 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
           const vscode = acquireVsCodeApi();
           window.vscode = vscode;
           window.viewType = "${this._viewType}";
-          window.konveyorInitialData = ${JSON.stringify(data)};
+          window.konveyorInitialData = ${jsesc(data, { json: true, isScriptContext: true })};
         </script>
       </head>
       <body>

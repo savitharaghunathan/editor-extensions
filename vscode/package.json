@@ -667,6 +667,8 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "diff": "^7.0.0"
+    "@types/jsesc": "^3.0.3",
+    "diff": "^7.0.0",
+    "jsesc": "^3.1.0"
   }
 }
