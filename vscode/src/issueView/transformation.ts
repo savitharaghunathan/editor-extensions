@@ -11,9 +11,12 @@ export const allIncidents = (ruleSets: Immutable<RuleSet[]>): Incident[] =>
         // allow empty messages (they will be grouped together)
         typeof it.message === "string" &&
         typeof it.uri === "string" &&
-        Number.isInteger(it.lineNumber) &&
         // expect non-empty path in format file:///some/file.ext
-        it.uri &&
-        // expect 1-based numbering (vscode.Position is zero-based)
-        it.lineNumber! > 0,
-    );
+        it.uri.startsWith("file://"),
+    )
+    .map((it) => ({
+      ...it,
+      // line numbers are optional - use first line as fallback
+      // expect 1-based numbering (vscode.Position is zero-based)
+      lineNumber: Number.isInteger(it.lineNumber) && it.lineNumber! > 0 ? it.lineNumber : 1,
+    }));
