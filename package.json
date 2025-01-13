@@ -52,6 +52,7 @@
     "dev:vscode": "npm run dev -w vscode",
     "build": "npm run build --workspaces --if-present",
     "collect-assets": "rimraf ./downloaded_assets && node ./scripts/collect-assets.js",
+    "collect-assets-workflow": "rimraf ./downloaded_assets && node ./scripts/collect-assets-workflow.js",
     "dist": "rimraf ./dist && node ./scripts/copy-dist.js",
     "package": "cd dist && vsce package",
     "test": "npm run lint && npm run build && npm run test --workspaces --if-present"
@@ -90,6 +91,7 @@
     "unzipper": "^0.12.3"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
     "fs-extra": "^11.2.0",
     "globby": "^14.0.2",
     "immer": "10.1.1",
