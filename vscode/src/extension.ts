@@ -1,45 +1,157 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import { VsCodeExtension } from "./VsCodeExtension";
+import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
+import { registerAllCommands as registerAllCommands } from "./commands";
+import { ExtensionState } from "./extensionState";
+import { ExtensionData } from "@editor-extensions/shared";
+import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
+import { registerDiffView, KonveyorFileModel } from "./diffView";
+import { MemFS } from "./data";
+import { Immutable, produce } from "immer";
+import { partialAnalysisTrigger } from "./analysis";
+import { IssuesModel, registerIssueView } from "./issueView";
 
-let client: AnalyzerClient;
+class VsCodeExtension {
+  private state: ExtensionState;
+  private data: Immutable<ExtensionData>;
+  private _onDidChange = new vscode.EventEmitter<Immutable<ExtensionData>>();
+  readonly onDidChangeData = this._onDidChange.event;
+  private listeners: vscode.Disposable[] = [];
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-  // TODO(djzager): This was in continue but I couldn't get it to work correctly.
-  // const { activateExtension } = await import("./activate");
-  try {
-    const ext = new VsCodeExtension(context);
-    client = ext.getAnalyzerClient();
+  constructor(context: vscode.ExtensionContext) {
+    this.data = produce(
+      {
+        localChanges: [],
+        ruleSets: [],
+        resolutionPanelData: undefined,
+        isAnalyzing: false,
+        isFetchingSolution: false,
+        isStartingServer: false,
+        solutionData: undefined,
+        serverState: "initial",
+        solutionScope: undefined,
+      },
+      () => {},
+    );
+    const getData = () => this.data;
+    const setData = (data: Immutable<ExtensionData>) => {
+      this.data = data;
+      this._onDidChange.fire(this.data);
+    };
+    const mutateData = (recipe: (draft: ExtensionData) => void): Immutable<ExtensionData> => {
+      const data = produce(getData(), recipe);
+      setData(data);
+      return data;
+    };
 
-    console.log("Extension activated");
-  } catch (e) {
-    console.log("Error activating extension: ", e);
-    vscode.window
-      .showInformationMessage(
-        "Error activating the Konveyor extension.",
-        //   "View Logs",
-        "Retry",
-      )
-      .then((selection) => {
-        //   if (selection === "View Logs") {
-        // 	vscode.commands.executeCommand("konveyor.viewLogs");
-        //   } else
-        if (selection === "Retry") {
-          // Reload VS Code window
-          vscode.commands.executeCommand("workbench.action.reloadWindow");
-        }
-      });
+    this.state = {
+      analyzerClient: new AnalyzerClient(context, mutateData, getData),
+      webviewProviders: new Map<string, KonveyorGUIWebviewViewProvider>(),
+      extensionContext: context,
+      diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
+      memFs: new MemFS(),
+      fileModel: new KonveyorFileModel(),
+      issueModel: new IssuesModel(),
+      get data() {
+        return getData();
+      },
+      mutateData,
+    };
+
+    this.initializeExtension(context);
+  }
+
+  private initializeExtension(context: vscode.ExtensionContext): void {
+    try {
+      this.checkWorkspace();
+      this.registerWebviewProvider(context);
+      this.listeners.push(this.onDidChangeData(registerDiffView(this.state)));
+      this.listeners.push(this.onDidChangeData(registerIssueView(this.state)));
+      this.registerCommands();
+      this.registerLanguageProviders(context);
+      this.listeners.push(vscode.workspace.onDidSaveTextDocument(partialAnalysisTrigger));
+      vscode.commands.executeCommand("konveyor.loadResultsFromDataFolder");
+    } catch (error) {
+      console.error("Error initializing extension:", error);
+      vscode.window.showErrorMessage(`Failed to initialize Konveyor extension: ${error}`);
+    }
+  }
+
+  private checkWorkspace(): void {
+    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 1) {
+      vscode.window.showWarningMessage(
+        "Konveyor does not currently support multi-root workspaces. Only the first workspace folder will be analyzed.",
+      );
+    }
+  }
+
+  private registerWebviewProvider(context: vscode.ExtensionContext): void {
+    const sidebarProvider = new KonveyorGUIWebviewViewProvider(this.state, "sidebar");
+    this.state.webviewProviders.set("sidebar", sidebarProvider);
+
+    const resolutionViewProvider = new KonveyorGUIWebviewViewProvider(this.state, "resolution");
+    this.state.webviewProviders.set("resolution", resolutionViewProvider);
+
+    [sidebarProvider, resolutionViewProvider].forEach((provider) =>
+      this.onDidChangeData((data) => {
+        provider.sendMessageToWebview(data);
+      }),
+    );
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        KonveyorGUIWebviewViewProvider.SIDEBAR_VIEW_TYPE,
+        sidebarProvider,
+        { webviewOptions: { retainContextWhenHidden: true } },
+      ),
+      vscode.window.registerWebviewViewProvider(
+        KonveyorGUIWebviewViewProvider.RESOLUTION_VIEW_TYPE,
+        resolutionViewProvider,
+        { webviewOptions: { retainContextWhenHidden: true } },
+      ),
+    );
+  }
+
+  private registerCommands(): void {
+    registerAllCommands(this.state);
+  }
+
+  private registerLanguageProviders(context: vscode.ExtensionContext): void {
+    const languagesToRegister = ["java"];
+
+    for (const language of languagesToRegister) {
+      context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(language, new ViolationCodeActionProvider(), {
+          providedCodeActionKinds: ViolationCodeActionProvider.providedCodeActionKinds,
+        }),
+      );
+    }
+  }
+
+  dispose() {
+    this.state.analyzerClient?.stop();
+    const disposables = this.listeners.splice(0, this.listeners.length);
+    for (const disposable of disposables) {
+      disposable.dispose();
+    }
   }
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {
-  if (!client) {
-    return;
+let extension: VsCodeExtension | undefined;
+
+export function activate(context: vscode.ExtensionContext): void {
+  try {
+    if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+      vscode.window.showErrorMessage("Please open a workspace folder before using this extension.");
+      return;
+    }
+    extension = new VsCodeExtension(context);
+  } catch (error) {
+    console.error("Failed to activate Konveyor extension:", error);
+    vscode.window.showErrorMessage(`Failed to activate Konveyor extension: ${error}`);
   }
-  return client.stop();
+}
+
+export function deactivate(): void {
+  extension?.dispose();
 }

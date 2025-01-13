@@ -1,23 +1,20 @@
 import { AnalyzerClient } from "./client/analyzerClient";
+import { KonveyorFileModel } from "./diffView";
+import { MemFS } from "./data/fileSystemProvider";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
 import * as vscode from "vscode";
-
-export class SharedState {
-  private state: Map<string, any> = new Map();
-
-  get(key: string) {
-    return this.state.get(key);
-  }
-
-  set(key: string, value: any) {
-    this.state.set(key, value);
-  }
-}
+import { ExtensionData } from "@editor-extensions/shared";
+import { Immutable } from "immer";
+import { IssuesModel } from "./issueView";
 
 export interface ExtensionState {
   analyzerClient: AnalyzerClient;
-  sharedState: SharedState;
-  webviewProviders: Set<KonveyorGUIWebviewViewProvider>;
-  sidebarProvider: KonveyorGUIWebviewViewProvider;
-  extensionContext: vscode.ExtensionContext; // Add this line
+  webviewProviders: Map<string, KonveyorGUIWebviewViewProvider>;
+  extensionContext: vscode.ExtensionContext;
+  diagnosticCollection: vscode.DiagnosticCollection;
+  memFs: MemFS;
+  fileModel: KonveyorFileModel;
+  issueModel: IssuesModel;
+  data: Immutable<ExtensionData>;
+  mutateData: (recipe: (draft: ExtensionData) => void) => Immutable<ExtensionData>;
 }

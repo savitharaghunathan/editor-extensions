@@ -1,117 +1,160 @@
-import { setupWebviewMessageListener } from "./webviewMessageHandler";
 import { ExtensionState } from "./extensionState";
-import { getWebviewContent } from "./webviewContent";
 import { sourceOptions, targetOptions } from "./config/labels";
-import * as vscode from "vscode";
+import { window, commands, Uri, OpenDialogOptions } from "vscode";
+import {
+  cleanRuleSets,
+  loadResultsFromDataFolder,
+  loadRuleSets,
+  loadSolution,
+  loadStaticResults,
+  reloadLastResolutions,
+} from "./data";
+import { Incident, RuleSet, Scope, Solution, Violation } from "@editor-extensions/shared";
+import {
+  applyAll,
+  discardAll,
+  copyDiff,
+  copyPath,
+  FileItem,
+  viewFix,
+  applyFile,
+  discardFile,
+  applyBlock,
+} from "./diffView";
+import {
+  updateAnalyzerPath,
+  updateKaiRpcServerPath,
+  updateCustomRules,
+  updateUseDefaultRuleSets,
+  getConfigLabelSelector,
+  updateLabelSelector,
+  updateGenAiKey,
+  updateGetSolutionMaxDepth,
+  updateGetSolutionMaxIterations,
+  updateGetSolutionMaxPriority,
+} from "./utilities/configuration";
+import { runPartialAnalysis } from "./analysis";
+import { IncidentTypeItem } from "./issueView";
 
-let fullScreenPanel: vscode.WebviewPanel | undefined;
+// let fullScreenPanel: WebviewPanel | undefined;
 
-function getFullScreenTab() {
-  const tabs = vscode.window.tabGroups.all.flatMap((tabGroup) => tabGroup.tabs);
-  return tabs.find((tab) => (tab.input as any)?.viewType?.endsWith("konveyor.konveyorGUIView"));
-}
+// function getFullScreenTab() {
+//   const tabs = window.tabGroups.all.flatMap((tabGroup) => tabGroup.tabs);
+//   return tabs.find((tab) =>
+//     (tab.input as any)?.viewType?.endsWith("konveyor.konveyorAnalysisView"),
+//   );
+// }
 
 const commandsMap: (state: ExtensionState) => {
   [command: string]: (...args: any) => any;
 } = (state) => {
-  const { sidebarProvider, extensionContext } = state;
+  // const { extensionContext } = state;
   return {
-    "konveyor.startAnalyzer": async () => {
+    "konveyor.startServer": async () => {
       const analyzerClient = state.analyzerClient;
-      if (!(await analyzerClient.canAnalyze())) {
+      if (!(await analyzerClient.canAnalyzeInteractive())) {
         return;
       }
+      try {
+        await analyzerClient.start();
+        await analyzerClient.initialize();
+      } catch (e) {
+        console.error("Could not start the server", e);
+      }
+    },
+    "konveyor.stopServer": async () => {
+      const analyzerClient = state.analyzerClient;
+      try {
+        await analyzerClient.stop();
+      } catch (e) {
+        console.error("Could not shutdown and stop the server", e);
+      }
+    },
+    "konveyor.restartServer": async () => {
+      const analyzerClient = state.analyzerClient;
+      try {
+        if (analyzerClient.isServerRunning()) {
+          await analyzerClient.stop();
+        }
 
-      vscode.window.showInformationMessage("Starting analyzer...");
-      analyzerClient.start();
+        if (!(await analyzerClient.canAnalyzeInteractive())) {
+          return;
+        }
+        await analyzerClient.start();
+        await analyzerClient.initialize();
+      } catch (e) {
+        console.error("Could not restart the server", e);
+      }
     },
     "konveyor.runAnalysis": async () => {
+      console.log("run analysis command called");
       const analyzerClient = state.analyzerClient;
-      if (!analyzerClient || !(await analyzerClient.canAnalyze())) {
-        vscode.window.showErrorMessage("Analyzer must be started before run!");
+      if (!analyzerClient || !analyzerClient.canAnalyze()) {
+        window.showErrorMessage("Analyzer must be started and configured before run!");
         return;
       }
-      analyzerClient.clearStoredRulesets();
-
-      if (fullScreenPanel && fullScreenPanel.webview) {
-        analyzerClient.runAnalysis(fullScreenPanel.webview);
-      } else {
-        analyzerClient.runAnalysis(state.sidebarProvider.webview!);
-      }
+      analyzerClient.runAnalysis();
     },
-    "konveyor.focusKonveyorInput": async () => {
-      const fullScreenTab = getFullScreenTab();
-      if (!fullScreenTab) {
-        vscode.commands.executeCommand("konveyor.konveyorGUIView.focus");
-      } else {
-        fullScreenPanel?.reveal();
-      }
-      // sidebar.webviewProtocol?.request("focusInput", undefined);
-      // await addHighlightedCodeToContext(sidebar.webviewProtocol);
+    "konveyor.getSolution": async (incidents: Incident[], violation: Violation) => {
+      const analyzerClient = state.analyzerClient;
+      analyzerClient.getSolution(state, incidents, violation);
+      // if (fullScreenPanel && fullScreenPanel.webview) {
+      //   analyzerClient.runAnalysis(fullScreenPanel.webview, state);
+      // } else if (sidebarProvider?.webview) {
+      //   analyzerClient.runAnalysis(sidebarProvider.webview, state);
+      // } else {
+      //   window.showErrorMessage("No webview available to run analysis!");
+      // }
     },
     "konveyor.toggleFullScreen": () => {
-      // Check if full screen is already open by checking open tabs
-      const fullScreenTab = getFullScreenTab();
-
-      // Check if the active editor is the GUI View
-      if (fullScreenTab && fullScreenTab.isActive) {
-        //Full screen open and focused - close it
-        vscode.commands.executeCommand("workbench.action.closeActiveEditor"); //this will trigger the onDidDispose listener below
-        return;
-      }
-
-      if (fullScreenTab && fullScreenPanel) {
-        //Full screen open, but not focused - focus it
-        fullScreenPanel.reveal();
-        return;
-      }
-
-      //create the full screen panel
-      const panel = vscode.window.createWebviewPanel(
-        "konveyor.konveyorFullScreenView",
-        "Konveyor",
-        vscode.ViewColumn.One,
-        {
-          retainContextWhenHidden: true,
-          enableScripts: true,
-          localResourceRoots: [
-            vscode.Uri.joinPath(extensionContext.extensionUri, "media"),
-            vscode.Uri.joinPath(extensionContext.extensionUri, "out"),
-          ],
-        },
-      );
-      fullScreenPanel = panel;
-
-      panel.webview.html = getWebviewContent(extensionContext, panel.webview, true);
-
-      panel.webview.onDidReceiveMessage((message) => {
-        if (message.type === "webviewReady") {
-          console.log("Webview is ready, setting up message listener");
-          setupWebviewMessageListener(panel.webview, state);
-
-          console.log("Populating webview with stored rulesets");
-          state.analyzerClient.populateWebviewWithStoredRulesets(panel.webview);
-        }
-      });
-
-      if (state.sidebarProvider) {
-        // Option 1: Hide the sidebar
-        vscode.commands.executeCommand("workbench.action.closeSidebar");
-      }
-
-      //When panel closes, reset the webview and focus
-      panel.onDidDispose(
-        () => {
-          state.webviewProviders.delete(sidebarProvider);
-          fullScreenPanel = undefined;
-          vscode.commands.executeCommand("konveyor.focusKonveyorInput");
-        },
-        null,
-        extensionContext.subscriptions,
-      );
+      // // TODO: refactor this to use showWebviewPanel
+      // // Check if full screen is already open by checking open tabs
+      // const fullScreenTab = getFullScreenTab();
+      // // Check if the active editor is the GUI View
+      // if (fullScreenTab && fullScreenTab.isActive) {
+      //   //Full screen open and focused - close it
+      //   commands.executeCommand("workbench.action.closeActiveEditor"); //this will trigger the onDidDispose listener below
+      //   return;
+      // }
+      // if (fullScreenTab && fullScreenPanel) {
+      //   //Full screen open, but not focused - focus it
+      //   fullScreenPanel.reveal();
+      //   return;
+      // }
+      // //create the full screen panel
+      // const panel = window.createWebviewPanel(
+      //   "konveyor.konveyorFullScreenView",
+      //   "Konveyor",
+      //   ViewColumn.One,
+      //   {
+      //     retainContextWhenHidden: true,
+      //     enableScripts: true,
+      //     localResourceRoots: [
+      //       Uri.joinPath(extensionContext.extensionUri, "media"),
+      //       Uri.joinPath(extensionContext.extensionUri, "out"),
+      //     ],
+      //   },
+      // );
+      // fullScreenPanel = panel;
+      // const sidebarProvider = state.webviewProviders?.get("sidebar");
+      // if (sidebarProvider) {
+      // panel.webview.html = sidebarProvider.getHtmlForWebview(panel.webview);
+      // setupWebviewMessageListener(panel.webview, state);
+      //   commands.executeCommand("workbench.action.closeSidebar");
+      //   //When panel closes, reset the webview and focus
+      //   panel.onDidDispose(
+      //     () => {
+      //       state.webviewProviders.delete("sidebar");
+      //       fullScreenPanel = undefined;
+      //       commands.executeCommand("konveyor.focusKonveyorInput");
+      //     },
+      //     null,
+      //     extensionContext.subscriptions,
+      //   );
+      // }
     },
     "konveyor.overrideAnalyzerBinaries": async () => {
-      const options: vscode.OpenDialogOptions = {
+      const options: OpenDialogOptions = {
         canSelectMany: false,
         openLabel: "Select Analyzer Binary",
         filters: {
@@ -120,22 +163,62 @@ const commandsMap: (state: ExtensionState) => {
         },
       };
 
-      const fileUri = await vscode.window.showOpenDialog(options);
-
+      const fileUri = await window.showOpenDialog(options);
       if (fileUri && fileUri[0]) {
         const filePath = fileUri[0].fsPath;
 
         // Update the user settings
-        const config = vscode.workspace.getConfiguration("konveyor");
-        await config.update("analyzerPath", filePath, vscode.ConfigurationTarget.Global);
+        await updateAnalyzerPath(filePath);
 
-        vscode.window.showInformationMessage(`Analyzer binary path updated to: ${filePath}`);
+        window.showInformationMessage(`Analyzer binary path updated to: ${filePath}`);
       } else {
-        vscode.window.showInformationMessage("No analyzer binary selected.");
+        // Reset the setting to undefined or remove it
+        await updateAnalyzerPath(undefined);
+        window.showInformationMessage("No analyzer binary selected.");
       }
     },
+    "konveyor.overrideKaiRpcServerBinaries": async () => {
+      const options: OpenDialogOptions = {
+        canSelectMany: false,
+        openLabel: "Select GenAI Binary",
+        filters: {
+          "Executable Files": ["exe", "sh", "bat", ""],
+          "All Files": ["*"],
+        },
+      };
+
+      const fileUri = await window.showOpenDialog(options);
+      if (fileUri && fileUri[0]) {
+        const filePath = fileUri[0].fsPath;
+
+        // Update the user settings
+        await updateKaiRpcServerPath(filePath);
+
+        window.showInformationMessage(`Kai rpc server binary path updated to: ${filePath}`);
+      } else {
+        // Reset the setting to undefined or remove it
+        await updateKaiRpcServerPath(undefined);
+        window.showInformationMessage("No Kai rpc-server binary selected.");
+      }
+    },
+    "konveyor.configureGenAiKey": async () => {
+      const newKey = await window.showInputBox({
+        prompt: "Enter your GENAI_KEY",
+        placeHolder: "Your GenAI key...",
+        ignoreFocusOut: true,
+        password: true,
+      });
+
+      if (newKey === undefined) {
+        window.showInformationMessage("No GENAI_KEY entered. Configuration cancelled.");
+        return;
+      }
+
+      await updateGenAiKey(state.extensionContext, newKey);
+      window.showInformationMessage("GENAI_KEY updated successfully!");
+    },
     "konveyor.configureCustomRules": async () => {
-      const options: vscode.OpenDialogOptions = {
+      const options: OpenDialogOptions = {
         canSelectMany: true,
         canSelectFolders: true,
         canSelectFiles: true,
@@ -145,7 +228,7 @@ const commandsMap: (state: ExtensionState) => {
         },
       };
 
-      const fileUris = await vscode.window.showOpenDialog(options);
+      const fileUris = await window.showOpenDialog(options);
 
       if (fileUris && fileUris.length > 0) {
         const customRules = fileUris.map((uri) => uri.fsPath);
@@ -153,31 +236,29 @@ const commandsMap: (state: ExtensionState) => {
         // TODO(djzager): Should we verify the rules provided are valid?
 
         // Update the user settings
-        const config = vscode.workspace.getConfiguration("konveyor");
-        await config.update("customRules", customRules, vscode.ConfigurationTarget.Workspace);
+        await updateCustomRules(customRules);
 
         // Ask the user if they want to disable the default ruleset
-        const useDefaultRulesets = await vscode.window.showQuickPick(["Yes", "No"], {
+        const useDefaultRulesets = await window.showQuickPick(["Yes", "No"], {
           placeHolder: "Do you want to use the default rulesets?",
           canPickMany: false,
         });
 
         if (useDefaultRulesets === "Yes") {
-          await config.update("useDefaultRulesets", true, vscode.ConfigurationTarget.Workspace);
+          await updateUseDefaultRuleSets(true);
         } else if (useDefaultRulesets === "No") {
-          await config.update("useDefaultRulesets", false, vscode.ConfigurationTarget.Workspace);
+          await updateUseDefaultRuleSets(false);
         }
 
-        vscode.window.showInformationMessage(
+        window.showInformationMessage(
           `Custom Rules Updated: ${customRules}\nUse Default Rulesets: ${useDefaultRulesets}`,
         );
       } else {
-        vscode.window.showInformationMessage("No custom rules selected.");
+        window.showInformationMessage("No custom rules selected.");
       }
     },
     "konveyor.configureSourcesTargets": async () => {
-      const config = vscode.workspace.getConfiguration("konveyor");
-      const currentLabelSelector = config.get<string>("labelSelector", "");
+      const currentLabelSelector = getConfigLabelSelector();
 
       // Function to extract values from label selector
       const extractValuesFromSelector = (selector: string, key: string): string[] => {
@@ -204,7 +285,7 @@ const commandsMap: (state: ExtensionState) => {
         items: string[],
         selectedItems: string[],
       ): Promise<string[] | undefined> => {
-        const result = await vscode.window.showQuickPick(
+        const result = await window.showQuickPick(
           items.map((item) => ({
             label: item,
             picked: selectedItems.includes(item),
@@ -249,14 +330,14 @@ const commandsMap: (state: ExtensionState) => {
       const sources = state.sources.map((source) => `konveyor.io/source=${source}`).join(" || ");
       const targets = state.targets.map((target) => `konveyor.io/target=${target}`).join(" || ");
       if (sources === "" && targets === "") {
-        vscode.window.showInformationMessage("No sources or targets selected.");
+        window.showInformationMessage("No sources or targets selected.");
         return;
       }
 
       state.labelSelector = `(${[sources, targets].filter((part) => part !== "").join(" && ")}) || (discovery)`;
 
       // Show input box for modifying label selector
-      const modifiedLabelSelector = await vscode.window.showInputBox({
+      const modifiedLabelSelector = await window.showInputBox({
         prompt: "Modify the label selector if needed",
         value: state.labelSelector,
         placeHolder: "e.g., source=(java|spring) target=(quarkus)",
@@ -268,21 +349,16 @@ const commandsMap: (state: ExtensionState) => {
       state.labelSelector = modifiedLabelSelector;
 
       // Update the user settings
-      await config.update(
-        "labelSelector",
-        state.labelSelector,
-        vscode.ConfigurationTarget.Workspace,
-      );
+      await updateLabelSelector(state.labelSelector);
 
-      vscode.window.showInformationMessage(
+      window.showInformationMessage(
         `Configuration updated: Sources: ${state.sources.join(", ")}, Targets: ${state.targets.join(", ")}, Label Selector: ${state.labelSelector}`,
       );
     },
     "konveyor.configureLabelSelector": async () => {
-      const config = vscode.workspace.getConfiguration("konveyor");
-      const currentLabelSelector = config.get<string>("labelSelector", "");
+      const currentLabelSelector = getConfigLabelSelector();
 
-      const modifiedLabelSelector = await vscode.window.showInputBox({
+      const modifiedLabelSelector = await window.showInputBox({
         prompt: "Modify the label selector if needed",
         value: currentLabelSelector,
         placeHolder: "e.g., source=(java|spring) target=(quarkus)",
@@ -293,10 +369,91 @@ const commandsMap: (state: ExtensionState) => {
       }
 
       // Update the user settings
-      await config.update(
-        "labelSelector",
-        modifiedLabelSelector,
-        vscode.ConfigurationTarget.Workspace,
+      await updateLabelSelector(modifiedLabelSelector);
+    },
+    "konveyor.loadRuleSets": async (ruleSets: RuleSet[], filePaths: Uri[]) =>
+      loadRuleSets(state, ruleSets, filePaths),
+    "konveyor.cleanRuleSets": () => cleanRuleSets(state),
+    "konveyor.loadStaticResults": loadStaticResults,
+    "konveyor.loadResultsFromDataFolder": loadResultsFromDataFolder,
+    "konveyor.loadSolution": async (solution: Solution, scope?: Scope) =>
+      loadSolution(state, solution, scope),
+    "konveyor.applyAll": async () => applyAll(state),
+    "konveyor.applyFile": async (item: FileItem | Uri) => applyFile(item, state),
+    "konveyor.copyDiff": async (item: FileItem | Uri) => copyDiff(item, state),
+    "konveyor.copyPath": copyPath,
+    "konveyor.diffView.viewFix": viewFix,
+    "konveyor.discardAll": async () => discardAll(state),
+    "konveyor.discardFile": async (item: FileItem | Uri) => discardFile(item, state),
+    "konveyor.showResolutionPanel": () => {
+      const resolutionProvider = state.webviewProviders?.get("resolution");
+      resolutionProvider?.showWebviewPanel();
+    },
+    "konveyor.showAnalysisPanel": () => {
+      const resolutionProvider = state.webviewProviders?.get("sidebar");
+      resolutionProvider?.showWebviewPanel();
+    },
+    "konveyor.openAnalysisDetails": async (item: IncidentTypeItem) => {
+      //TODO: pass the item to webview and move the focus
+      console.log("Open details for ", item);
+      const resolutionProvider = state.webviewProviders?.get("sidebar");
+      resolutionProvider?.showWebviewPanel();
+    },
+    "konveyor.reloadLastResolutions": async () => reloadLastResolutions(state),
+    "konveyor.diffView.applyBlock": applyBlock,
+    "konveyor.diffView.applyBlockInline": applyBlock,
+    "konveyor.diffView.applySelection": applyBlock,
+    "konveyor.diffView.applySelectionInline": applyBlock,
+    "konveyor.partialAnalysis": async (filePaths: Uri[]) => runPartialAnalysis(state, filePaths),
+    "konveyor.configureGetSolutionParams": async () => {
+      const maxPriorityInput = await window.showInputBox({
+        prompt: "Enter max_priority for getSolution",
+        placeHolder: "0",
+        validateInput: (value) => {
+          return isNaN(Number(value)) ? "Please enter a valid number" : null;
+        },
+      });
+
+      if (maxPriorityInput === undefined) {
+        return;
+      }
+
+      const maxPriority = Number(maxPriorityInput);
+
+      const maxDepthInput = await window.showInputBox({
+        prompt: "Enter max_depth for getSolution",
+        placeHolder: "0",
+        validateInput: (value) => {
+          return isNaN(Number(value)) ? "Please enter a valid number" : null;
+        },
+      });
+
+      if (maxDepthInput === undefined) {
+        return;
+      }
+
+      const maxDepth = Number(maxDepthInput);
+
+      const maxIterationsInput = await window.showInputBox({
+        prompt: "Enter max_iterations for getSolution",
+        placeHolder: "1",
+        validateInput: (value) => {
+          return isNaN(Number(value)) ? "Please enter a valid number" : null;
+        },
+      });
+
+      if (maxIterationsInput === undefined) {
+        return;
+      }
+
+      const maxIterations = Number(maxIterationsInput);
+
+      await updateGetSolutionMaxPriority(maxPriority);
+      await updateGetSolutionMaxDepth(maxDepth);
+      await updateGetSolutionMaxIterations(maxIterations);
+
+      window.showInformationMessage(
+        `getSolution parameters updated: max_priority=${maxPriority}, max_depth=${maxDepth}, max_iterations=${maxIterations}`,
       );
     },
   };
@@ -304,6 +461,6 @@ const commandsMap: (state: ExtensionState) => {
 
 export function registerAllCommands(state: ExtensionState) {
   for (const [command, callback] of Object.entries(commandsMap(state))) {
-    state.extensionContext.subscriptions.push(vscode.commands.registerCommand(command, callback));
+    state.extensionContext.subscriptions.push(commands.registerCommand(command, callback));
   }
 }

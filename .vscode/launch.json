@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/vscode"],
+      "outFiles": ["${workspaceFolder}/vscode/out/**/*.js"],
+      "env": {
+        "VSCODE_DEBUG_MODE": "true"
+      },
+      "preLaunchTask": "npm: dev"
+    },
+    {
+      "name": "Extension Tests",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/vscode",
+        "--extensionTestsPath=${workspaceFolder}/vscode/out/test/suite/index"
+      ],
+      "outFiles": ["${workspaceFolder}/vscode/out/test/**/*.js"],
+      "preLaunchTask": "npm: test-watch - vscode"
+    },
+    {
+      "name": "Run Dev Script",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "VSCODE_DEBUG_MODE": "true"
+      }
+    }
+  ]
+}

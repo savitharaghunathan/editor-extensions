@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "composite": true,
+    "declaration": true
+  },
+
+  "references": [
+    { "path": "./shared" },
+    { "path": "./vscode" },
+    { "path": "./webview-ui" }
+  ]
+}
