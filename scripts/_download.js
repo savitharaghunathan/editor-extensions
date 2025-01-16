@@ -6,7 +6,10 @@ import fs from "fs-extra";
 import unzipper from "unzipper";
 import * as tar from "tar";
 import { bold, green, yellow } from "colorette";
-import { chmodOwnerPlusX, fetchFirstSuccessfulRun, fetchArtifactsForRun } from "./_util.js";
+import { chmodOwnerPlusX } from "./_util.js";
+import { fetchFirstSuccessfulRun, fetchArtifactsForRun } from "./_github.js";
+
+import { globby } from "globby";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -255,18 +258,20 @@ export async function extractArtifact(filePath, tempDir, finalDir) {
 
     // First extraction to temporary directory
     console.log(`Extracting ${filePath} to temporary directory: ${tempDir}`);
-    await unzipper.Open.file(filePath).then((d) => d.extract({ path: tempDir }));
+    const unzipArtifact = await unzipper.Open.file(filePath);
+    await unzipArtifact.extract({ path: tempDir });
 
     // Find and extract any nested zip files in the temp directory
-    const files = await fs.readdir(tempDir);
-    for (const file of files) {
-      if (file.endsWith(".zip")) {
-        const nestedZipPath = join(tempDir, file);
-        console.log(`Extracting nested zip: ${nestedZipPath} to ${finalDir}`);
-        await unzipper.Open.file(nestedZipPath).then((d) => d.extract({ path: finalDir }));
-        console.log(`Deleting nested zip: ${nestedZipPath}`);
-        await fs.unlink(nestedZipPath);
-      }
+    const zipFiles = await globby("*.zip", { cwd: tempDir });
+    for (const file of zipFiles) {
+      const nestedZipPath = join(tempDir, file);
+      console.log(`Extracting nested zip: ${nestedZipPath} to ${finalDir}`);
+
+      const unzipNestedArtifact = await unzipper.Open.file(nestedZipPath);
+      await unzipNestedArtifact.extract({ path: finalDir });
+
+      console.log(`Deleting nested zip: ${nestedZipPath}`);
+      await fs.unlink(nestedZipPath);
     }
 
     // Cleanup temporary directory
@@ -296,7 +301,8 @@ export async function extractArtifact(filePath, tempDir, finalDir) {
 export async function downloadWorkflowArtifacts({
   targetDirectory,
   metaFile,
-  url,
+  org,
+  repo,
   workflow,
   assets,
 }) {
@@ -309,21 +315,25 @@ export async function downloadWorkflowArtifacts({
 
   try {
     console.log("Fetching first successful workflow run...");
-    const workflowRunId = await fetchFirstSuccessfulRun(url, workflow, GITHUB_TOKEN);
+    const { workflowRunId, headSha } = await fetchFirstSuccessfulRun(org, repo, workflow);
 
     if (!workflowRunId) {
       throw new Error("No successful workflow runs found.");
     }
 
     console.log(`Workflow Run ID: ${workflowRunId}`);
-    const artifactUrls = await fetchArtifactsForRun(url, workflowRunId, GITHUB_TOKEN);
+    const artifactUrls = await fetchArtifactsForRun(org, repo, workflowRunId);
 
     if (!artifactUrls || artifactUrls.length === 0) {
       throw new Error("No artifacts found for the workflow run.");
     }
 
     const metadata = {
+      org,
+      repo,
+      workflow,
       workflowRunId,
+      commitId: headSha,
       collectedAt: new Date().toISOString(),
       assets: [],
     };
@@ -351,6 +361,17 @@ export async function downloadWorkflowArtifacts({
         const tempDir = join(targetDirectory, "temp");
         const extractionDir = join(targetDirectory, name.replace(/\.zip$/, ""));
         await extractArtifact(downloadedFilePath, tempDir, extractionDir);
+
+        // for (const file of await globby(["*", "!*.zip"], { cwd: extractionDir, absolute: true })) {
+        //   chmodOwnerPlusX(file);
+        // }
+
+        const extractedFiles = await fs.readdir(extractionDir);
+        extractedFiles.forEach(async (file) => {
+          if (asset.chmod && !file.endsWith(".zip")) {
+            chmodOwnerPlusX(join(extractionDir, file));
+          }
+        });
 
         metadata.assets.push({
           name,
