@@ -4,7 +4,6 @@ build/
 dist/
 downloaded_assets/
 *.vsix
-.env
 
 # TypeScript build info
 **/tsconfig.tsbuildinfo
