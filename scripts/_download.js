@@ -362,16 +362,9 @@ export async function downloadWorkflowArtifacts({
         const extractionDir = join(targetDirectory, name.replace(/\.zip$/, ""));
         await extractArtifact(downloadedFilePath, tempDir, extractionDir);
 
-        // for (const file of await globby(["*", "!*.zip"], { cwd: extractionDir, absolute: true })) {
-        //   chmodOwnerPlusX(file);
-        // }
-
-        const extractedFiles = await fs.readdir(extractionDir);
-        extractedFiles.forEach(async (file) => {
-          if (asset.chmod && !file.endsWith(".zip")) {
-            chmodOwnerPlusX(join(extractionDir, file));
-          }
-        });
+        for (const file of await globby(["*", "!*.zip"], { cwd: extractionDir, absolute: true })) {
+          chmodOwnerPlusX(file);
+        }
 
         metadata.assets.push({
           name,

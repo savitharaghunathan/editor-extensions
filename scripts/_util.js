@@ -20,7 +20,10 @@ export function cwdToProjectRoot() {
  * @param {string} path File or directory to chmod
  */
 export function chmodOwnerPlusX(path) {
-  const { mode = fs.constants.S_IRUSR } = fs.statSync(path);
-  console.log(`Setting executable permissions for: ${path}:${mode}`);
-  fs.chmodSync(path, mode | fs.constants.S_IXUSR);
+  try {
+    const { mode = fs.constants.S_IRUSR } = fs.statSync(path);
+    fs.chmodSync(path, mode | fs.constants.S_IXUSR);
+  } catch (error) {
+    console.error(`Failed to set executable permissions for ${path}:`, error.message);
+  }
 }
