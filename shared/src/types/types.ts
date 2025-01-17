@@ -88,6 +88,7 @@ export interface Scope {
 export type Solution = GetSolutionResult | SolutionResponse;
 
 export interface ExtensionData {
+  workspaceRoot: string;
   localChanges: LocalChange[];
   ruleSets: RuleSet[];
   resolutionPanelData: any;

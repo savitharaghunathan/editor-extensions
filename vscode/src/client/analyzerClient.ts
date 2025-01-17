@@ -440,7 +440,7 @@ export class AnalyzerClient {
             ? {
                 wellFormed: true,
                 rawIncidentCount: ruleSets
-                  .flatMap((r) => Object.values(r.violations ?? {}))
+                  .flatMap((r) => Object.values<Violation>(r.violations ?? {}))
                   .flatMap((v) => v.incidents ?? []).length,
                 incidentCount: allIncidents(ruleSets).length,
                 partialAnalysis: filePaths
@@ -494,7 +494,7 @@ export class AnalyzerClient {
   public async getSolution(
     state: ExtensionState,
     incidents: Incident[],
-    violation: Violation,
+    violation?: Violation,
   ): Promise<void> {
     // TODO: Ensure serverState is running
 
@@ -507,8 +507,8 @@ export class AnalyzerClient {
 
     const enhancedIncidents = incidents.map((incident) => ({
       ...incident,
-      ruleset_name: violation.category || "default_ruleset",
-      violation_name: violation.description || "default_violation",
+      ruleset_name: violation?.category ?? "default_ruleset",
+      violation_name: violation?.description ?? "default_violation",
     }));
 
     const maxPriority = getConfigMaxPriority();

@@ -59,6 +59,18 @@
         "icon": "$(expand-all)"
       },
       {
+        "command": "konveyor.fixGroupOfIncidents",
+        "title": "Resolve incidents",
+        "category": "Konveyor",
+        "icon": "$(debug-console)"
+      },
+      {
+        "command": "konveyor.fixIncident",
+        "title": "Resolve incident",
+        "category": "Konveyor",
+        "icon": "$(debug-console)"
+      },
+      {
         "command": "konveyor.openAnalysisDetails",
         "title": "Open Details",
         "category": "Konveyor",
@@ -290,6 +302,16 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "konveyor.fixGroupOfIncidents",
+          "group": "inline@3",
+          "when": "view == konveyor.issueView && viewItem == incident-type-item"
+        },
+        {
+          "command": "konveyor.fixIncident",
+          "group": "inline@1",
+          "when": "view == konveyor.issueView && viewItem == reference-item"
+        },
         {
           "command": "konveyor.expandSingleIssue",
           "group": "inline@2",

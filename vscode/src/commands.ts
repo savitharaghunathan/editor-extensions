@@ -34,7 +34,7 @@ import {
   updateGetSolutionMaxPriority,
 } from "./utilities/configuration";
 import { runPartialAnalysis } from "./analysis";
-import { IncidentTypeItem } from "./issueView";
+import { fixGroupOfIncidents, IncidentTypeItem } from "./issueView";
 
 // let fullScreenPanel: WebviewPanel | undefined;
 
@@ -95,7 +95,7 @@ const commandsMap: (state: ExtensionState) => {
       }
       analyzerClient.runAnalysis();
     },
-    "konveyor.getSolution": async (incidents: Incident[], violation: Violation) => {
+    "konveyor.getSolution": async (incidents: Incident[], violation?: Violation) => {
       const analyzerClient = state.analyzerClient;
       analyzerClient.getSolution(state, incidents, violation);
       // if (fullScreenPanel && fullScreenPanel.webview) {
@@ -398,6 +398,8 @@ const commandsMap: (state: ExtensionState) => {
       const resolutionProvider = state.webviewProviders?.get("sidebar");
       resolutionProvider?.showWebviewPanel();
     },
+    "konveyor.fixGroupOfIncidents": fixGroupOfIncidents,
+    "konveyor.fixIncident": fixGroupOfIncidents,
     "konveyor.reloadLastResolutions": async () => reloadLastResolutions(state),
     "konveyor.diffView.applyBlock": applyBlock,
     "konveyor.diffView.applyBlockInline": applyBlock,

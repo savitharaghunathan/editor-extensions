@@ -30,6 +30,7 @@ class VsCodeExtension {
         solutionData: undefined,
         serverState: "initial",
         solutionScope: undefined,
+        workspaceRoot: vscode.workspace.workspaceFolders?.[0].uri.toString() ?? "/",
       },
       () => {},
     );
