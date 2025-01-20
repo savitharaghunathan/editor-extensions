@@ -32,7 +32,6 @@ if (process.env.WORKFLOW && process.env.WORKFLOW !== "False") {
       { name: "kai-rpc-server.linux-x86_64.zip", platform: "linux", arch: "x64", chmod: true },
       { name: "kai-rpc-server.macos-arm64.zip", platform: "darwin", arch: "arm64", chmod: true },
       { name: "kai-rpc-server.macos-x86_64.zip", platform: "darwin", arch: "x64", chmod: true },
-      { name: "kai-rpc-server.windows-Arm64.zip", platform: "win32", arch: "arm64", chmod: false },
       { name: "kai-rpc-server.windows-X64.zip", platform: "win32", arch: "x64", chmod: false },
     ],
   });
