@@ -53,6 +53,7 @@ if (process.env.WORKFLOW && process.env.WORKFLOW !== "False") {
       arch: https://nodejs.org/docs/latest-v22.x/api/process.html#processarch
     */
     assets: [
+      { name: "java-deps.zip" },
       { name: "kai-rpc-server.linux-x86_64.zip", platform: "linux", arch: "x64", chmod: true },
       { name: "kai-rpc-server.linux-aarch64.zip", platform: "linux", arch: "arm64", chmod: true },
       { name: "kai-rpc-server.macos-x86_64.zip", platform: "darwin", arch: "x64", chmod: true },
