@@ -7,7 +7,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  Content,
   EmptyState,
   EmptyStateBody,
   Title,
@@ -22,21 +21,23 @@ import {
   StackItem,
   Flex,
   FlexItem,
+  PageSidebar,
+  PageSidebarBody,
+  Masthead,
+  MastheadMain,
+  MastheadToggle,
+  MastheadContent,
+  Toolbar,
+  ToolbarContent,
+  ToolbarGroup,
+  ToolbarItem,
 } from "@patternfly/react-core";
-import spacing from "@patternfly/react-styles/css/utilities/Spacing/spacing";
 
 import ProgressIndicator from "../ProgressIndicator";
 import ViolationIncidentsList from "../ViolationIncidentsList";
-import { Incident } from "@editor-extensions/shared";
+import { Incident, Violation } from "@editor-extensions/shared";
 import { useExtensionState } from "../../hooks/useExtensionState";
-import {
-  cancelSolution,
-  getSolution,
-  openFile,
-  startServer,
-  runAnalysis,
-  stopServer,
-} from "../../hooks/actions";
+import { getSolution, openFile, startServer, runAnalysis, stopServer } from "../../hooks/actions";
 import { ServerStatusToggle } from "../ServerStatusToggle/ServerStatusToggle";
 import { ViolationsCount } from "../ViolationsCount/ViolationsCount";
 
@@ -62,8 +63,6 @@ const AnalysisPage: React.FC = () => {
 
   const runAnalysisRequest = () => dispatch(runAnalysis());
 
-  const cancelSolutionRequest = () => dispatch(cancelSolution());
-
   const handleServerToggle = () => {
     dispatch(serverRunning ? stopServer() : startServer());
   };
@@ -73,7 +72,7 @@ const AnalysisPage: React.FC = () => {
       return [];
     }
     return analysisResults.flatMap((ruleSet) =>
-      Object.entries(ruleSet.violations || {}).map(([id, violation]) => ({
+      Object.entries<Violation>(ruleSet.violations || {}).map(([id, violation]) => ({
         id,
         ...violation,
       })),
@@ -84,13 +83,45 @@ const AnalysisPage: React.FC = () => {
   const hasAnalysisResults = analysisResults !== undefined;
 
   return (
-    <Page>
-      <ServerStatusToggle
-        isRunning={serverRunning}
-        isStarting={isStartingServer}
-        onToggle={handleServerToggle}
-      />
+    <Page
+      sidebar={
+        <PageSidebar isSidebarOpen={false}>
+          <PageSidebarBody />
+        </PageSidebar>
+      }
+      masthead={
+        <Masthead>
+          <MastheadMain>
+            <MastheadToggle>
+              <Button
+                variant={ButtonVariant.primary}
+                onClick={runAnalysisRequest}
+                isLoading={isAnalyzing}
+                isDisabled={isAnalyzing || isStartingServer || !serverRunning}
+              >
+                {isAnalyzing ? "Analyzing..." : "Run Analysis"}
+              </Button>
+            </MastheadToggle>
+          </MastheadMain>
 
+          <MastheadContent>
+            <Toolbar>
+              <ToolbarContent>
+                <ToolbarGroup variant="action-group-plain" align={{ default: "alignEnd" }}>
+                  <ToolbarItem>
+                    <ServerStatusToggle
+                      isRunning={serverRunning}
+                      isStarting={isStartingServer}
+                      onToggle={handleServerToggle}
+                    />
+                  </ToolbarItem>
+                </ToolbarGroup>
+              </ToolbarContent>
+            </Toolbar>
+          </MastheadContent>
+        </Masthead>
+      }
+    >
       {errorMessage && (
         <PageSection padding={{ default: "noPadding" }}>
           <AlertGroup isToast>
@@ -110,39 +141,6 @@ const AnalysisPage: React.FC = () => {
 
       <PageSection>
         <Stack hasGutter>
-          <StackItem>
-            <Card>
-              <CardHeader>
-                <Flex>
-                  <FlexItem>
-                    <CardTitle>Analysis Actions</CardTitle>
-                  </FlexItem>
-                </Flex>
-              </CardHeader>
-              <CardBody>
-                <Stack hasGutter>
-                  <StackItem>
-                    <Content>
-                      {hasAnalysisResults
-                        ? "Previous analysis results are available. You can run a new analysis at any time."
-                        : "No previous analysis results found. Run an analysis to get started."}
-                    </Content>
-                  </StackItem>
-                  <StackItem>
-                    <Button
-                      variant={ButtonVariant.primary}
-                      onClick={runAnalysisRequest}
-                      isLoading={isAnalyzing}
-                      isDisabled={isAnalyzing || isStartingServer || !serverRunning}
-                    >
-                      {isAnalyzing ? "Analyzing..." : "Run Analysis"}
-                    </Button>
-                  </StackItem>
-                </Stack>
-              </CardBody>
-            </Card>
-          </StackItem>
-
           <StackItem>
             <Card>
               <CardHeader>
@@ -207,13 +205,6 @@ const AnalysisPage: React.FC = () => {
             <Title headingLevel="h2" size="lg">
               Waiting for solution confirmation...
             </Title>
-            <Button
-              variant={ButtonVariant.link}
-              onClick={cancelSolutionRequest}
-              className={spacing.mtMd}
-            >
-              Cancel
-            </Button>
           </div>
         </Backdrop>
       )}

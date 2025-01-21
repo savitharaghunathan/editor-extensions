@@ -35,6 +35,8 @@ class VsCodeExtension {
         serverState: "initial",
         solutionScope: undefined,
         workspaceRoot: paths.workspaceRepo.fsPath,
+        solutionMessages: [],
+        solutionState: "none",
       },
       () => {},
     );

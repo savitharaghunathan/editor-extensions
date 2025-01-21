@@ -47,6 +47,12 @@
         "icon": "$(book)"
       },
       {
+        "command": "konveyor.showResolutionPanel",
+        "title": "Open Konveyor Resolution View",
+        "category": "Konveyor",
+        "icon": "$(beaker)"
+      },
+      {
         "command": "konveyor.expandAllIssues",
         "title": "Expand All",
         "category": "Konveyor",
@@ -276,8 +282,13 @@
           "when": "view == konveyor.issueView"
         },
         {
-          "command": "konveyor.expandAllIssues",
+          "command": "konveyor.showResolutionPanel",
           "group": "navigation@2",
+          "when": "view == konveyor.issueView"
+        },
+        {
+          "command": "konveyor.expandAllIssues",
+          "group": "navigation@3",
           "when": "view == konveyor.issueView"
         },
         {
