@@ -91,7 +91,6 @@
     "unzipper": "^0.12.3"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
     "fs-extra": "^11.2.0",
     "globby": "^14.0.2",
     "immer": "10.1.1",
