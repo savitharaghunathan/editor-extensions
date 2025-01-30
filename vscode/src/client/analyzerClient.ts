@@ -5,8 +5,8 @@ import * as fs from "fs-extra";
 import * as vscode from "vscode";
 import * as rpc from "vscode-jsonrpc/node";
 import {
+  EnhancedIncident,
   ExtensionData,
-  Incident,
   RuleSet,
   Scope,
   ServerState,
@@ -523,26 +523,16 @@ export class AnalyzerClient {
    *
    * Will only run if the sever state is: `running`
    */
-  public async getSolution(
-    state: ExtensionState,
-    incidents: Incident[],
-    violation?: Violation,
-  ): Promise<void> {
+  public async getSolution(state: ExtensionState, incidents: EnhancedIncident[]): Promise<void> {
     // TODO: Ensure serverState is running
 
-    this.fireSolutionStateChange("started", "Checking server state...", { incidents, violation });
+    this.fireSolutionStateChange("started", "Checking server state...", { incidents });
 
     if (!this.rpcConnection) {
       vscode.window.showErrorMessage("RPC connection is not established.");
       this.fireSolutionStateChange("failedOnStart", "RPC connection is not established.");
       return;
     }
-
-    const enhancedIncidents = incidents.map((incident) => ({
-      ...incident,
-      ruleset_name: violation?.category ?? "default_ruleset",
-      violation_name: violation?.description ?? "default_violation",
-    }));
 
     const multiIncident = incidents.length > 1;
     const maxPriority = multiIncident ? getConfigMultiMaxPriority() : getConfigMaxPriority();
@@ -552,7 +542,7 @@ export class AnalyzerClient {
     try {
       const request = {
         file_path: "",
-        incidents: enhancedIncidents,
+        incidents,
         max_priority: maxPriority,
         max_depth: maxDepth,
         max_iterations: maxIterations,
@@ -571,7 +561,6 @@ export class AnalyzerClient {
       this.fireSolutionStateChange("received", "Received response...");
       vscode.commands.executeCommand("konveyor.loadSolution", response, {
         incidents,
-        violation,
       });
     } catch (err: any) {
       this.outputChannel.appendLine(`Error during getSolution: ${err.message}`);
