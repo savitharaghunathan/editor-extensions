@@ -1,6 +1,6 @@
 import { ExtensionState } from "./extensionState";
 import { sourceOptions, targetOptions } from "./config/labels";
-import { window, commands, Uri, OpenDialogOptions } from "vscode";
+import { window, commands, Uri, OpenDialogOptions, workspace } from "vscode";
 import {
   cleanRuleSets,
   loadResultsFromDataFolder,
@@ -9,7 +9,7 @@ import {
   loadStaticResults,
   reloadLastResolutions,
 } from "./data";
-import { Incident, RuleSet, Scope, Solution, Violation } from "@editor-extensions/shared";
+import { EnhancedIncident, RuleSet, Scope, Solution } from "@editor-extensions/shared";
 import {
   applyAll,
   discardAll,
@@ -28,27 +28,20 @@ import {
   updateUseDefaultRuleSets,
   getConfigLabelSelector,
   updateLabelSelector,
-  updateGenAiKey,
   updateGetSolutionMaxDepth,
   updateGetSolutionMaxIterations,
   updateGetSolutionMaxPriority,
 } from "./utilities/configuration";
 import { runPartialAnalysis } from "./analysis";
-import { IncidentTypeItem } from "./issueView";
+import { fixGroupOfIncidents, IncidentTypeItem } from "./issueView";
+import { paths } from "./paths";
+import { checkIfExecutable, copySampleProviderSettings } from "./utilities/fileUtils";
 
-// let fullScreenPanel: WebviewPanel | undefined;
-
-// function getFullScreenTab() {
-//   const tabs = window.tabGroups.all.flatMap((tabGroup) => tabGroup.tabs);
-//   return tabs.find((tab) =>
-//     (tab.input as any)?.viewType?.endsWith("konveyor.konveyorAnalysisView"),
-//   );
-// }
+const isWindows = process.platform === "win32";
 
 const commandsMap: (state: ExtensionState) => {
   [command: string]: (...args: any) => any;
 } = (state) => {
-  // const { extensionContext } = state;
   return {
     "konveyor.startServer": async () => {
       const analyzerClient = state.analyzerClient;
@@ -95,77 +88,35 @@ const commandsMap: (state: ExtensionState) => {
       }
       analyzerClient.runAnalysis();
     },
-    "konveyor.getSolution": async (incidents: Incident[], violation: Violation) => {
+    "konveyor.getSolution": async (incidents: EnhancedIncident[]) => {
       const analyzerClient = state.analyzerClient;
-      analyzerClient.getSolution(state, incidents, violation);
-      // if (fullScreenPanel && fullScreenPanel.webview) {
-      //   analyzerClient.runAnalysis(fullScreenPanel.webview, state);
-      // } else if (sidebarProvider?.webview) {
-      //   analyzerClient.runAnalysis(sidebarProvider.webview, state);
-      // } else {
-      //   window.showErrorMessage("No webview available to run analysis!");
-      // }
-    },
-    "konveyor.toggleFullScreen": () => {
-      // // TODO: refactor this to use showWebviewPanel
-      // // Check if full screen is already open by checking open tabs
-      // const fullScreenTab = getFullScreenTab();
-      // // Check if the active editor is the GUI View
-      // if (fullScreenTab && fullScreenTab.isActive) {
-      //   //Full screen open and focused - close it
-      //   commands.executeCommand("workbench.action.closeActiveEditor"); //this will trigger the onDidDispose listener below
-      //   return;
-      // }
-      // if (fullScreenTab && fullScreenPanel) {
-      //   //Full screen open, but not focused - focus it
-      //   fullScreenPanel.reveal();
-      //   return;
-      // }
-      // //create the full screen panel
-      // const panel = window.createWebviewPanel(
-      //   "konveyor.konveyorFullScreenView",
-      //   "Konveyor",
-      //   ViewColumn.One,
-      //   {
-      //     retainContextWhenHidden: true,
-      //     enableScripts: true,
-      //     localResourceRoots: [
-      //       Uri.joinPath(extensionContext.extensionUri, "media"),
-      //       Uri.joinPath(extensionContext.extensionUri, "out"),
-      //     ],
-      //   },
-      // );
-      // fullScreenPanel = panel;
-      // const sidebarProvider = state.webviewProviders?.get("sidebar");
-      // if (sidebarProvider) {
-      // panel.webview.html = sidebarProvider.getHtmlForWebview(panel.webview);
-      // setupWebviewMessageListener(panel.webview, state);
-      //   commands.executeCommand("workbench.action.closeSidebar");
-      //   //When panel closes, reset the webview and focus
-      //   panel.onDidDispose(
-      //     () => {
-      //       state.webviewProviders.delete("sidebar");
-      //       fullScreenPanel = undefined;
-      //       commands.executeCommand("konveyor.focusKonveyorInput");
-      //     },
-      //     null,
-      //     extensionContext.subscriptions,
-      //   );
-      // }
+      analyzerClient.getSolution(state, incidents);
     },
     "konveyor.overrideAnalyzerBinaries": async () => {
       const options: OpenDialogOptions = {
         canSelectMany: false,
         openLabel: "Select Analyzer Binary",
-        filters: {
-          "Executable Files": ["exe", "sh", "bat", ""],
-          "All Files": ["*"],
-        },
+        filters: isWindows
+          ? {
+              "Executable Files": ["exe"],
+              "All Files": ["*"],
+            }
+          : {
+              "All Files": ["*"],
+            },
       };
 
       const fileUri = await window.showOpenDialog(options);
       if (fileUri && fileUri[0]) {
         const filePath = fileUri[0].fsPath;
+
+        const isExecutable = await checkIfExecutable(filePath);
+        if (!isExecutable) {
+          window.showErrorMessage(
+            `The selected file "${filePath}" is not executable. Please select a valid executable file.`,
+          );
+          return;
+        }
 
         // Update the user settings
         await updateAnalyzerPath(filePath);
@@ -180,42 +131,47 @@ const commandsMap: (state: ExtensionState) => {
     "konveyor.overrideKaiRpcServerBinaries": async () => {
       const options: OpenDialogOptions = {
         canSelectMany: false,
-        openLabel: "Select GenAI Binary",
-        filters: {
-          "Executable Files": ["exe", "sh", "bat", ""],
-          "All Files": ["*"],
-        },
+        openLabel: "Select Rpc Server Binary",
+        filters: isWindows
+          ? {
+              "Executable Files": ["exe"],
+              "All Files": ["*"],
+            }
+          : {
+              "All Files": ["*"],
+            },
       };
 
       const fileUri = await window.showOpenDialog(options);
       if (fileUri && fileUri[0]) {
         const filePath = fileUri[0].fsPath;
 
+        const isExecutable = await checkIfExecutable(filePath);
+        if (!isExecutable) {
+          window.showErrorMessage(
+            `The selected file "${filePath}" is not executable. Please select a valid executable file.`,
+          );
+          return;
+        }
+
         // Update the user settings
         await updateKaiRpcServerPath(filePath);
 
-        window.showInformationMessage(`Kai rpc server binary path updated to: ${filePath}`);
+        window.showInformationMessage(`Rpc server binary path updated to: ${filePath}`);
       } else {
         // Reset the setting to undefined or remove it
         await updateKaiRpcServerPath(undefined);
         window.showInformationMessage("No Kai rpc-server binary selected.");
       }
     },
-    "konveyor.configureGenAiKey": async () => {
-      const newKey = await window.showInputBox({
-        prompt: "Enter your GENAI_KEY",
-        placeHolder: "Your GenAI key...",
-        ignoreFocusOut: true,
-        password: true,
-      });
-
-      if (newKey === undefined) {
-        window.showInformationMessage("No GENAI_KEY entered. Configuration cancelled.");
-        return;
-      }
-
-      await updateGenAiKey(state.extensionContext, newKey);
-      window.showInformationMessage("GENAI_KEY updated successfully!");
+    "konveyor.modelProviderSettingsOpen": async () => {
+      const settingsDocument = await workspace.openTextDocument(paths().settingsYaml);
+      window.showTextDocument(settingsDocument);
+    },
+    "konveyor.modelProviderSettingsBackupReset": async () => {
+      await copySampleProviderSettings(true);
+      const settingsDocument = await workspace.openTextDocument(paths().settingsYaml);
+      window.showTextDocument(settingsDocument);
     },
     "konveyor.configureCustomRules": async () => {
       const options: OpenDialogOptions = {
@@ -262,7 +218,7 @@ const commandsMap: (state: ExtensionState) => {
 
       // Function to extract values from label selector
       const extractValuesFromSelector = (selector: string, key: string): string[] => {
-        const regex = new RegExp(`konveyor.io/${key}=(.*?)(?:\\s|$)`, "g");
+        const regex = new RegExp(`konveyor.io/${key}=([\\w.-]+)`, "g");
         const matches = selector.matchAll(regex);
         const values = Array.from(matches, (match) => match[1]);
         return values.flatMap((value) => value.split("|"));
@@ -302,18 +258,6 @@ const commandsMap: (state: ExtensionState) => {
         return result.map((item) => item.label);
       };
 
-      // Show QuickPick for sources
-      const selectedSources = await showQuickPick(
-        "Select Source Technologies",
-        "Choose one or more source technologies",
-        sourceOptions,
-        currentSources,
-      );
-      if (selectedSources === undefined) {
-        return;
-      }
-      state.sources = selectedSources;
-
       // Show QuickPick for targets
       const selectedTargets = await showQuickPick(
         "Select Target Technologies",
@@ -326,6 +270,18 @@ const commandsMap: (state: ExtensionState) => {
       }
       state.targets = selectedTargets;
 
+      // Show QuickPick for sources
+      const selectedSources = await showQuickPick(
+        "Select Source Technologies",
+        "Choose one or more source technologies",
+        sourceOptions,
+        currentSources,
+      );
+      if (selectedSources === undefined) {
+        return;
+      }
+      state.sources = selectedSources;
+
       // Compute initial label selector
       const sources = state.sources.map((source) => `konveyor.io/source=${source}`).join(" || ");
       const targets = state.targets.map((target) => `konveyor.io/target=${target}`).join(" || ");
@@ -336,24 +292,10 @@ const commandsMap: (state: ExtensionState) => {
 
       state.labelSelector = `(${[sources, targets].filter((part) => part !== "").join(" && ")}) || (discovery)`;
 
-      // Show input box for modifying label selector
-      const modifiedLabelSelector = await window.showInputBox({
-        prompt: "Modify the label selector if needed",
-        value: state.labelSelector,
-        placeHolder: "e.g., source=(java|spring) target=(quarkus)",
-      });
-
-      if (modifiedLabelSelector === undefined) {
-        return;
-      }
-      state.labelSelector = modifiedLabelSelector;
-
       // Update the user settings
       await updateLabelSelector(state.labelSelector);
 
-      window.showInformationMessage(
-        `Configuration updated: Sources: ${state.sources.join(", ")}, Targets: ${state.targets.join(", ")}, Label Selector: ${state.labelSelector}`,
-      );
+      window.showInformationMessage(`Label Selector Updated: ${state.labelSelector}`);
     },
     "konveyor.configureLabelSelector": async () => {
       const currentLabelSelector = getConfigLabelSelector();
@@ -371,8 +313,7 @@ const commandsMap: (state: ExtensionState) => {
       // Update the user settings
       await updateLabelSelector(modifiedLabelSelector);
     },
-    "konveyor.loadRuleSets": async (ruleSets: RuleSet[], filePaths: Uri[]) =>
-      loadRuleSets(state, ruleSets, filePaths),
+    "konveyor.loadRuleSets": async (ruleSets: RuleSet[]) => loadRuleSets(state, ruleSets),
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
     "konveyor.loadResultsFromDataFolder": loadResultsFromDataFolder,
@@ -399,6 +340,8 @@ const commandsMap: (state: ExtensionState) => {
       const resolutionProvider = state.webviewProviders?.get("sidebar");
       resolutionProvider?.showWebviewPanel();
     },
+    "konveyor.fixGroupOfIncidents": fixGroupOfIncidents,
+    "konveyor.fixIncident": fixGroupOfIncidents,
     "konveyor.reloadLastResolutions": async () => reloadLastResolutions(state),
     "konveyor.diffView.applyBlock": applyBlock,
     "konveyor.diffView.applyBlockInline": applyBlock,

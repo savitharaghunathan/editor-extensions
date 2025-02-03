@@ -1,5 +1,6 @@
-import { KONVEYOR_CONFIG_KEY } from "./constants";
 import * as vscode from "vscode";
+import { ServerLogLevels } from "../client/types";
+import { KONVEYOR_CONFIG_KEY } from "./constants";
 
 function getConfigValue<T>(key: string): T | undefined {
   return vscode.workspace.getConfiguration(KONVEYOR_CONFIG_KEY)?.get<T>(key);
@@ -13,8 +14,12 @@ export function getConfigKaiRpcServerPath(): string {
   return getConfigValue<string>("kaiRpcServerPath") || "";
 }
 
-export function getConfigLogLevel(): string {
-  return getConfigValue<string>("logLevel") || "debug";
+export function getConfigLogLevel(): ServerLogLevels {
+  return getConfigValue<ServerLogLevels>("logLevel") || "DEBUG";
+}
+
+export function getConfigLoggingTraceMessageConnection(): boolean {
+  return getConfigValue<boolean>("logging.traceMessageConnection") ?? false;
 }
 
 export function getConfigIncidentLimit(): number {
@@ -54,15 +59,19 @@ export function getConfigAnalyzeOnSave(): boolean {
 }
 
 export function getConfigDiffEditorType(): string {
-  return getConfigValue<string>("diffEditorType") || "diff";
-}
-
-export function getConfigKaiBackendURL(): string {
-  return getConfigValue<string>("kai.backendURL") || "0.0.0.0:8080";
+  return getConfigValue<"diff" | "merge">("diffEditorType") || "diff";
 }
 
 export function getConfigKaiProviderName(): string {
   return getConfigValue<string>("kai.providerName") || "ChatIBMGenAI";
+}
+
+export function getCacheDir(): string | undefined {
+  return getConfigValue<string>("kai.cacheDir");
+}
+
+export function getTraceEnabled(): boolean {
+  return getConfigValue<boolean>("kai.traceEnabled") || false;
 }
 
 export function getConfigKaiProviderArgs(): object | undefined {
@@ -111,11 +120,25 @@ async function updateConfigValue<T>(
 }
 
 export async function updateAnalyzerPath(value: string | undefined): Promise<void> {
-  await updateConfigValue("analyzerPath", value, vscode.ConfigurationTarget.Workspace);
+  try {
+    const scope = vscode.workspace.workspaceFolders
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    await updateConfigValue("analyzerPath", value, scope);
+  } catch (error) {
+    console.error("Failed to update analyzerPath:", error);
+  }
 }
 
 export async function updateKaiRpcServerPath(value: string | undefined): Promise<void> {
-  await updateConfigValue("kaiRpcServerPath", value, vscode.ConfigurationTarget.Workspace);
+  try {
+    const scope = vscode.workspace.workspaceFolders
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    await updateConfigValue("kaiRpcServerPath", value, scope);
+  } catch (error) {
+    console.error("Failed to update kaiRpcServerPath:", error);
+  }
 }
 
 export async function updateLogLevel(value: string): Promise<void> {
@@ -208,16 +231,26 @@ export async function updateGenAiKey(
   }
 }
 
-export function getConfigMaxPriority(): number {
-  return getConfigValue<number>("kai.getSolutionMaxPriority") || 0;
+export function getConfigSolutionMaxPriority(): number | undefined {
+  return getConfigValue<number | null>("kai.getSolutionMaxPriority") ?? undefined;
 }
 
-export function getConfigMaxDepth(): number {
-  return getConfigValue<number>("kai.getSolutionMaxDepth") || 0;
+// getConfigSolutionMaxEffort takes the enum from the config and turns it into
+// a number for use in a getSolution request. This value corresponds to
+// the maximum depth kai will go in attempting to provide a solution.
+export function getConfigSolutionMaxEffort(): number | undefined {
+  const effortLevels: Record<string, number | undefined> = {
+    Low: 0,
+    Medium: 1,
+    "Maximum (experimental)": undefined,
+  };
+
+  const effortSetting = getConfigValue<string>("kai.getSolutionMaxEffort");
+  return effortLevels[effortSetting as keyof typeof effortLevels];
 }
 
-export function getConfigMaxIterations(): number {
-  return getConfigValue<number>("kai.getSolutionMaxIterations") || 1;
+export function getConfigMaxLLMQueries(): number | undefined {
+  return getConfigValue<number | null>("kai.getSolutionMaxLLMQueries") ?? undefined;
 }
 
 export async function updateGetSolutionMaxPriority(value: number): Promise<void> {

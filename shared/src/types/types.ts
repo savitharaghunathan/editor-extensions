@@ -24,47 +24,38 @@ export interface Violation {
   category?: Category;
   labels?: string[];
   incidents: Incident[];
-  links?: Link[];
-  extras?: unknown;
   effort?: number;
+}
+
+export type EnhancedViolation = Violation & {
+  id: string;
+  rulesetName?: string;
+  violationName?: string;
+};
+// Keep EnhancedIncident type aligned with KAI backend type:
+// https://github.com/konveyor/kai/blob/82e195916be14eddd08c4e2bfb69afc0880edfcb/kai/analyzer_types.py#L89-L106
+export interface EnhancedIncident extends Incident {
+  violationId: string;
+  uri: string;
+  message: string;
+  severity?: Severity;
+  ruleset_name?: string;
+  ruleset_description?: string;
+  violation_name?: string;
+  violation_description?: string;
+  violation_category?: Category;
+  violation_labels?: string[];
 }
 
 export interface RuleSet {
   name?: string;
   description?: string;
   tags?: string[];
-  violations?: { [key: string]: Violation };
-  insights?: { [key: string]: Violation };
+  violations?: { [key: string]: EnhancedViolation };
+  insights?: { [key: string]: EnhancedViolation };
   errors?: { [key: string]: string };
   unmatched?: string[];
   skipped?: string[];
-}
-
-// KaiConfigModels type definition
-export interface KaiConfigModels {
-  provider: string;
-  args: Record<string, any>;
-  template?: string;
-  llamaHeader?: boolean;
-  llmRetries: number;
-  llmRetryDelay: number;
-}
-
-// KaiRpcApplicationConfig type definition
-export interface KaiInitializeParams {
-  rootPath: string;
-  modelProvider: KaiConfigModels;
-  kaiBackendUrl: string;
-
-  logLevel: string;
-  stderrLogLevel: string;
-  fileLogLevel?: string;
-  logDirPath?: string;
-
-  analyzerLspLspPath: string;
-  analyzerLspRpcPath: string;
-  analyzerLspRulesPath: string;
-  analyzerLspJavaBundlePath: string;
 }
 
 export interface GetSolutionParams {
@@ -108,22 +99,27 @@ export interface SolutionResponse {
 }
 
 export interface Scope {
-  incidents: Incident[];
-  violation?: Violation;
+  incidents: EnhancedIncident[];
+  violation?: EnhancedViolation;
 }
 
 export type Solution = GetSolutionResult | SolutionResponse;
 
 export interface ExtensionData {
+  workspaceRoot: string;
   localChanges: LocalChange[];
   ruleSets: RuleSet[];
+  enhancedIncidents: EnhancedIncident[];
   resolutionPanelData: any;
   isAnalyzing: boolean;
   isFetchingSolution: boolean;
   isStartingServer: boolean;
+  isInitializingServer: boolean;
   serverState: ServerState;
+  solutionState: SolutionState;
   solutionData?: Solution;
   solutionScope?: Scope;
+  solutionMessages: string[];
 }
 
 export type ServerState =
@@ -132,7 +128,16 @@ export type ServerState =
   | "configurationReady"
   | "starting"
   | "readyToInitialize"
+  | "initializing"
   | "startFailed"
   | "running"
   | "stopping"
   | "stopped";
+
+export type SolutionState =
+  | "none"
+  | "started"
+  | "sent"
+  | "received"
+  | "failedOnStart"
+  | "failedOnSending";

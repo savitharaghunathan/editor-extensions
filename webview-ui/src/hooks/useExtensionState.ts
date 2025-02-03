@@ -5,13 +5,18 @@ import { sendVscodeMessage as dispatch } from "../utils/vscodeMessaging";
 const defaultState: ExtensionData = {
   localChanges: [],
   ruleSets: [],
+  enhancedIncidents: [],
   resolutionPanelData: undefined,
   isAnalyzing: false,
   isFetchingSolution: false,
   isStartingServer: false,
+  isInitializingServer: false,
   solutionData: undefined,
   serverState: "initial",
   solutionScope: undefined,
+  workspaceRoot: "/",
+  solutionMessages: [],
+  solutionState: "none",
 };
 
 const windowState =

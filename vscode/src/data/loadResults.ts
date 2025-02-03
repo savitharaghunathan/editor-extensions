@@ -1,5 +1,7 @@
 import {
+  EnhancedIncident,
   GetSolutionResult,
+  Incident,
   LocalChange,
   RuleSet,
   Scope,
@@ -7,81 +9,27 @@ import {
 } from "@editor-extensions/shared";
 import { processIncidents } from "./analyzerResults";
 import { ExtensionState } from "src/extensionState";
-import { deleteAllDataFilesByPrefix, writeDataFile } from "./storage";
+import { writeDataFile } from "./storage";
 import { toLocalChanges, writeSolutionsToMemFs } from "./virtualStorage";
-import { Diagnostic, Uri, window } from "vscode";
+import { window } from "vscode";
 import {
   KONVEYOR_SCHEME,
-  MERGED_RULE_SET_DATA_FILE_PREFIX,
-  PARTIAL_RULE_SET_DATA_FILE_PREFIX,
   RULE_SET_DATA_FILE_PREFIX,
   SOLUTION_DATA_FILE_PREFIX,
 } from "../utilities";
 import { castDraft, Immutable } from "immer";
-import { mergeRuleSets } from "../analysis";
 
-const diagnosticsForPaths = (
-  filePaths: Uri[],
-  diagnostics: Immutable<[Uri, Diagnostic[]][]>,
-): [Uri, Diagnostic[]][] => {
-  const paths = new Set(filePaths.map((it) => it.toString()));
-  return diagnostics.filter(([uri]) => paths.has(uri.toString())) as [Uri, Diagnostic[]][];
-};
-
-const countDiagnosticPerPath = (diagnostics: [Uri, readonly Diagnostic[] | undefined][]) =>
-  diagnostics.reduce(
-    (acc, [uri, items]) => {
-      const path = uri.toString();
-      acc[path] = (acc[path] ?? 0) + (items?.length ?? 0);
-      return acc;
-    },
-    {} as { [key: string]: number },
-  );
-
-export const loadRuleSets = async (
-  state: ExtensionState,
-  receivedRuleSets: RuleSet[],
-  filePaths?: Uri[],
-) => {
-  const isPartial = !!filePaths;
-  if (isPartial) {
-    //partial analysis
-    await writeDataFile(receivedRuleSets, PARTIAL_RULE_SET_DATA_FILE_PREFIX);
-  } else {
-    //full analysis
-    await writeDataFile(receivedRuleSets, RULE_SET_DATA_FILE_PREFIX);
-    // cleanup
-    await deleteAllDataFilesByPrefix(PARTIAL_RULE_SET_DATA_FILE_PREFIX);
-    await deleteAllDataFilesByPrefix(MERGED_RULE_SET_DATA_FILE_PREFIX);
-  }
+export const loadRuleSets = async (state: ExtensionState, receivedRuleSets: RuleSet[]) => {
+  await writeDataFile(receivedRuleSets, RULE_SET_DATA_FILE_PREFIX);
+  const enhancedIncidents = enhanceIncidentsFromRuleSets(receivedRuleSets);
 
   const data = state.mutateData((draft) => {
-    draft.ruleSets = isPartial
-      ? mergeRuleSets(draft.ruleSets, receivedRuleSets, filePaths)
-      : receivedRuleSets;
+    draft.ruleSets = receivedRuleSets;
+    draft.enhancedIncidents = enhancedIncidents;
   });
   const diagnosticTuples = processIncidents(data.ruleSets);
-  if (isPartial) {
-    await writeDataFile(data.ruleSets, MERGED_RULE_SET_DATA_FILE_PREFIX);
-    console.log(
-      "Diagnostics on the selected paths before update",
-      countDiagnosticPerPath(filePaths.map((uri) => [uri, state.diagnosticCollection.get(uri)])),
-    );
-    const scopedChange = [
-      // remove existing markers by passing undefined first
-      ...filePaths.map((uri): [Uri, undefined] => [uri, undefined]),
-      // set new values
-      ...diagnosticsForPaths(filePaths, diagnosticTuples),
-    ];
-    state.diagnosticCollection.set(scopedChange);
-    console.log(
-      "Diagnostics on the selected paths after update",
-      countDiagnosticPerPath(filePaths.map((uri) => [uri, state.diagnosticCollection.get(uri)])),
-    );
-  } else {
-    state.diagnosticCollection.clear();
-    state.diagnosticCollection.set(diagnosticTuples);
-  }
+  state.diagnosticCollection.clear();
+  state.diagnosticCollection.set(diagnosticTuples);
 };
 
 export const cleanRuleSets = (state: ExtensionState) => {
@@ -126,3 +74,23 @@ const doLoadSolution = async (
     draft.solutionScope = castDraft(scope);
   });
 };
+
+function enhanceIncidentsFromRuleSets(ruleSets: RuleSet[]): EnhancedIncident[] {
+  return ruleSets.flatMap((ruleSet) =>
+    Object.entries(ruleSet.violations || {}).flatMap(([violationId, violation]) =>
+      violation.incidents.map((incident: Incident) => ({
+        ...incident,
+        ruleset_name: ruleSet.name,
+        ruleset_description: ruleSet.description,
+        violation_name: violationId,
+        violation_description: violation.description,
+        violation_category: violation.category,
+        violation_labels: violation.labels,
+        violationId,
+        uri: incident.uri,
+        message: incident.message,
+        severity: incident.severity,
+      })),
+    ),
+  );
+}
