@@ -1,4 +1,4 @@
-import { join, extname, basename } from "node:path";
+import { join, extname, basename, relative } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createHash } from "node:crypto";
@@ -234,23 +234,28 @@ export async function extractArtifact(filePath, tempDir, finalDir) {
 
   // Find and extract any nested zip files in the temp directory
   const zipFiles = await globby("*.zip", { cwd: tempDir });
-  for (const file of zipFiles) {
-    const nestedZipPath = join(tempDir, file);
-    console.log(`Extracting nested zip: ${nestedZipPath} to ${finalDir}`);
-
-    const unzipNestedArtifact = await unzipper.Open.file(nestedZipPath);
-    await unzipNestedArtifact.extract({ path: finalDir });
-
-    console.log(`Deleting nested zip: ${nestedZipPath}`);
-    await fs.unlink(nestedZipPath);
+  if (zipFiles.length > 0) {
+    for (const file of zipFiles) {
+      const nestedZipPath = join(tempDir, file);
+      console.log(`Extracting nested zip: ${nestedZipPath} to ${finalDir}`);
+      const unzipNestedArtifact = await unzipper.Open.file(nestedZipPath);
+      await unzipNestedArtifact.extract({ path: finalDir });
+      await fs.unlink(nestedZipPath);
+    }
+  } else {
+    // If no nested zip files were found, move all extracted files into finalDir.
+    const files = await globby(["**/*"], { cwd: tempDir, absolute: true });
+    for (const file of files) {
+      const relativePath = relative(tempDir, file);
+      const destPath = join(finalDir, relativePath);
+      await fs.move(file, destPath, { overwrite: true });
+    }
   }
 
   // Cleanup temporary directory
-  console.log(`Cleaning up temporary directory: ${tempDir}`);
   await fs.rm(tempDir, { recursive: true, force: true });
 
   // Cleanup the original zip file
-  console.log(`Deleting original zip file: ${filePath}`);
   await fs.unlink(filePath);
 
   console.log(`Extraction complete: ${filePath} -> ${finalDir}`);
@@ -318,9 +323,8 @@ export async function downloadWorkflowArtifacts({
   };
 
   for (const asset of assets) {
-    const { name } = asset;
+    const { name, platform, arch, chmod: shouldChmod } = asset;
     const artifact = artifactUrls.find((a) => a.name === name);
-
     if (!artifact) {
       console.warn(`Asset [${name}] was not found in the workflow artifacts.`);
       continue;
@@ -330,6 +334,16 @@ export async function downloadWorkflowArtifacts({
       console.group(yellow(name));
       console.log(`Processing artifact: ${name}`);
 
+      const finalDir =
+        platform && arch
+          ? join(targetDirectory, `${platform}-${arch}`)
+          : join(targetDirectory, name.replace(/\.zip$/, ""));
+
+      const tempDir = join(targetDirectory, "temp", name.replace(/\.zip$/, ""));
+      await fs.mkdirp(tempDir);
+      await fs.mkdirp(finalDir);
+
+      // Download the artifact zip
       const downloadedFilePath = await downloadArtifact(
         artifact.url,
         name,
@@ -337,18 +351,18 @@ export async function downloadWorkflowArtifacts({
         GITHUB_TOKEN,
       );
 
-      // Extract the artifact
-      const tempDir = join(targetDirectory, "temp");
-      const extractionDir = join(targetDirectory, name.replace(/\.zip$/, ""));
-      await extractArtifact(downloadedFilePath, tempDir, extractionDir);
+      // Extract the artifact (moves files from tempDir into finalDir)
+      await extractArtifact(downloadedFilePath, tempDir, finalDir);
 
-      for (const file of await globby(["*", "!*.zip"], { cwd: extractionDir, absolute: true })) {
-        chmodOwnerPlusX(file);
+      //set executable permission on extracted files
+      if (shouldChmod) {
+        for (const file of await globby(["*", "!*.zip"], { cwd: finalDir, absolute: true })) {
+          chmodOwnerPlusX(file);
+        }
       }
-
       metadata.assets.push({
         name,
-        extractionDir,
+        extractionDir: finalDir,
         downloadedAt: new Date().toISOString(),
       });
     } catch (error) {
@@ -361,4 +375,11 @@ export async function downloadWorkflowArtifacts({
 
   await fs.writeJson(metaFile, metadata, { spaces: 2 });
   console.log(`Metadata written to ${metaFile}`);
+
+  // Cleanup the parent "temp" folder if it exists.
+  const parentTempDir = join(targetDirectory, "temp");
+  if (await fs.pathExists(parentTempDir)) {
+    await fs.rm(parentTempDir, { recursive: true, force: true });
+    console.log(`Cleaned up temporary folder: ${parentTempDir}`);
+  }
 }
