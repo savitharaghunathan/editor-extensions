@@ -41,6 +41,7 @@ import { countIncidentsOnPaths } from "../analysis";
 import { KaiRpcApplicationConfig } from "./types";
 import { getModelProvider, ModelProvider } from "./modelProvider";
 import { tracer } from "./tracer";
+import { v4 as uuidv4 } from "uuid";
 
 export class AnalyzerClient {
   private kaiRpcServer: ChildProcessWithoutNullStreams | null = null;
@@ -149,12 +150,22 @@ export class AnalyzerClient {
       new rpc.StreamMessageReader(this.kaiRpcServer.stdout),
       new rpc.StreamMessageWriter(this.kaiRpcServer.stdin),
     );
+    
     if (getConfigLoggingTraceMessageConnection()) {
       this.rpcConnection.trace(
         rpc.Trace.Verbose,
         tracer(`${basename(this.kaiRpcServer.spawnfile)} message trace`),
       );
     }
+
+    this.rpcConnection.onNotification("my_progress", (params) => {
+      if (params.kind === "SimpleChatMessage") {
+        this.fireSolutionStateChange("sent", params.value.message);
+      } else {
+        this.fireSolutionStateChange("sent", JSON.stringify(params));
+      }
+    });
+
     this.rpcConnection.listen();
   }
 
@@ -536,12 +547,16 @@ export class AnalyzerClient {
     const maxIterations = getConfigMaxLLMQueries();
 
     try {
+      // generate a uuid for the request
+      const chatToken = uuidv4();
+
       const request = {
         file_path: "",
         incidents,
         max_priority: maxPriority,
         max_depth: maxDepth,
         max_iterations: maxIterations,
+        chat_token: chatToken,
       };
 
       this.outputChannel.appendLine(
@@ -549,6 +564,7 @@ export class AnalyzerClient {
       );
 
       this.fireSolutionStateChange("sent", "Waiting for the resolution...");
+
       const response: SolutionResponse = await this.rpcConnection!.sendRequest(
         "getCodeplanAgentSolution",
         request,
