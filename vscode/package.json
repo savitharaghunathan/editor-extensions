@@ -594,6 +594,13 @@
           "scope": "window",
           "order": 50
         },
+        "konveyor.kai.demoMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to run Kai in demo mode i.e. use cached LLM responses",
+          "scope": "window",
+          "order": 50
+        },
         "konveyor.analysis.incidentLimit": {
           "type": "number",
           "default": 10000,
@@ -678,9 +685,9 @@
           {
             "id": "configure-gen",
             "title": "Configure Generative AI",
-            "description": "Configure Generative AI for your project\n[Configure GenAI model settings file](command:konveyor.openModelProviderSettings)",
+            "description": "Configure Generative AI for your project\n[Configure GenAI model settings file](command:konveyor.modelProviderSettingsOpen)",
             "completionEvents": [
-              "onCommand:konveyor.openModelProviderSettings"
+              "onCommand:konveyor.modelProviderSettingsOpen"
             ],
             "media": {
               "markdown": "media/walkthroughs/gen-ai.md"
@@ -726,7 +733,7 @@
     "compile": "tsc && webpack --mode production",
     "dev": "npm run watch",
     "watch": "webpack --watch --mode development",
-    "test:local": "mocha --require ts-node/register src/**/__tests__/*test.ts",
+    "test:local": "mocha",
     "test": "npm run compile && npm run test:local && vscode-test"
   },
   "lint-staged": {
@@ -735,18 +742,14 @@
   },
   "devDependencies": {
     "@types/diff": "^6.0.0",
-    "@types/mocha": "^10.0.9",
     "@types/uuid": "^10.0.0",
     "@types/vscode": "^1.93.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
-    "expect": "^29.7.0",
-    "mocha": "^10.7.3",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
-    "ts-node": "10.9.2",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4"
   },
