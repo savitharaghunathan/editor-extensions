@@ -19,6 +19,7 @@ import "./resolutionsPage.css";
 import { IncidentTableGroup } from "../IncidentTable/IncidentTableGroup";
 import { SentMessage } from "./SentMessage";
 import { ReceivedMessage } from "./ReceivedMessage";
+import { ChatMessageComponent } from "./ChatMessageComponent";
 
 const ResolutionPage: React.FC = () => {
   const [state, dispatch] = useExtensionState();
@@ -27,7 +28,7 @@ const ResolutionPage: React.FC = () => {
     isFetchingSolution,
     solutionData: resolution,
     solutionScope,
-    solutionMessages,
+    chatMessages,
     solutionState,
     workspaceRoot,
   } = state;
@@ -104,9 +105,13 @@ const ResolutionPage: React.FC = () => {
           >
             {hasNothingToView && <ReceivedMessage>No resolutions available.</ReceivedMessage>}
             {isHistorySolution && <ReceivedMessage>Loaded last known resolution.</ReceivedMessage>}
-            {solutionMessages.map((msg) => (
-              <ReceivedMessage key={msg}>{msg}</ReceivedMessage>
+
+            {chatMessages.map((msg) => (
+              <ReceivedMessage key={msg.messageToken}>
+                <ChatMessageComponent message={msg} />
+              </ReceivedMessage>
             ))}
+
             {isFetchingSolution && <Spinner />}
 
             {hasResponse && (
@@ -122,7 +127,6 @@ const ResolutionPage: React.FC = () => {
             {hasEmptyResponse && !hasResponseWithErrors && (
               <ReceivedMessage>Received response contains no resolutions.</ReceivedMessage>
             )}
-
             {hasResponseWithErrors && (
               <>
                 <ReceivedMessage>Response contains errors:</ReceivedMessage>
@@ -135,6 +139,7 @@ const ResolutionPage: React.FC = () => {
                 </ReceivedMessage>
               </>
             )}
+
             {isResolved && !isFetchingSolution && (
               <ReceivedMessage>All resolutions have been applied.</ReceivedMessage>
             )}
