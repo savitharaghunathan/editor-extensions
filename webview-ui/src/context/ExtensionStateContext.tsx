@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, PropsWithChildren } from "react";
 import { ExtensionData, WebviewAction, WebviewActionType } from "@editor-extensions/shared";
 import { sendVscodeMessage as dispatch } from "../utils/vscodeMessaging";
 
@@ -24,10 +24,14 @@ const windowState =
     ? (window["konveyorInitialData"] as ExtensionData)
     : defaultState;
 
-export function useExtensionState(): [
-  ExtensionData,
-  (message: WebviewAction<WebviewActionType, unknown>) => void,
-] {
+type ExtensionStateContextType = {
+  state: ExtensionData;
+  dispatch: (message: WebviewAction<WebviewActionType, unknown>) => void;
+};
+
+const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined);
+
+export function ExtensionStateProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<ExtensionData>(windowState);
 
   useEffect(() => {
@@ -39,7 +43,19 @@ export function useExtensionState(): [
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  });
+  }, []);
 
-  return [state, dispatch];
+  return (
+    <ExtensionStateContext.Provider value={{ state, dispatch }}>
+      {children}
+    </ExtensionStateContext.Provider>
+  );
+}
+
+export function useExtensionStateContext(): ExtensionStateContextType {
+  const context = useContext(ExtensionStateContext);
+  if (context === undefined) {
+    throw new Error("useExtensionStateContext must be used within an ExtensionStateProvider");
+  }
+  return context;
 }
