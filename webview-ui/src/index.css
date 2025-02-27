@@ -30,7 +30,7 @@ body {
 }
 
 .pf-c-page__main-section {
-  height: calc(100vh - 76px); /* Adjust this value based on your header height */
+  height: calc(100vh - 76px);
   overflow-y: auto;
 }
 
@@ -53,4 +53,33 @@ body {
 .response-wrapper code {
   background-color: rgba(255, 255, 255, 0.5);
   color: brown;
+}
+
+.pf-chatbot__message-text {
+  word-break: break-word;
+}
+
+.pf-chatbot__message-text > details > summary {
+  cursor: pointer;
+}
+
+.pf-chatbot {
+  background-color: var(--vscode-editor-background) !important;
+}
+
+.pf-chatbot__content {
+  background-color: var(--vscode-editor-background) !important;
+}
+
+.pf-chatbot {
+  height: 100vh;
+}
+
+.pf-chatbot__messagebox {
+  width: 100%;
+  max-width: 100% !important; /* to ignore media queries */
+}
+
+.pf-chatbot__jump {
+  inset-inline-start: 95% !important;
 }
