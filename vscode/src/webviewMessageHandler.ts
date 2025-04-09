@@ -4,6 +4,7 @@ import {
   APPLY_FILE,
   DISCARD_FILE,
   GET_SOLUTION,
+  GET_SOLUTION_WITH_KONVEYOR_CONTEXT,
   LocalChange,
   OPEN_FILE,
   RUN_ANALYSIS,
@@ -14,6 +15,7 @@ import {
   WEBVIEW_READY,
   WebviewAction,
   WebviewActionType,
+  ScopeWithKonveyorContext,
 } from "@editor-extensions/shared";
 
 export function setupWebviewMessageListener(webview: vscode.Webview, _state: ExtensionState) {
@@ -48,6 +50,9 @@ const actions: {
       vscode.Uri.from(change.originalUri),
       true,
     );
+  },
+  async [GET_SOLUTION_WITH_KONVEYOR_CONTEXT]({ incident }: ScopeWithKonveyorContext) {
+    vscode.commands.executeCommand("konveyor.askContinue", incident);
   },
   // [REQUEST_QUICK_FIX]({uri,line}){
   // await handleRequestQuickFix(uri, line);
