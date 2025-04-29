@@ -1,7 +1,7 @@
 import { Uri } from "vscode";
 import { SolutionEffortLevel } from "../effort";
 
-export type WebviewType = "sidebar" | "resolution";
+export type WebviewType = "sidebar" | "resolution" | "profiles";
 
 export interface Incident {
   uri: string;
@@ -138,6 +138,8 @@ export interface ExtensionData {
   chatMessages: ChatMessage[];
   solutionEffort: SolutionEffortLevel;
   analysisConfig: AnalysisConfig;
+  profiles: AnalysisProfile[];
+  activeProfileId: string | null;
 }
 export type AnalysisConfig = {
   labelSelectorValid: boolean;
@@ -191,4 +193,12 @@ export interface GenAIConfigStatus {
   keyMissing: boolean;
   usingDefault: boolean;
   activeKey?: string;
+}
+export interface AnalysisProfile {
+  id: string;
+  name: string;
+  customRules: string[];
+  useDefaultRules: boolean;
+  labelSelector: string;
+  readOnly?: boolean;
 }
