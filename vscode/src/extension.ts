@@ -5,12 +5,12 @@ import { ExtensionState } from "./extensionState";
 import { ExtensionData } from "@editor-extensions/shared";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
-import { registerDiffView, KonveyorFileModel } from "./diffView";
+import { KonveyorFileModel, registerDiffView } from "./diffView";
 import { MemFS } from "./data";
 import { Immutable, produce } from "immer";
 import { registerAnalysisTrigger } from "./analysis";
 import { IssuesModel, registerIssueView } from "./issueView";
-import { ensurePaths, ExtensionPaths, paths } from "./paths";
+import { ExtensionPaths, ensurePaths, paths } from "./paths";
 import { copySampleProviderSettings } from "./utilities/fileUtils";
 import { getConfigSolutionMaxEffortLevel, updateAnalysisConfig } from "./utilities";
 import { getBundledProfiles } from "./utilities/profiles/bundledProfiles";
@@ -37,6 +37,8 @@ class VsCodeExtension {
         isFetchingSolution: false,
         isStartingServer: false,
         isInitializingServer: false,
+        isAnalysisScheduled: false,
+        isContinueInstalled: false,
         solutionData: undefined,
         serverState: "initial",
         solutionScope: undefined,
@@ -108,8 +110,16 @@ class VsCodeExtension {
       this.listeners.push(this.onDidChangeData(registerIssueView(this.state)));
       this.registerCommands();
       this.registerLanguageProviders();
+      this.checkContinueInstalled();
 
-      registerAnalysisTrigger(this.listeners);
+      // Listen for extension changes to update Continue installation status
+      this.listeners.push(
+        vscode.extensions.onDidChange(() => {
+          this.checkContinueInstalled();
+        }),
+      );
+
+      registerAnalysisTrigger(this.listeners, this.state);
 
       this.listeners.push(
         vscode.workspace.onDidSaveTextDocument((doc) => {
@@ -212,6 +222,13 @@ class VsCodeExtension {
         },
       ),
     );
+  }
+
+  private checkContinueInstalled(): void {
+    const continueExt = vscode.extensions.getExtension("Continue.continue");
+    this.state.mutateData((draft) => {
+      draft.isContinueInstalled = !!continueExt;
+    });
   }
 
   public async dispose() {
