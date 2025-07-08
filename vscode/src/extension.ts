@@ -55,6 +55,7 @@ class VsCodeExtension {
         chatMessages: [],
         solutionState: "none",
         solutionEffort: getConfigSolutionMaxEffortLevel(),
+        solutionServerEnabled: getConfigSolutionServerEnabled(),
         analysisConfig: {
           labelSelectorValid: false,
           providerConfigured: false,

@@ -1,6 +1,6 @@
 import "./styles.css";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   AlertGroup,
@@ -39,7 +39,13 @@ import {
   ToolbarItem,
 } from "@patternfly/react-core";
 
-import { openFile, startServer, runAnalysis, stopServer } from "../../hooks/actions";
+import {
+  openFile,
+  startServer,
+  runAnalysis,
+  stopServer,
+  getSuccessRate,
+} from "../../hooks/actions";
 import { useViolations } from "../../hooks/useViolations";
 import { useExtensionStateContext } from "../../context/ExtensionStateContext";
 import { WalkthroughDrawer } from "./WalkthroughDrawer/WalkthroughDrawer";
@@ -65,6 +71,7 @@ const AnalysisPage: React.FC = () => {
     profiles,
     activeProfileId,
     serverState,
+    solutionServerEnabled,
   } = state;
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -78,6 +85,12 @@ const AnalysisPage: React.FC = () => {
   const serverRunning = serverState === "running";
 
   const drawerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (enhancedIncidents.length > 0 && serverRunning) {
+      dispatch(getSuccessRate());
+    }
+  }, [enhancedIncidents.length, serverRunning, dispatch]);
 
   const handleIncidentSelect = (incident: Incident) => {
     setFocusedIncident(incident);
@@ -322,6 +335,7 @@ const AnalysisPage: React.FC = () => {
                           onIncidentSelect={handleIncidentSelect}
                           expandedViolations={expandedViolations}
                           setExpandedViolations={setExpandedViolations}
+                          solutionServerEnabled={solutionServerEnabled}
                         />
                       )}
                     </CardBody>

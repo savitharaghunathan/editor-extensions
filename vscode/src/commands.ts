@@ -115,6 +115,18 @@ const commandsMap: (state: ExtensionState) => {
         console.error("Could not restart the server", e);
       }
     },
+    "konveyor.restartSolutionServer": async () => {
+      const solutionServerClient = state.solutionServerClient;
+      try {
+        window.showInformationMessage("Restarting solution server...");
+        await solutionServerClient.disconnect();
+        await solutionServerClient.connect();
+        window.showInformationMessage("Solution server restarted successfully");
+      } catch (e) {
+        console.error("Could not restart the solution server", e);
+        window.showErrorMessage(`Failed to restart solution server: ${e}`);
+      }
+    },
     "konveyor.runAnalysis": async () => {
       console.log("run analysis command called");
       const analyzerClient = state.analyzerClient;
@@ -389,6 +401,47 @@ const commandsMap: (state: ExtensionState) => {
         });
 
         window.showErrorMessage(`Failed to generate solution: ${error.message}`);
+      }
+    },
+    "konveyor.getSuccessRate": async () => {
+      console.log("Getting success rate for incidents");
+
+      try {
+        if (!state.data.enhancedIncidents || state.data.enhancedIncidents.length === 0) {
+          console.log("No incidents to update");
+          return;
+        }
+
+        const currentIncidents = state.data.enhancedIncidents.map((incident) => ({
+          ...incident,
+          violation_labels: incident.violation_labels ? [...incident.violation_labels] : undefined,
+        }));
+        const updatedIncidents = await state.solutionServerClient.getSuccessRate(currentIncidents);
+
+        // Update the state with the enhanced incidents
+        state.mutateData((draft) => {
+          draft.enhancedIncidents = updatedIncidents;
+        });
+      } catch (error: any) {
+        console.error("Error getting success rate:", error);
+      }
+    },
+    "konveyor.changeApplied": async (clientId: string, path: string, finalContent: string) => {
+      console.log("File change applied:", path);
+
+      try {
+        await state.solutionServerClient.acceptFile(clientId, path, finalContent);
+      } catch (error: any) {
+        console.error("Error notifying solution server of file acceptance:", error);
+      }
+    },
+    "konveyor.changeDiscarded": async (clientId: string, path: string) => {
+      console.log("File change discarded:", path);
+
+      try {
+        await state.solutionServerClient.rejectFile(clientId, path);
+      } catch (error: any) {
+        console.error("Error notifying solution server of file rejection:", error);
       }
     },
     "konveyor.askContinue": async (incident: EnhancedIncident) => {
