@@ -179,14 +179,22 @@ export class AnalyzerClient {
     });
     this.analyzerRpcConnection.onRequest(
       "workspace/executeCommand",
-      (params: WorksapceCommandParams) => {
+      async (params: WorksapceCommandParams) => {
         this.outputChannel.appendLine(`Executing workspace command: ${params.command}`);
-        return vscode.commands
-          .executeCommand("java.execute.workspaceCommand", params.command, params.arguments![0])
-          .then((res) => {
-            this.outputChannel.appendLine(`Command execution result: ${JSON.stringify(res)}`);
-            return res;
-          });
+        this.outputChannel.appendLine(`Command arguments: ${JSON.stringify(params.arguments)}`);
+
+        try {
+          const result = await vscode.commands.executeCommand(
+            "java.execute.workspaceCommand",
+            params.command,
+            params.arguments![0],
+          );
+
+          this.outputChannel.appendLine(`Command execution result: ${JSON.stringify(result)}`);
+          return result;
+        } catch (error) {
+          this.outputChannel.appendLine(`[Java] Command execution error: ${error}`);
+        }
       },
     );
     this.analyzerRpcConnection.onError((e) => {
@@ -195,17 +203,52 @@ export class AnalyzerClient {
     this.analyzerRpcConnection.listen();
     this.analyzerRpcConnection.sendNotification("start", { type: "start" });
     this.fireServerStateChange("running");
+    await this.runHealthCheck();
+  }
+
+  protected async runHealthCheck(): Promise<void> {
+    if (!this.analyzerRpcConnection) {
+      this.outputChannel.appendLine("Analyzer RPC connection is not established");
+      return;
+    }
+    try {
+      const healthcheckResult = await vscode.commands.executeCommand(
+        "java.execute.workspaceCommand",
+        "java.project.getAll",
+      );
+      this.outputChannel.appendLine(
+        `Java Language Server Healthcheck result: ${JSON.stringify(healthcheckResult)}`,
+      );
+      if (
+        healthcheckResult === undefined ||
+        !Array.isArray(healthcheckResult) ||
+        healthcheckResult.length < 1
+      ) {
+        vscode.window.showErrorMessage(
+          "It appears that the Java Language Server is not running or the project configuration is not set up correctly. Analysis results may be degraded.",
+        );
+      }
+    } catch (error) {
+      this.outputChannel.appendLine(`Error running Java Language Server healthcheck: ${error}`);
+    }
   }
 
   protected async getSocket(pipeName: string): Promise<Socket> {
     const s = createConnection(pipeName);
     let ready = false;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY = 2000; // 2 seconds
+    let retryCount = 0;
+
     s.on("ready", () => {
       this.outputChannel.appendLine("got ready message");
       ready = true;
     });
-    while ((s.connecting || !s.readable) && !ready) {
-      await setTimeout(200);
+
+    while ((s.connecting || !s.readable) && !ready && retryCount < MAX_RETRIES) {
+      await setTimeout(RETRY_DELAY);
+      retryCount++;
+
       if (!s.connecting && s.readable) {
         break;
       }
@@ -213,10 +256,13 @@ export class AnalyzerClient {
         s.connect(pipeName);
       }
     }
+
     if (s.readable) {
       return s;
     } else {
-      throw Error("unable to connect");
+      throw Error(
+        "Unable to connect after multiple retries. Please check Java environment configuration.",
+      );
     }
   }
 
