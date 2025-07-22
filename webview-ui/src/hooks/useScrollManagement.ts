@@ -1,8 +1,13 @@
 import { useRef, useCallback, useEffect } from "react";
-import { ChatMessage } from "@editor-extensions/shared";
+import { ChatMessage, LocalChange } from "@editor-extensions/shared";
 import { MessageBoxHandle } from "@patternfly/chatbot";
 
-export const useScrollManagement = (chatMessages: ChatMessage[], isFetchingSolution: boolean) => {
+export const useScrollManagement = (
+  chatMessages: ChatMessage[],
+  isFetchingSolution: boolean,
+  localChanges?: LocalChange[],
+  isAgentMode?: boolean,
+) => {
   const messageBoxRef = useRef<MessageBoxHandle | null>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
   const lastScrollTime = useRef<number>(0);
@@ -10,6 +15,7 @@ export const useScrollManagement = (chatMessages: ChatMessage[], isFetchingSolut
   const lastUserScrollTime = useRef<number>(0);
   const isHandlingLayoutChange = useRef(false); // Track if we're handling layout changes
   const lastContentHeight = useRef<number>(0); // Track content height changes
+  const lastLocalChangesCount = useRef<number>(0); // Track local changes count
 
   const getMessageBoxElement = useCallback(() => {
     const selectors = [
@@ -167,6 +173,23 @@ export const useScrollManagement = (chatMessages: ChatMessage[], isFetchingSolut
     }
   }, [chatMessages, scrollToBottom, isNearBottom, getMessageBoxElement]);
 
+  // Handle local changes updates (for non-agent mode)
+  useEffect(() => {
+    if (!isAgentMode && Array.isArray(localChanges)) {
+      const currentChangesCount = localChanges.length;
+      const changesCountChanged = currentChangesCount !== lastLocalChangesCount.current;
+
+      if (changesCountChanged) {
+        lastLocalChangesCount.current = currentChangesCount;
+
+        // Auto-scroll when local changes are added/removed in non-agent mode
+        if (!userHasScrolledUp.current) {
+          setTimeout(() => scrollToBottom(false), 150);
+        }
+      }
+    }
+  }, [localChanges, isAgentMode, scrollToBottom]);
+
   // Set up scroll listener with better layout change detection
   useEffect(() => {
     const messageBox = getMessageBoxElement();
@@ -247,5 +270,13 @@ export const useScrollManagement = (chatMessages: ChatMessage[], isFetchingSolut
     };
   }, []);
 
-  return { messageBoxRef, scrollToBottom };
+  const triggerScrollOnUserAction = useCallback(() => {
+    const timeoutId = setTimeout(() => {
+      scrollToBottom(false);
+    }, 150); // Small delay to ensure DOM updates are complete
+
+    return () => clearTimeout(timeoutId);
+  }, [scrollToBottom]);
+
+  return { messageBoxRef, triggerScrollOnUserAction };
 };
