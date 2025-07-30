@@ -1,9 +1,13 @@
 import { parse } from "yaml";
+import * as pathlib from "path";
+import * as winston from "winston";
 import { workspace, Uri } from "vscode";
 import { KaiModelProvider } from "@editor-extensions/agentic";
 
 import { ParsedModelConfig } from "./types";
 import { ModelCreators } from "./modelCreator";
+import { getCacheForModelProvider } from "./utils";
+import { getTraceEnabled, getConfigKaiDemoMode } from "../utilities/configuration";
 import { BaseModelProvider, ModelProviders, runModelHealthCheck } from "./modelProvider";
 
 export async function parseModelConfig(yamlUri: Uri): Promise<ParsedModelConfig> {
@@ -33,6 +37,9 @@ export async function parseModelConfig(yamlUri: Uri): Promise<ParsedModelConfig>
 
 export async function getModelProviderFromConfig(
   parsedConfig: ParsedModelConfig,
+  logger: winston.Logger,
+  cacheDir: string | undefined = undefined,
+  traceDir: string | undefined = undefined,
 ): Promise<KaiModelProvider> {
   if (!ModelCreators[parsedConfig.config.provider]) {
     throw new Error("Unsupported model provider");
@@ -65,5 +72,22 @@ export async function getModelProviderFromConfig(
 
   const capabilities = await runModelHealthCheck(streamingModel, nonStreamingModel);
 
-  return new BaseModelProvider(streamingModel, nonStreamingModel, capabilities);
+  const subDir = (dir: string): string =>
+    pathlib.join(
+      dir,
+      parsedConfig.config.provider,
+      (parsedConfig.config.args.model ?? parsedConfig.config.args.model_id ?? "").replace(
+        /[^a-zA-Z0-9_-]/g,
+        "_",
+      ),
+    );
+
+  return new BaseModelProvider(
+    streamingModel,
+    nonStreamingModel,
+    capabilities,
+    logger,
+    getCacheForModelProvider(getConfigKaiDemoMode(), logger, subDir(cacheDir ?? "")),
+    getCacheForModelProvider(getTraceEnabled(), logger, subDir(traceDir ?? ""), true),
+  );
 }

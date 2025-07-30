@@ -4,10 +4,14 @@ import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider
 import { registerAllCommands as registerAllCommands } from "./commands";
 import { ExtensionState } from "./extensionState";
 import { ConfigError, createConfigError, ExtensionData } from "@editor-extensions/shared";
-import { KaiInteractiveWorkflow, SimpleInMemoryCache } from "@editor-extensions/agentic";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
-import { SolutionServerClient } from "@editor-extensions/agentic";
+import {
+  KaiInteractiveWorkflow,
+  InMemoryCacheWithRevisions,
+  SolutionServerClient,
+  FileBasedResponseCache,
+} from "@editor-extensions/agentic";
 import { KonveyorFileModel, registerDiffView } from "./diffView";
 import { MemFS } from "./data";
 import { Immutable, produce } from "immer";
@@ -22,6 +26,10 @@ import {
   getConfigSolutionServerUrl,
   updateConfigErrors,
   getConfigAgentMode,
+  getCacheDir,
+  getTraceDir,
+  getTraceEnabled,
+  getConfigKaiDemoMode,
 } from "./utilities";
 import { getBundledProfiles } from "./utilities/profiles/bundledProfiles";
 import { getUserProfiles } from "./utilities/profiles/profileService";
@@ -104,7 +112,7 @@ class VsCodeExtension {
       memFs: new MemFS(),
       fileModel: new KonveyorFileModel(),
       issueModel: new IssuesModel(),
-      kaiFsCache: new SimpleInMemoryCache(),
+      kaiFsCache: new InMemoryCacheWithRevisions(true),
       taskManager,
       logger,
       get data() {
@@ -132,6 +140,14 @@ class VsCodeExtension {
               ...config,
               fsCache: this.state.kaiFsCache,
               solutionServerClient: this.state.solutionServerClient,
+              toolCache: new FileBasedResponseCache(
+                getConfigKaiDemoMode(), // cache enabled only when demo mode is on
+                (args) =>
+                  typeof args === "string" ? args : JSON.stringify(args, Object.keys(args).sort()),
+                (args) => (typeof args === "string" ? args : JSON.parse(args)),
+                getCacheDir(this.state.data.workspaceRoot),
+                this.state.logger,
+              ),
             });
             this.state.workflowManager.isInitialized = true;
           } catch (error) {
@@ -422,7 +438,12 @@ class VsCodeExtension {
       return configError;
     }
     try {
-      this.state.modelProvider = await getModelProviderFromConfig(modelConfig);
+      this.state.modelProvider = await getModelProviderFromConfig(
+        modelConfig,
+        this.state.logger,
+        getConfigKaiDemoMode() ? getCacheDir(this.data.workspaceRoot) : undefined,
+        getTraceEnabled() ? getTraceDir(this.data.workspaceRoot) : undefined,
+      );
     } catch (err) {
       this.state.logger.error("Error running model health check:", err);
       const configError = createConfigError.providerConnnectionFailed();

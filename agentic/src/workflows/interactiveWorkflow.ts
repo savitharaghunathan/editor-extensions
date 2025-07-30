@@ -1,3 +1,5 @@
+import { Logger } from "winston";
+import { createHash } from "crypto";
 import { EnhancedIncident } from "@editor-extensions/shared";
 import { AIMessage, AIMessageChunk } from "@langchain/core/messages";
 import { Annotation, type MessagesAnnotation } from "@langchain/langgraph";
@@ -26,7 +28,6 @@ import { AnalysisIssueFix } from "../nodes/analysisIssueFix";
 import { JavaDependencyTools } from "../tools/javaDependency";
 import { DiagnosticsIssueFix } from "../nodes/diagnosticsIssueFix";
 import { AgentName, DiagnosticsOrchestratorState } from "../schemas/diagnosticsIssueFix";
-import { Logger } from "winston";
 
 export interface KaiInteractiveWorkflowInput extends KaiWorkflowInput {
   programmingLanguage: string;
@@ -101,7 +102,7 @@ export class KaiInteractiveWorkflow
   async init(options: KaiWorkflowInitOptions): Promise<void> {
     const workspaceDir = fileUriToPath(options.workspaceDir);
     const fsTools = new FileSystemTools(workspaceDir, options.fsCache, this.logger);
-    const depTools = new JavaDependencyTools();
+    const depTools = new JavaDependencyTools(options.toolCache, this.logger);
 
     const analysisIssueFixNodes = new AnalysisIssueFix(
       options.modelProvider,
@@ -207,24 +208,33 @@ export class KaiInteractiveWorkflow
     }
 
     const incidentsByUris: Array<{ uri: string; incidents: EnhancedIncident[] }> =
-      input.incidents?.reduce(
-        (acc, incident) => {
-          const existingEntry = acc.find(
-            (entry: { uri: string; incidents: EnhancedIncident[] }) =>
-              entry.uri === fileUriToPath(incident.uri),
-          );
-          if (existingEntry) {
-            existingEntry.incidents.push(incident);
-          } else {
-            acc.push({
-              uri: fileUriToPath(incident.uri),
-              incidents: [incident],
-            });
-          }
-          return acc;
-        },
-        [] as Array<{ uri: string; incidents: EnhancedIncident[] }>,
-      ) ?? [];
+      input.incidents
+        ?.reduce(
+          (acc, incident) => {
+            const existingEntry = acc.find(
+              (entry: { uri: string; incidents: EnhancedIncident[] }) =>
+                entry.uri === fileUriToPath(incident.uri),
+            );
+            if (existingEntry) {
+              existingEntry.incidents.push(incident);
+            } else {
+              acc.push({
+                uri: fileUriToPath(incident.uri),
+                incidents: [incident],
+              });
+            }
+            return acc;
+          },
+          [] as Array<{ uri: string; incidents: EnhancedIncident[] }>,
+        )
+        ?.sort((a, b) => a.uri.localeCompare(b.uri))
+        ?.map((entry) => ({
+          ...entry,
+          incidents: entry.incidents.sort((a, b) => a.uri.localeCompare(b.uri)),
+        })) ?? [];
+
+    const cacheSubDir = this.createIncidentsHash(incidentsByUris);
+    this.logger.debug(`Using cache directory '${cacheSubDir}' for this run`);
 
     const graphInput: typeof AnalysisIssueFixOrchestratorState.State = {
       inputIncidentsByUris: incidentsByUris,
@@ -232,6 +242,7 @@ export class KaiInteractiveWorkflow
       migrationHint: input.migrationHint,
       programmingLanguage: input.programmingLanguage,
       enableAdditionalInformation: input.enableAdditionalInformation ?? false,
+      cacheSubDir,
       // internal fields
       inputFileContent: undefined,
       inputFileUri: undefined,
@@ -245,6 +256,7 @@ export class KaiInteractiveWorkflow
       outputUpdatedFileUri: undefined,
       outputHints: [],
       outputAllResponses: [],
+      iterationCount: 0,
     };
 
     const runResponse: KaiWorkflowResponse = {
@@ -307,6 +319,7 @@ export class KaiInteractiveWorkflow
       plannerInputAgents: ["generalFix", "javaDependency"],
       plannerInputBackground: analysisFixOutputState.summarizedHistory,
       enableDiagnosticsFixes: input.enableDiagnostics ?? false,
+      cacheSubDir,
       // internal fields
       inputDiagnosticsTasks: undefined,
       currentAgent: undefined,
@@ -318,6 +331,7 @@ export class KaiInteractiveWorkflow
       plannerOutputNominatedAgents: undefined,
       plannerInputTasks: undefined,
       shouldEnd: false,
+      iterationCount: analysisFixOutputState.iterationCount,
     };
 
     await this.followUpInteractiveWorkflow?.invoke(interactiveWorkflowInput, {
@@ -452,5 +466,37 @@ export class KaiInteractiveWorkflow
         return returnNode;
       }
     };
+  }
+
+  // used as a name for the subdirectory in the cache to store the results of current run
+  private createIncidentsHash(
+    incidentsByUris: Array<{ uri: string; incidents: EnhancedIncident[] }>,
+  ): string {
+    const dataString = incidentsByUris
+      .map(({ uri, incidents }) => {
+        const incidentsData = incidents
+          .map((incident) => ({
+            lineNumber: incident.lineNumber,
+            uri: incident.uri,
+            message: incident.message,
+            violationId: incident.violationId,
+            ruleset_name: incident.ruleset_name,
+            violation_name: incident.violation_name,
+            violation_category: incident.violation_category,
+          }))
+          .sort((a, b) => {
+            const lineCompare = (a.lineNumber || 0) - (b.lineNumber || 0);
+            return lineCompare !== 0 ? lineCompare : a.violationId.localeCompare(b.violationId);
+          });
+
+        return {
+          uri,
+          incidents: incidentsData,
+        };
+      })
+      .sort((a, b) => a.uri.localeCompare(b.uri))
+      .map((item) => JSON.stringify(item))
+      .join("|");
+    return createHash("sha256").update(dataString).digest("hex").substring(0, 16);
   }
 }

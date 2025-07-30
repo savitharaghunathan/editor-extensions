@@ -244,13 +244,15 @@ const commandsMap: (
         try {
           const agentModeEnabled = getConfigAgentMode();
 
-          await workflow.run({
+          const input: KaiInteractiveWorkflowInput = {
             incidents,
             migrationHint: profileName,
             programmingLanguage: "Java",
             enableAdditionalInformation: agentModeEnabled,
             enableDiagnostics: getConfigSuperAgentMode(),
-          } as KaiInteractiveWorkflowInput);
+          };
+
+          await workflow.run(input);
 
           // Wait for all message processing to complete before proceeding
           // This is critical for non-agentic mode where ModifiedFile messages
@@ -421,12 +423,14 @@ const commandsMap: (
           draft.chatMessages.push({
             messageToken: `m${Date.now()}`,
             kind: ChatMessageType.String,
-            value: { message: `Error: ${error.message}` },
+            value: { message: `Error: ${error instanceof Error ? error.message : String(error)}` },
             timestamp: new Date().toISOString(),
           });
         });
 
-        window.showErrorMessage(`Failed to generate solution: ${error.message}`);
+        window.showErrorMessage(
+          `Failed to generate solution: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     },
     "konveyor.getSuccessRate": async () => {
