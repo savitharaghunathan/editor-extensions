@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import hljs from "highlight.js";
-import {
-  detectLanguage,
-  isLanguageSupported,
-} from "../../../../../shared/src/utils/languageMapping";
+import { detectLanguage, isLanguageSupported } from "@editor-extensions/shared";
 import { applyTheme, watchThemeChanges } from "../../../utils/syntaxHighlightingTheme";
 
 // Re-enabling CSS import to test if this breaks re-rendering
@@ -137,7 +134,7 @@ export const EnhancedDiffRenderer: React.FC<EnhancedDiffRendererProps> = ({
         setHighlightCache((cache) => new Map(cache).set(cacheKey, result));
 
         return result;
-      } catch (error) {
+      } catch {
         // Fallback with auto-detection
         try {
           const autoHighlighted = hljs.highlightAuto(line.content);
@@ -166,10 +163,10 @@ export const EnhancedDiffRenderer: React.FC<EnhancedDiffRendererProps> = ({
     if (!shouldVirtualize) {
       return { start: 0, end: parsedLines.length };
     }
-    
+
     const start = Math.max(0, Math.min(visibleRange.start, parsedLines.length - 1));
     const end = Math.max(start + 1, Math.min(visibleRange.end, parsedLines.length));
-    
+
     return { start, end };
   }, [shouldVirtualize, visibleRange, parsedLines.length]);
 
@@ -181,14 +178,14 @@ export const EnhancedDiffRenderer: React.FC<EnhancedDiffRendererProps> = ({
       }
 
       const scrollTop = event.currentTarget.scrollTop;
-      
+
       // Skip if scroll position hasn't changed significantly
       if (Math.abs(scrollTop - lastScrollTopRef.current) < lineHeight / 2) {
         return;
       }
-      
+
       lastScrollTopRef.current = scrollTop;
-      
+
       // Throttle scroll updates to prevent excessive re-renders
       if (scrollThrottleRef.current) {
         return;
@@ -201,7 +198,7 @@ export const EnhancedDiffRenderer: React.FC<EnhancedDiffRendererProps> = ({
         // Only update if the range has changed significantly
         const currentStart = visibleRange.start;
         const currentEnd = visibleRange.end;
-        
+
         if (Math.abs(start - currentStart) > 5 || Math.abs(end - currentEnd) > 5) {
           setVisibleRange({ start: Math.max(0, start - 10), end }); // Increased buffer
         }
@@ -251,10 +248,20 @@ export const EnhancedDiffRenderer: React.FC<EnhancedDiffRendererProps> = ({
         offsetY,
         totalHeight,
         maxHeight,
-        lineHeight
+        lineHeight,
       });
     }
-  }, [shouldVirtualize, visibleRange, validVisibleRange, visibleLines.length, offsetY, totalHeight, maxHeight, lineHeight, parsedLines.length]);
+  }, [
+    shouldVirtualize,
+    visibleRange,
+    validVisibleRange,
+    visibleLines.length,
+    offsetY,
+    totalHeight,
+    maxHeight,
+    lineHeight,
+    parsedLines.length,
+  ]);
 
   // Render a single diff line
   const renderLine = useCallback(
@@ -315,11 +322,11 @@ export const EnhancedDiffRenderer: React.FC<EnhancedDiffRendererProps> = ({
         onScroll={handleScroll}
       >
         {shouldVirtualize && (
-          <div 
-            style={{ 
-              height: totalHeight, 
+          <div
+            style={{
+              height: totalHeight,
               position: "relative",
-              width: "100%"
+              width: "100%",
             }}
           >
             <div
