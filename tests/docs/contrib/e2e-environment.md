@@ -64,14 +64,14 @@ yours.
 
 Additionally, you can directly pass the env variables.
 
-| KEY                    | DESCRIPTION                                                                                                         |
-|------------------------|---------------------------------------------------------------------------------------------------------------------|
-| VSCODE_EXECUTABLE_PATH | Path to executable vscode                                                                                           |
-| VSIX_FILE_PATH         | Path to the extension in vsix format                                                                                |
-| VSIX_DOWNLOAD_URL      | (Optional) URL to get vsix from (only used if VSIX_FILE_PATH is not defined)                                        |
-| OPENAI_API_KEY         | OPENAI API KEY FOR GenAI provider                                                                                   |
-| KAI_QE_S3_BUCKET_NAME  | (Optional) AWS S3 bucket name (only needed if running evaluation)                                                   |
-| PARASOL_API_KEY        | (Optional) API key for MaaS provider (Only used if working with https://maas.apps.prod.rhoai.rh-aiservices-bu.com/) |
+| KEY                    | DESCRIPTION                                                                                                                                                                                                                                                |
+|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| VSCODE_EXECUTABLE_PATH | Path to executable vscode                                                                                                                                                                                                                                  |
+| VSIX_FILE_PATH         | (Optional) Path to the extension in vsix format. <br/>If this property and VSIX_DOWNLOAD_URL are not set, the tests will run using the local extension under development (launches VS Code with `--extensionDevelopmentPath` and `--enable-proposed-api`). |
+| VSIX_DOWNLOAD_URL      | (Optional) URL to get vsix from (only used if VSIX_FILE_PATH is not defined)                                                                                                                                                                               |
+| OPENAI_API_KEY         | OPENAI API KEY FOR GenAI provider                                                                                                                                                                                                                          |
+| KAI_QE_S3_BUCKET_NAME  | (Optional) AWS S3 bucket name (only needed if running evaluation)                                                                                                                                                                                          |
+| PARASOL_API_KEY        | (Optional) API key for MaaS provider (Only used if working with https://maas.apps.prod.rhoai.rh-aiservices-bu.com/)                                                                                                                                        |
 
 ## Running Tests
 

@@ -1,12 +1,7 @@
-import { _electron as electron, FrameLocator } from 'playwright';
+import { _electron as electron, FrameLocator, Page } from 'playwright';
 import { execSync } from 'child_process';
 import { downloadFile } from '../utilities/download.utils';
-import {
-  cleanupRepo,
-  generateRandomString,
-  getOSInfo,
-  getVscodeExecutablePath,
-} from '../utilities/utils';
+import { cleanupRepo, generateRandomString, getOSInfo } from '../utilities/utils';
 import * as path from 'path';
 import { LeftBarItems } from '../enums/left-bar-items.enum';
 import { expect } from '@playwright/test';
@@ -14,9 +9,20 @@ import { Application } from './application.pages';
 import { DEFAULT_PROVIDER } from '../fixtures/provider-configs.fixture';
 import { KAIViews } from '../enums/views.enum';
 import fs from 'fs';
+import { TEST_DATA_DIR } from '../utilities/consts';
 
 export class VSCode extends Application {
   public static async open(repoUrl?: string, repoDir?: string) {
+    /**
+     * user-data-dir is passed to force opening a new instance avoiding the process to couple with an existing vscode instance
+     * so Playwright doesn't detect that the process has finished
+     */
+    const args = [
+      '--disable-workspace-trust',
+      '--skip-welcome',
+      `--user-data-dir=${TEST_DATA_DIR}`,
+    ];
+
     try {
       if (repoUrl) {
         if (repoDir) {
@@ -29,10 +35,10 @@ export class VSCode extends Application {
       throw new Error('Failed to clone the repository');
     }
 
-    const args = ['--disable-workspace-trust', '--skip-welcome'];
     if (repoDir) {
       args.push(path.resolve(repoDir));
     }
+
     let executablePath = process.env.VSCODE_EXECUTABLE_PATH;
     if (!executablePath) {
       if (getOSInfo() === 'linux') {
@@ -41,10 +47,22 @@ export class VSCode extends Application {
         throw new Error('VSCODE_EXECUTABLE_PATH env variable not provided');
       }
     }
+
+    if (!process.env.VSIX_FILE_PATH && !process.env.VSIX_DOWNLOAD_URL) {
+      args.push(
+        `--extensionDevelopmentPath=${path.resolve(__dirname, '../../../vscode')}`,
+        '--enable-proposed-api=konveyor.konveyor-ai'
+      );
+      console.log('Running in DEV mode...');
+    }
+
+    console.log(`Code command: ${executablePath} ${args.join(' ')}`);
+
     const vscodeApp = await electron.launch({
       executablePath: executablePath,
       args,
     });
+    await vscodeApp.firstWindow();
 
     const window = await vscodeApp.firstWindow({ timeout: 60000 });
     console.log('VSCode opened');
@@ -57,7 +75,10 @@ export class VSCode extends Application {
    */
   public static async init(repoDir?: string): Promise<VSCode> {
     try {
-      await VSCode.installExtension();
+      if (process.env.VSIX_FILE_PATH || process.env.VSIX_DOWNLOAD_URL) {
+        await VSCode.installExtension();
+      }
+
       return repoDir ? VSCode.open(repoDir) : VSCode.open();
     } catch (error) {
       console.error('Error launching VSCode:', error);
@@ -67,11 +88,7 @@ export class VSCode extends Application {
 
   private static async installExtension(): Promise<void> {
     try {
-      const installedExtensions = execSync('code --list-extensions', {
-        encoding: 'utf-8',
-      });
-
-      if (installedExtensions.includes('konveyor.konveyor-ai')) {
+      if (VSCode.isExtensionInstalled('konveyor.konveyor-ai')) {
         console.log(`Extension already installed`);
         return;
       }
@@ -84,6 +101,8 @@ export class VSCode extends Application {
         console.log(`vsix downloaded from ${process.env.VSIX_DOWNLOAD_URL}`);
         extensionPath = 'extension.vsix';
         await downloadFile(process.env.VSIX_DOWNLOAD_URL, extensionPath);
+      } else {
+        throw new Error(`Extension path or url not found: ${extensionPath}`);
       }
 
       execSync(`code --install-extension "${extensionPath}"`, {
@@ -127,10 +146,21 @@ export class VSCode extends Application {
     const window = this.getWindow();
 
     const navLi = window.locator(`a[aria-label^="${name}"]`).locator('..');
-    await expect(navLi).toBeVisible();
-    if ((await navLi.getAttribute('aria-expanded')) === 'false') {
-      await navLi.click();
+
+    if (await navLi.isVisible()) {
+      if ((await navLi.getAttribute('aria-expanded')) === 'false') {
+        await navLi.click();
+      }
+      return;
     }
+
+    const moreButton = window.getByRole('button', { name: LeftBarItems.AdditionalViews });
+    await expect(moreButton).toBeVisible();
+    await moreButton.click();
+
+    const menuBtn = window.locator(`a.action-menu-item span[aria-label^="${name}"]`);
+    await expect(menuBtn).toBeVisible();
+    await menuBtn.click({ delay: 500 });
   }
 
   public async openAnalysisView(): Promise<void> {
@@ -241,7 +271,6 @@ export class VSCode extends Application {
 
   public async deleteProfile(profileName: string) {
     await this.executeQuickCommand('Konveyor: Manage Analysis Profile');
-    // await this.getWindow().pause();
     const manageProfileView = await this.getView(KAIViews.manageProfiles);
     const profileList = manageProfileView.getByRole('list', {
       name: 'Profile list',
@@ -263,5 +292,13 @@ export class VSCode extends Application {
       console.log('Error deleting profile:', error);
       throw error;
     }
+  }
+
+  public static isExtensionInstalled(extension: string) {
+    const installedExtensions = execSync('code --list-extensions', {
+      encoding: 'utf-8',
+    });
+
+    return installedExtensions.includes(extension);
   }
 }
