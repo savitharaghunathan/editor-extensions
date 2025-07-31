@@ -18,9 +18,12 @@ import { ExtensionData, WebviewType } from "@editor-extensions/shared";
 import { Immutable } from "immer";
 import jsesc from "jsesc";
 
+const DEV_SERVER_ROOT = "http://localhost:5173/out/webview";
+
 export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
   public static readonly SIDEBAR_VIEW_TYPE = "konveyor.konveyorAnalysisView";
   public static readonly RESOLUTION_VIEW_TYPE = "konveyor.konveyorResolutionView";
+  public static readonly PROFILES_VIEW_TYPE = "konveyor.konveyorProfilesView";
 
   private static instance: KonveyorGUIWebviewViewProvider;
   private _disposables: Disposable[] = [];
@@ -47,16 +50,36 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
     this._view = webviewView;
     this.initializeWebview(webviewView.webview, this._extensionState.data);
   }
-
   public createWebviewPanel(): void {
     if (this._panel) {
       return;
     }
+
+    const panelOptions: { viewType: string; title: string } = (() => {
+      switch (this._viewType) {
+        case "sidebar":
+          return {
+            viewType: KonveyorGUIWebviewViewProvider.SIDEBAR_VIEW_TYPE,
+            title: "Konveyor Analysis View",
+          };
+        case "resolution":
+          return {
+            viewType: KonveyorGUIWebviewViewProvider.RESOLUTION_VIEW_TYPE,
+            title: "Resolution Details",
+          };
+        case "profiles":
+          return {
+            viewType: KonveyorGUIWebviewViewProvider.PROFILES_VIEW_TYPE,
+            title: "Manage Profiles",
+          };
+        default:
+          throw new Error(`Unsupported view type: ${this._viewType}`);
+      }
+    })();
+
     this._panel = window.createWebviewPanel(
-      this.isAnalysisView()
-        ? KonveyorGUIWebviewViewProvider.SIDEBAR_VIEW_TYPE
-        : KonveyorGUIWebviewViewProvider.RESOLUTION_VIEW_TYPE,
-      this.isAnalysisView() ? "Konveyor Analysis View" : "Resolution Details",
+      panelOptions.viewType,
+      panelOptions.title,
       ViewColumn.One,
       {
         enableScripts: true,
@@ -102,9 +125,9 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
 
     let assetsUri: Uri;
     if (isProd) {
-      assetsUri = Uri.joinPath(extensionUri, "out", "webview", "assets");
+      assetsUri = Uri.joinPath(extensionUri, "out", "webview");
     } else {
-      assetsUri = Uri.parse("http://localhost:5173");
+      assetsUri = Uri.parse(DEV_SERVER_ROOT);
     }
 
     webview.options = {
@@ -129,7 +152,7 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
         <meta http-equiv="Content-Security-Policy" content="${this._getContentSecurityPolicy(nonce, webview)}">
         <link rel="stylesheet" type="text/css" href="${stylesUri}">
         <title>Konveyor IDE Extension</title>
-         <script nonce="${nonce}">
+        <script nonce="${nonce}">
           const vscode = acquireVsCodeApi();
           window.vscode = vscode;
           window.viewType = "${this._viewType}";
@@ -149,34 +172,48 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
     </html>`;
   }
 
+  /**
+   * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+   */
   private _getContentSecurityPolicy(nonce: string, webview: Webview): string {
     const isProd = process.env.NODE_ENV === "production";
-    const localServerUrl = "localhost:5173";
-    return [
-      `default-src 'none';`,
-      `script-src 'unsafe-eval' https://* ${
-        isProd ? `'nonce-${nonce}'` : `http://${localServerUrl} 'nonce-${nonce}' 'unsafe-inline'`
-      };`,
-      `style-src ${webview.cspSource} 'unsafe-inline' https://* ${isProd ? "" : `http://${localServerUrl}`};`,
+    const localServerUrl = "localhost:*";
 
-      `font-src ${webview.cspSource};`,
-      `connect-src https://* ${isProd ? `` : `ws://${localServerUrl} http://${localServerUrl}`};`,
-      `img-src https: data:;`,
-    ].join(" ");
+    if (isProd) {
+      // Production CSP - stricter, only allow local resources
+      return [
+        `default-src 'none'`,
+        `script-src 'nonce-${nonce}' 'unsafe-eval'`,
+        `style-src ${webview.cspSource} 'unsafe-inline'`,
+        `font-src ${webview.cspSource} data:`,
+        `img-src ${webview.cspSource} data: https:`,
+        `connect-src ${webview.cspSource}`,
+      ].join("; ");
+    } else {
+      // Development CSP - allow local dev server
+      return [
+        `default-src 'none'`,
+        `script-src 'nonce-${nonce}' 'unsafe-eval' ${webview.cspSource} http://${localServerUrl}`,
+        `style-src ${webview.cspSource} 'unsafe-inline' http://${localServerUrl}`,
+        `font-src ${webview.cspSource} data: http://${localServerUrl}`,
+        `img-src ${webview.cspSource} data: https: http://${localServerUrl}`,
+        `connect-src ${webview.cspSource} http://${localServerUrl} ws://${localServerUrl}`,
+      ].join("; ");
+    }
   }
 
   private _getScriptUri(webview: Webview): Uri {
     const isProd = process.env.NODE_ENV === "production";
     return isProd
       ? this._getUri(webview, ["assets", "index.js"])
-      : Uri.parse("http://localhost:5173/src/index.tsx");
+      : Uri.parse(`${DEV_SERVER_ROOT}/src/index.tsx`);
   }
 
   private _getStylesUri(webview: Webview): Uri {
     const isProd = process.env.NODE_ENV === "production";
     return isProd
       ? this._getUri(webview, ["assets", "index.css"])
-      : Uri.parse("http://localhost:5173/src/index.css");
+      : Uri.parse(`${DEV_SERVER_ROOT}/src/index.css`);
   }
 
   private _getReactRefreshScript(nonce: string): string {
@@ -186,7 +223,7 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
       ? ""
       : `
       <script type="module" nonce="${nonce}">
-        import RefreshRuntime from "http://localhost:5173/@react-refresh"
+        import RefreshRuntime from "${DEV_SERVER_ROOT}/@react-refresh"
         RefreshRuntime.injectIntoGlobalHook(window)
         window.$RefreshReg$ = () => {}
         window.$RefreshSig$ = () => (type) => type
@@ -207,9 +244,8 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
         ),
       );
     } else {
-      const localServerUrl = "http://localhost:5173";
       const assetPath = pathList.join("/");
-      return Uri.parse(`${localServerUrl}/${assetPath}`);
+      return Uri.parse(`${DEV_SERVER_ROOT}/${assetPath}`);
     }
   }
 

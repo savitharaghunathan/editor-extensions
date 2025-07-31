@@ -15,14 +15,14 @@ export async function fetchGitHubReleaseMetadata(octokit, releaseTag) {
 }
 
 /**
- * Fetch the commit sha for a GitHub repository release.
+ * Fetch the commit sha for a GitHub repository tag.
  *
  * @param {Octokit} octokit Octokit configured for auth and the target owner/repo
- * @param {string} releaseTag The release's tag
+ * @param {string} tag The commit's tag
  */
-export async function fetchGitHubReleaseTagSha(octokit, releaseTag) {
+export async function fetchGitHubTagSha(octokit, tag) {
   const response = await octokit.request("GET /repos/{owner}/{repo}/commits/{tag}", {
-    tag: releaseTag,
+    tag,
   });
 
   return await response.data.sha;
@@ -60,6 +60,50 @@ export async function fetchFirstSuccessfulRun(octokit, branch, workflowFile) {
   if (workflowRun.status !== "completed" || workflowRun.conclusion !== "success") {
     console.error(
       `Workflow run ${workflowRun.id} for HEAD commit on ${branch} is not successful. status: ${workflowRun.status}, conclusion: ${workflowRun.conclusion}`,
+    );
+    return {};
+  }
+
+  return {
+    workflowRunId: workflowRun.id,
+    workflowRunUrl: workflowRun.url,
+    headSha: headSha,
+  };
+}
+
+/**
+ * Fetch the most recent successful workflow run for a PR.
+ *
+ * @param {Octokit} octokit Octokit configured for auth and the target owner/repo
+ * @param {string} pr Number of the pull request to check
+ * @param {string} workflowFile Name of the workflow file to check
+ * @returns {Promise<{runId: string, headSha: string} | null>} - Object containing the workflow run ID and head SHA, or null if not found.
+ */
+export async function fetchFirstSuccessfulRunForPr(octokit, pr, workflowFile) {
+  // Get PR information to get the head SHA
+  const prInfo = await octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+    pull_number: pr,
+  });
+  const headSha = prInfo.data.head.sha;
+
+  const workflowRunInfo = await octokit.request(
+    "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs{?head_sha,per_page}",
+    {
+      workflow_id: workflowFile,
+      head_sha: headSha,
+      per_page: 1,
+    },
+  );
+
+  if (workflowRunInfo.data.workflow_runs.length === 0) {
+    console.error(`No workflow runs found for PR #${pr} commit ${headSha}.`);
+    return {};
+  }
+
+  const workflowRun = workflowRunInfo.data.workflow_runs[0];
+  if (workflowRun.status !== "completed" || workflowRun.conclusion !== "success") {
+    console.error(
+      `Workflow run ${workflowRun.id} for PR #${pr} commit ${headSha} is not successful. status: ${workflowRun.status}, conclusion: ${workflowRun.conclusion}`,
     );
     return {};
   }

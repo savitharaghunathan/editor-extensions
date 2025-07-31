@@ -5,7 +5,7 @@
   "author": "Konveyor",
   "icon": "resources/konveyor-icon-color.png",
   "license": "Apache-2.0",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "main": "./out/extension.js",
   "publisher": "konveyor",
   "repository": {
@@ -30,14 +30,29 @@
   "engines": {
     "vscode": "^1.93.0",
     "node": ">=22.9.0",
-    "npm": "^9.5.0 || ^10.5.0"
+    "npm": "^9.5.0 || >=10.5.2"
   },
+  "enabledApiProposals": [
+    "contribDiffEditorGutterToolBarMenus"
+  ],
+  "extensionDependencies": [
+    "redhat.java"
+  ],
   "activationEvents": [
     "onFileSystem:konveyorMemFs",
     "onFileSystem:konveyorReadOnly"
   ],
   "contributes": {
+    "javaExtensions": [
+      "../downloaded_assets/jdtls-bundles/bundle.jar"
+    ],
     "commands": [
+      {
+        "command": "konveyor.openProfilesPanel",
+        "title": "Manage Analysis Profile",
+        "category": "Konveyor",
+        "icon": "$(settings-gear)"
+      },
       {
         "command": "konveyor.modelProviderSettingsOpen",
         "title": "Open the GenAI model provider configuration file",
@@ -141,6 +156,12 @@
         "icon": "$(restart)"
       },
       {
+        "command": "konveyor.restartSolutionServer",
+        "title": "Restart Solution Server",
+        "category": "Konveyor",
+        "icon": "$(restart)"
+      },
+      {
         "command": "konveyor.runAnalysis",
         "title": "Run Analysis",
         "category": "Konveyor",
@@ -176,12 +197,6 @@
         "title": "Apply All",
         "category": "Konveyor",
         "icon": "$(check)"
-      },
-      {
-        "command": "konveyor.reloadLastResolutions",
-        "title": "Reload Last Resolutions",
-        "icon": "$(history)",
-        "category": "Konveyor"
       },
       {
         "command": "konveyor.discardAll",
@@ -309,11 +324,6 @@
         {
           "command": "konveyor.discardAll",
           "group": "navigation@2",
-          "when": "view == konveyor.diffView"
-        },
-        {
-          "command": "konveyor.reloadLastResolutions",
-          "group": "navigation@3",
           "when": "view == konveyor.diffView"
         }
       ],
@@ -450,15 +460,16 @@
         "konveyor.logLevel": {
           "type": "string",
           "enum": [
-            "TRACE",
-            "DEBUG",
-            "INFO",
-            "WARN",
-            "ERROR",
-            "CRITICAL"
+            "error",
+            "warn",
+            "info",
+            "http",
+            "verbose",
+            "debug",
+            "silly"
           ],
-          "default": "DEBUG",
-          "description": "Logging level used for the server binaries",
+          "default": "debug",
+          "description": "Logging level used for the extension",
           "scope": "window",
           "order": 0
         },
@@ -476,34 +487,24 @@
           "scope": "resource",
           "order": 1
         },
-        "konveyor.analysis.useDefaultRulesets": {
-          "type": "boolean",
-          "default": true,
-          "description": "Should the rulesets bundled in the extension be used?",
+        "konveyor.solutionServer.url": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "URL for the MCP solution server endpoint.",
           "scope": "window",
           "order": 3
         },
-        "konveyor.analysis.customRules": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [],
-          "description": "Array of filepaths to additional rules for analysis.",
+        "konveyor.solutionServer.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the MCP solution server client.",
           "scope": "window",
           "order": 4
-        },
-        "konveyor.analysis.labelSelector": {
-          "type": "string",
-          "default": "discovery",
-          "description": "Expression to select incidents based on custom variables. Example: (!package=io.konveyor.demo.config-utils)",
-          "scope": "window",
-          "order": 5
         },
         "konveyor.analysis.analyzeOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Should analysis of file be run when it is saved?",
+          "description": "Should analysis of file be run when it is saved? (Automatically enabled when Agent Mode is active)",
           "scope": "window",
           "order": 6
         },
@@ -518,31 +519,28 @@
           "scope": "window",
           "order": 7
         },
-        "konveyor.kai.providerName": {
-          "type": "string",
-          "default": "ChatIBMGenAI",
-          "description": "Kai provider name (Note: Kai configurations will be moved to an extension specific file.",
+        "konveyor.kai.agentMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "(Experimental) Use agentic flow when getting solution. Requires automatic analysis.",
           "scope": "window",
-          "order": 30
+          "order": 6
         },
-        "konveyor.kai.providerArgs": {
-          "type": "object",
-          "default": {
-            "model_id": "meta-llama/llama-3-1-70b-instruct",
-            "parameters": {
-              "max_new_tokens": 2048
-            }
-          },
-          "description": "Kai provider arguments (Note: Kai configurations will be moved to an extension specific file.",
+        "konveyor.kai.superAgentMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "(Experimental) Use agentic flow when getting solution.",
           "scope": "window",
-          "order": 30
+          "order": 6
         },
-        "konveyor.kai.genAiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Generative AI Key (Note: Kai configurations will be moved to an extension specific file.",
+        "konveyor.kai.excludedDiagnosticSources": {
+          "type": "array",
+          "default": [
+            "trunk"
+          ],
+          "description": "List of diagnostic sources to exclude from agentic workflow.",
           "scope": "window",
-          "order": 30
+          "order": 8
         },
         "konveyor.kai.getSolutionMaxPriority": {
           "type": [
@@ -559,6 +557,7 @@
           "enum": [
             "Low",
             "Medium",
+            "High",
             "Maximum (experimental)"
           ],
           "default": "Low",
@@ -587,12 +586,29 @@
           "scope": "window",
           "order": 50
         },
+        "konveyor.kai.traceDir": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Path to a directory containing traces of LLM interactions",
+          "scope": "window",
+          "order": 50
+        },
         "konveyor.kai.traceEnabled": {
           "type": "boolean",
           "default": false,
           "description": "Whether to create traces of the communication with the model",
           "scope": "window",
           "order": 50
+        },
+        "konveyor.debug.webview": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging for webview message handling",
+          "scope": "window",
+          "order": 51
         },
         "konveyor.kai.demoMode": {
           "type": "boolean",
@@ -635,76 +651,9 @@
           "description": "Should the analyzer analyze project dependencies?",
           "scope": "window",
           "order": 99
-        },
-        "konveyor.logging.traceMessageConnection": {
-          "type": "boolean",
-          "default": false,
-          "description": "Trace the jsonrpc calls between the extension and the kai server?",
-          "order": 100
         }
       }
     },
-    "walkthroughs": [
-      {
-        "id": "konveyor-setup",
-        "title": "Set up Konveyor",
-        "description": "Configure Konveyor for your project",
-        "steps": [
-          {
-            "id": "override-analyzer",
-            "title": "Override Analyzer Binary",
-            "description": "Specify a custom path for the analyzer binary\n[Override Analyzer Binary](command:konveyor.overrideAnalyzerBinaries)\n[Override Rpc Server Binary](command:konveyor.overrideKaiRpcServerBinaries)",
-            "completionEvents": [],
-            "media": {
-              "markdown": "media/walkthroughs/override-analyzer.md"
-            }
-          },
-          {
-            "id": "configure-custom-rules",
-            "title": "Configure Custom Rules",
-            "description": "Add custom rules for analysis\n[Configure Custom Rules](command:konveyor.configureCustomRules)",
-            "completionEvents": [
-              "onCommand:konveyor.configureCustomRules"
-            ],
-            "media": {
-              "markdown": "media/walkthroughs/custom-rules.md"
-            }
-          },
-          {
-            "id": "configure-analysis-arguments",
-            "title": "Configure Analysis Arguments",
-            "description": "Set up analysis arguments such as sources, targets, and label selector\n[Configure Analysis Sources and Targets](command:konveyor.configureSourcesTargets)\n[Configure Analysis Label Selector](command:konveyor.configureLabelSelector)",
-            "completionEvents": [
-              "onCommand:konveyor.configureSourcesTargets",
-              "onCommand:konveyor.configureLabelSelector"
-            ],
-            "media": {
-              "markdown": "media/walkthroughs/analysis-arguments.md"
-            }
-          },
-          {
-            "id": "configure-gen",
-            "title": "Configure Generative AI",
-            "description": "Configure Generative AI for your project\n[Configure GenAI model settings file](command:konveyor.modelProviderSettingsOpen)",
-            "completionEvents": [
-              "onCommand:konveyor.modelProviderSettingsOpen"
-            ],
-            "media": {
-              "markdown": "media/walkthroughs/gen-ai.md"
-            }
-          },
-          {
-            "id": "start-server",
-            "title": "Start Server",
-            "description": "Start the analyzer\n[Start Analyzer](command:konveyor.startServer)",
-            "completionEvents": [],
-            "media": {
-              "markdown": "media/walkthroughs/start-server.md"
-            }
-          }
-        ]
-      }
-    ],
     "keybindings": [
       {
         "command": "konveyor.diffView.next",
@@ -720,21 +669,21 @@
     "kai": "../downloaded_assets/kai",
     "fernFlowerPath": "../assets/fernflower/fernflower.jar",
     "jdtls": "../downloaded_assets/jdt.ls-1.38.0",
-    "jdtlsBundles": "../assets/jdtls-bundles",
-    "openSourceLabelsFile": "../assets/opensource-labels-file/maven.default.index",
-    "rulesets": "../assets/rulesets"
+    "jdtlsBundles": "../downloaded_assets/jdtls-bundles",
+    "openSourceLabelsFile": "../downloaded_assets/opensource-labels-file/maven.default.index",
+    "rulesets": "../downloaded_assets/rulesets"
   },
   "scripts": {
     "clean": "rimraf out",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "prebuild": "npm run clean",
-    "build": "npm run compile",
-    "compile": "tsc && webpack --mode production",
-    "dev": "npm run watch",
-    "watch": "webpack --watch --mode development",
-    "test:local": "mocha",
-    "test": "npm run compile && npm run test:local && vscode-test"
+    "build": "webpack --mode production",
+    "dev": "webpack --watch --mode development",
+    "pretest": "npm run build",
+    "test": "npm run test:unit-tests && npm run test:integration",
+    "test:unit-tests": "mocha",
+    "test:integration": "vscode-test"
   },
   "lint-staged": {
     "*.{js,cjs,mjs,ts,cts,mts}": "eslint --fix",
@@ -742,6 +691,7 @@
   },
   "devDependencies": {
     "@types/diff": "^6.0.0",
+    "@types/jsesc": "^3.0.3",
     "@types/uuid": "^10.0.0",
     "@types/vscode": "^1.93.0",
     "@vscode/test-cli": "^0.0.10",
@@ -754,8 +704,12 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@types/jsesc": "^3.0.3",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@types/mustache": "^4.2.5",
     "diff": "^7.0.0",
-    "jsesc": "^3.1.0"
+    "jsesc": "^3.1.0",
+    "mustache": "^4.2.0",
+    "winston": "^3.17.0",
+    "winston-transport-vscode": "^0.1.0"
   }
 }

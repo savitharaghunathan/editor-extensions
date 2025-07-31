@@ -23,6 +23,7 @@ await copy({
         packageJson.dependencies = undefined;
         packageJson.devDependencies = undefined;
         packageJson["lint-staged"] = undefined;
+        packageJson.contributes.javaExtensions = ["./assets/jdtls-bundles/bundle.jar"];
 
         packageJson.includedAssetPaths = {
           kai: "./assets/kai",
@@ -61,10 +62,25 @@ await copy({
       dest: "dist/out/webview/",
     },
 
-    // seed assets - rulesets, jdtls bundles, fernflower
+    // seed assets - rulesets
     {
-      src: "assets/**/*",
-      dest: "dist/",
+      context: "downloaded_assets/rulesets",
+      src: ["**/*"],
+      dest: "dist/assets/rulesets",
+    },
+
+    // seed assets - jdtls bundles
+    {
+      context: "downloaded_assets/jdtls-bundles",
+      src: ["**/*.jar"],
+      dest: "dist/assets/jdtls-bundles",
+    },
+
+    // seed assets - opensource-labels-file
+    {
+      context: "downloaded_assets/opensource-labels-file",
+      src: ["*"],
+      dest: "dist/assets/opensource-labels-file",
     },
 
     // seed assets - jdt.ls v1.38.0
@@ -79,6 +95,13 @@ await copy({
       context: "downloaded_assets/kai",
       src: ["*/kai*", "!**/*.zip"],
       dest: "dist/assets/kai",
+    },
+
+    // include the collect-assets metadata
+    {
+      context: "downloaded_assets",
+      src: "collect-assets-meta.json",
+      dest: "dist/assets",
     },
   ],
 });

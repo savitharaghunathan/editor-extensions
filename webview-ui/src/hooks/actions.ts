@@ -3,6 +3,8 @@ import {
   ExtensionData,
   LocalChange,
   Scope,
+  ScopeWithKonveyorContext,
+  SolutionEffortLevel,
   WebviewAction,
   WebviewActionType,
 } from "@editor-extensions/shared";
@@ -36,9 +38,17 @@ export const cancelSolution = (): WebviewAction<WebviewActionType, unknown> => (
 
 export const getSolution = (
   incidents: EnhancedIncident[],
+  effort: SolutionEffortLevel,
 ): WebviewAction<WebviewActionType, Scope> => ({
   type: "GET_SOLUTION",
-  payload: { incidents },
+  payload: { incidents, effort },
+});
+
+export const getSolutionWithKonveyorContext = (
+  incident: EnhancedIncident,
+): WebviewAction<WebviewActionType, ScopeWithKonveyorContext> => ({
+  type: "GET_SOLUTION_WITH_KONVEYOR_CONTEXT",
+  payload: { incident },
 });
 
 export const openFile = (
@@ -54,14 +64,57 @@ export const viewFix = (change: LocalChange): WebviewAction<WebviewActionType, L
   payload: change,
 });
 
-export const applyFile = (change: LocalChange): WebviewAction<WebviewActionType, LocalChange> => ({
+export interface ApplyFilePayload {
+  path: string;
+  messageToken?: string;
+  content?: string;
+}
+
+export const applyFile = (
+  payload: ApplyFilePayload,
+): WebviewAction<WebviewActionType, ApplyFilePayload> => ({
   type: "APPLY_FILE",
-  payload: change,
+  payload,
 });
 
+export interface DiscardFilePayload {
+  path: string;
+  messageToken?: string;
+}
+
 export const discardFile = (
-  change: LocalChange,
-): WebviewAction<WebviewActionType, LocalChange> => ({
+  payload: LocalChange | DiscardFilePayload,
+): WebviewAction<WebviewActionType, LocalChange | DiscardFilePayload> => ({
   type: "DISCARD_FILE",
-  payload: change,
+  payload,
+});
+
+export const configureLabelSelector = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "CONFIGURE_LABEL_SELECTOR",
+  payload: {}, // no payload needed here, but could pass data if needed
+});
+
+export const configureSourcesTargets = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "CONFIGURE_SOURCES_TARGETS",
+  payload: {},
+});
+
+export const overrideAnalyzerBinaries = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "OVERRIDE_ANALYZER_BINARIES",
+  payload: {},
+});
+
+export const overrideKaiRpcServerBinaries = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "OVERRIDE_RPC_SERVER_BINARIES",
+  payload: {},
+});
+
+export const configureModelProviderSettings = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "OPEN_GENAI_SETTINGS",
+  payload: {},
+});
+
+export const getSuccessRate = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "GET_SUCCESS_RATE",
+  payload: {},
 });
