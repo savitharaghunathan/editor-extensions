@@ -64,6 +64,21 @@ export const getConfigAgentMode = (): boolean => getConfigValue<boolean>("kai.ag
 export const getExcludedDiagnosticSources = (): string[] =>
   getConfigValue<string[]>("kai.excludedDiagnosticSources") ?? [];
 
+/**
+ * Get all configuration values for keys defined in the package.json file. Used in debugging.
+ * @returns A record of all configuration values.
+ */
+export function getAllConfigurationValues(): Record<string, any> {
+  const config = vscode.workspace.getConfiguration(KONVEYOR_CONFIG_KEY);
+  const result: Record<string, any> = {};
+  for (const key of Object.keys(config)) {
+    if (!key.startsWith("inspect") && !key.startsWith("update")) {
+      result[key] = config.get(key);
+    }
+  }
+  return result;
+}
+
 export const updateSolutionServerUrl = async (value: string | undefined): Promise<void> => {
   await updateConfigValue("solutionServer.url", value, vscode.ConfigurationTarget.Workspace);
 };
@@ -172,7 +187,7 @@ export function updateActiveProfileValidity(draft: ExtensionData, assetRulesetPa
   }
 }
 
-function getWorkspaceRelativePath(
+export function getWorkspaceRelativePath(
   path: string | undefined,
   workspaceRoot: string | undefined,
 ): string | undefined {
