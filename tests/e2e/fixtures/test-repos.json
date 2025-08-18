@@ -12,5 +12,13 @@
     "branch": "main",
     "sources": [],
     "targets": ["openjdk17"]
+  },
+  "inventory_management": {
+    "repoUrl": "https://github.com/savitharaghunathan/inventory_management",
+    "repoName": "inventory_management",
+    "branch": "partial",
+    "sources": [],
+    "targets": ["openjdk21"],
+    "customRulesFolder": "inventory_management/rules"
   }
 }
