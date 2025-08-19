@@ -44,9 +44,6 @@ test.describe(`Solution server test`, () => {
       );
     }
 
-    // Wait for VS Code to fully load before creating profile
-    await vsCode.getWindow().waitForTimeout(5000);
-
     // Create profile with sources, targets, and custom rules from repo info
     const customRulesPath = path.join(process.cwd(), 'inventory_management', 'rules');
 
@@ -153,10 +150,10 @@ test.describe(`Solution server test`, () => {
       // Wait for the resolution view to appear
       const resolutionView = await vsCode.getView(KAIViews.resolutionDetails);
 
-      // Wait for solution generation to complete - look for specific UI elements that indicate solution is ready
+      // Wait for solution generation to complete
       let acceptButton = null;
       let attempts = 0;
-      const maxAttempts = 30; // Try for up to 5 minutes (30 * 10 seconds)
+      const maxAttempts = 30;
 
       while (attempts < maxAttempts) {
         try {
@@ -168,17 +165,7 @@ test.describe(`Solution server test`, () => {
           // Button not found yet, continue waiting
         }
 
-        // Also check for reject button as an alternative
-        try {
-          const rejectButton = resolutionView.locator('button[aria-label="Reject all changes"]');
-          if (await rejectButton.isVisible()) {
-            acceptButton = rejectButton; // Use this as our reference
-            break;
-          }
-        } catch (error) {
-          // Button not found yet, continue waiting
-        }
-
+        // Wait for solution generation to complete
         await vsCode.getWindow().waitForTimeout(10000);
         attempts++;
       }
@@ -245,9 +232,6 @@ test.describe(`Solution server test`, () => {
       );
     }
 
-    // Wait for VSCode to stabilize after loading EHR app
-    await vsCode.getWindow().waitForTimeout(5000);
-
     // Create profile with custom rules for EHR app
     const ehrCustomRulesPath = path.join(process.cwd(), 'ehr_viewer', 'rules');
 
@@ -275,7 +259,6 @@ test.describe(`Solution server test`, () => {
     // Restart solution server and wait for it to stabilize
     try {
       await vsCode.executeQuickCommand('Konveyor: Restart Solution Server');
-      await vsCode.getWindow().waitForTimeout(5000); // Wait for restart
       console.log('Successfully restarted solution server');
     } catch (error) {
       throw new Error(`Failed to restart solution server: ${error}`);
