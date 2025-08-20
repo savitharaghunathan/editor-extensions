@@ -691,7 +691,7 @@ test.describe.serial('Solution Server Workflow', () => {
     const beforeSolution = await helper.captureSolutionServerMetrics(mcpClient);
     helper.logger.info(`Pre-solution hint ID: ${beforeSolution.bestHint.hint_id}`);
 
-    // Apply fix to EHR app to test if solution server uses learned hints
+    // Apply fix to EHR app to test if solution server uses  hints
     const fixApplied = await helper.applyAuditLoggerFix(vsCode, 'EHR Viewer');
     expect(fixApplied).toBe(true);
 
@@ -699,14 +699,14 @@ test.describe.serial('Solution Server Workflow', () => {
     const afterSolution = await helper.captureSolutionServerMetrics(mcpClient);
     helper.logger.info(`Post-solution hint ID: ${afterSolution.bestHint.hint_id}`);
 
-    // Validate that solution server used the learned hints
+    // Validate that solution server used hints
     expect(afterSolution.successRate.accepted_solutions).toBeGreaterThan(
       beforeSolution.successRate.accepted_solutions
     );
-    helper.logger.success('Solution server successfully applied learned hints in EHR app');
+    helper.logger.success('Solution server successfully applied hint in EHR app');
 
     // Log final workflow completion
-    helper.logger.success('Complete solution server workflow validated - hint learning confirmed');
+    helper.logger.success('Complete solution server workflow validated');
     helper.logger.info(
       `Final metrics - Total accepted: ${afterSolution.successRate.accepted_solutions}, ` +
         `Latest hint ID: ${afterSolution.bestHint.hint_id}`
