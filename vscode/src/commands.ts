@@ -144,6 +144,13 @@ const commandsMap: (
         return;
       }
 
+      // Check if GenAI is disabled
+      if (state.data.configErrors.some((e) => e.type === "genai-disabled")) {
+        logger.info("GenAI disabled, cannot get solution");
+        window.showErrorMessage("GenAI functionality is disabled.");
+        return;
+      }
+
       // Read agent mode from configuration instead of parameter
       const agentMode = getConfigAgentMode();
       logger.info("Get solution command called", { incidents, agentMode });
@@ -544,12 +551,12 @@ const commandsMap: (
         openLabel: "Select Analyzer Binary",
         filters: isWindows
           ? {
-            "Executable Files": ["exe"],
-            "All Files": ["*"],
-          }
+              "Executable Files": ["exe"],
+              "All Files": ["*"],
+            }
           : {
-            "All Files": ["*"],
-          },
+              "All Files": ["*"],
+            },
       };
 
       const fileUri = await window.showOpenDialog(options);
