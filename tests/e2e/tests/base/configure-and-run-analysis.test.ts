@@ -1,10 +1,10 @@
 import * as pathlib from 'path';
+import { expect, test } from '../../fixtures/test-repo-fixture';
+import { VSCode } from '../../pages/vscode.page';
+import { OPENAI_GPT4O_PROVIDER } from '../../fixtures/provider-configs.fixture';
 import * as fs from 'fs/promises';
-import { expect, test } from '../fixtures/test-repo-fixture';
-import { VSCode } from '../pages/vscode.page';
-import { OPENAI_GPT4O_PROVIDER } from '../fixtures/provider-configs.fixture';
-import { generateRandomString } from '../utilities/utils';
-import { extractZip } from '../utilities/archive';
+import { generateRandomString } from '../../utilities/utils';
+import { extractZip } from '../../utilities/archive';
 
 test.describe(`Configure extension and run analysis`, () => {
   let vscodeApp: VSCode;

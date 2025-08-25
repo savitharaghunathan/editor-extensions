@@ -188,7 +188,6 @@ There are a few common ways to get your token:
   as the download source uses this as the source for the bearer token.
 
 - Open the [Tokens page](https://github.com/settings/tokens) on GitHub and generate a new token.
-
   - For new tokens, only the **Public repositories** "Read-only access to public repositories" access is needed.
 
   - For classic tokens, only the **public_repo** scope is needed.

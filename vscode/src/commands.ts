@@ -2,6 +2,7 @@ import AdmZip from "adm-zip";
 import * as pathlib from "path";
 import * as fs from "fs/promises";
 import { ExtensionState } from "./extensionState";
+import * as vscode from "vscode";
 import {
   window,
   commands,
@@ -13,18 +14,11 @@ import {
   TextEditorRevealType,
   Position,
 } from "vscode";
-import {
-  cleanRuleSets,
-  loadResultsFromDataFolder,
-  loadRuleSets,
-  loadSolution,
-  loadStaticResults,
-} from "./data";
+import { cleanRuleSets, loadResultsFromDataFolder, loadRuleSets, loadStaticResults } from "./data";
 import {
   EnhancedIncident,
   RuleSet,
   Scope,
-  Solution,
   ChatMessageType,
   GetSolutionResult,
 } from "@editor-extensions/shared";
@@ -32,17 +26,6 @@ import {
   type KaiWorkflowMessage,
   type KaiInteractiveWorkflowInput,
 } from "@editor-extensions/agentic";
-import {
-  applyAll,
-  discardAll,
-  copyDiff,
-  copyPath,
-  FileItem,
-  viewFix,
-  applyFile,
-  discardFile,
-  applyBlock,
-} from "./diffView";
 import {
   updateAnalyzerPath,
   getConfigAgentMode,
@@ -63,6 +46,7 @@ import { createPatch, createTwoFilesPatch } from "diff";
 import { v4 as uuidv4 } from "uuid";
 import { processMessage } from "./utilities/ModifiedFiles/processMessage";
 import { MessageQueueManager } from "./utilities/ModifiedFiles/queueManager";
+import { VerticalDiffCodeLensProvider } from "./diff/verticalDiffCodeLens";
 import type { Logger } from "winston";
 import { parseModelConfig, getProviderConfigKeys } from "./modelProvider/config";
 
@@ -139,7 +123,7 @@ const commandsMap: (
       analyzerClient.runAnalysis();
     },
     "konveyor.getSolution": async (incidents: EnhancedIncident[]) => {
-      if (state.data.isFetchingSolution || state.data.solutionState !== "none") {
+      if (state.data.isFetchingSolution) {
         logger.info("Solution already being fetched");
         window.showWarningMessage("Solution already being fetched");
         return;
@@ -170,9 +154,8 @@ const commandsMap: (
         draft.isFetchingSolution = true;
         draft.solutionState = "started";
         draft.solutionScope = scope;
-        draft.chatMessages = []; // Clear previous chat messages (agentic mode)
-        draft.localChanges = []; // Clear previous local changes (non-agentic mode)
-        draft.solutionData = undefined; // Clear previous solution data
+        draft.chatMessages = []; // Clear previous chat messages
+        draft.activeDecorators = {};
       });
 
       // Declare variables outside try block for proper cleanup access
@@ -396,25 +379,15 @@ const commandsMap: (
           clientId: clientId,
         };
 
-        // Update the state with the solution
+        // Update the state - solution fetching is complete
         state.mutateData((draft) => {
           draft.solutionState = "received";
           draft.isFetchingSolution = false;
-
-          // Only set solutionData in non-agentic mode where we have traditional diffs
-          if (!agentMode) {
-            draft.solutionData = solutionResponse;
-            // Note: Removed redundant "Solution generated successfully!" message
-            // The specific completion status messages (e.g. "All resolutions have been applied")
-            // provide more meaningful feedback to users
-          }
-          // In agentic mode, file changes are handled through ModifiedFile messages in chat
+          // File changes are handled through ModifiedFile messages in both agent and non-agent modes
         });
 
-        // Load the solution
-        if (!agentMode) {
-          commands.executeCommand("konveyor.loadSolution", solutionResponse, { incidents });
-        }
+        // In non-agent mode, file changes are already handled through ModifiedFile messages
+        // No need to load solution into the old diff view
 
         // Clean up pending interactions and resolver function after successful completion
         // Only clean up if we're not waiting for user interaction
@@ -598,15 +571,6 @@ const commandsMap: (
     "konveyor.cleanRuleSets": () => cleanRuleSets(state),
     "konveyor.loadStaticResults": loadStaticResults,
     "konveyor.loadResultsFromDataFolder": loadResultsFromDataFolder,
-    "konveyor.loadSolution": async (solution: Solution, scope?: Scope) =>
-      loadSolution(state, solution, scope),
-    "konveyor.applyAll": async () => applyAll(state),
-    "konveyor.applyFile": async (item: FileItem | Uri) => applyFile(item, state),
-    "konveyor.copyDiff": async (item: FileItem | Uri) => copyDiff(item, state),
-    "konveyor.copyPath": copyPath,
-    "konveyor.diffView.viewFix": viewFix,
-    "konveyor.discardAll": async () => discardAll(state),
-    "konveyor.discardFile": async (item: FileItem | Uri) => discardFile(item, state),
     "konveyor.showResolutionPanel": () => {
       const resolutionProvider = state.webviewProviders?.get("resolution");
       resolutionProvider?.showWebviewPanel();
@@ -623,10 +587,6 @@ const commandsMap: (
     },
     "konveyor.fixGroupOfIncidents": fixGroupOfIncidents,
     "konveyor.fixIncident": fixGroupOfIncidents,
-    "konveyor.diffView.applyBlock": applyBlock,
-    "konveyor.diffView.applyBlockInline": applyBlock,
-    "konveyor.diffView.applySelection": applyBlock,
-    "konveyor.diffView.applySelectionInline": applyBlock,
     "konveyor.partialAnalysis": async (filePaths: Uri[]) => runPartialAnalysis(state, filePaths),
     "konveyor.generateDebugArchive": async () => {
       const archiveRawPath = await window.showInputBox({
@@ -790,6 +750,204 @@ const commandsMap: (
       await commands.executeCommand("konveyor.restartSolutionServer");
       logger.info("Solution server credentials updated successfully.");
     },
+
+    "konveyor.showDiffWithDecorations": async (
+      filePath: string,
+      diff: string,
+      content: string,
+      messageToken: string,
+    ) => {
+      try {
+        logger.debug("showDiffWithDecorations using vertical diff", { filePath, messageToken });
+
+        // Check if vertical diff system is initialized
+        if (!state.staticDiffAdapter) {
+          throw new Error("Vertical diff system not initialized");
+        }
+
+        // Set activeDecorators to indicate decorators are being applied
+        state.mutateData((draft) => {
+          if (!draft.activeDecorators) {
+            draft.activeDecorators = {};
+          }
+          draft.activeDecorators[messageToken] = filePath;
+          logger.info(
+            `[Commands] Set activeDecorators for messageToken: ${messageToken}, filePath: ${filePath}`,
+          );
+          logger.info(`[Commands] Current activeDecorators:`, draft.activeDecorators);
+        });
+
+        // Get original content
+        const uri = Uri.file(filePath);
+        const doc = await workspace.openTextDocument(uri);
+        const originalContent = doc.getText();
+
+        // Apply using Continue's system
+        await state.staticDiffAdapter.applyStaticDiff(
+          filePath,
+          diff,
+          originalContent,
+          messageToken,
+        );
+
+        logger.info("Vertical diff applied successfully");
+      } catch (error) {
+        logger.error("Error in vertical diff:", error);
+
+        // Clear activeDecorators on error
+        state.mutateData((draft) => {
+          if (draft.activeDecorators && draft.activeDecorators[messageToken]) {
+            delete draft.activeDecorators[messageToken];
+            logger.debug(
+              `[Commands] Cleared activeDecorators on error for messageToken: ${messageToken}`,
+            );
+          }
+        });
+
+        vscode.window.showErrorMessage(`Failed to show diff: ${error}`);
+      }
+    },
+
+    "konveyor.acceptDiff": async (filePath?: string) => {
+      if (!filePath) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          return;
+        }
+        filePath = editor.document.fileName;
+      }
+      if (!state.staticDiffAdapter) {
+        vscode.window.showErrorMessage("Vertical diff system not initialized");
+        return;
+      }
+      await state.staticDiffAdapter.acceptAll(filePath);
+
+      // Save the document after accepting changes
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document.fileName === filePath) {
+        await editor.document.save();
+      }
+
+      vscode.window.showInformationMessage("Changes accepted and document saved");
+    },
+
+    "konveyor.rejectDiff": async (filePath?: string) => {
+      if (!filePath) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          return;
+        }
+        filePath = editor.document.fileName;
+      }
+      if (!state.staticDiffAdapter) {
+        vscode.window.showErrorMessage("Vertical diff system not initialized");
+        return;
+      }
+      await state.staticDiffAdapter.rejectAll(filePath);
+
+      // Save the document after rejecting changes
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document.fileName === filePath) {
+        await editor.document.save();
+      }
+
+      vscode.window.showInformationMessage("Changes rejected and document saved");
+    },
+
+    "konveyor.acceptVerticalDiffBlock": async (fileUri: string, blockIndex: number) => {
+      try {
+        logger.info("acceptVerticalDiffBlock called", { fileUri, blockIndex });
+        const filePath = vscode.Uri.parse(fileUri).fsPath;
+        if (!state.staticDiffAdapter) {
+          throw new Error("Vertical diff system not initialized");
+        }
+        await state.staticDiffAdapter.acceptRejectBlock(filePath, blockIndex, true);
+      } catch (error) {
+        logger.error("Error accepting diff block:", error);
+        window.showErrorMessage(`Failed to accept changes: ${error}`);
+      }
+    },
+
+    "konveyor.rejectVerticalDiffBlock": async (fileUri: string, blockIndex: number) => {
+      try {
+        logger.info("rejectVerticalDiffBlock called", { fileUri, blockIndex });
+        const filePath = vscode.Uri.parse(fileUri).fsPath;
+        if (!state.staticDiffAdapter) {
+          throw new Error("Vertical diff system not initialized");
+        }
+        await state.staticDiffAdapter.acceptRejectBlock(filePath, blockIndex, false);
+      } catch (error) {
+        logger.error("Error rejecting diff block:", error);
+        window.showErrorMessage(`Failed to reject changes: ${error}`);
+      }
+    },
+
+    "konveyor.clearDiffDecorations": async (filePath?: string) => {
+      try {
+        if (filePath) {
+          const fileUri = vscode.Uri.file(filePath).toString();
+          await state.verticalDiffManager?.clearForFileUri(fileUri, false);
+        } else {
+          // Clear all active diffs
+          if (state.verticalDiffManager) {
+            for (const fileUri of state.verticalDiffManager.fileUriToCodeLens.keys()) {
+              await state.verticalDiffManager.clearForFileUri(fileUri, false);
+            }
+          }
+        }
+      } catch (error) {
+        logger.error("Error clearing diff decorations:", error);
+      }
+    },
+
+    "konveyor.showDiffActions": async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+
+      const filePath = editor.document.fileName;
+      const fileUri = editor.document.uri.toString();
+
+      if (!state.verticalDiffManager) {
+        vscode.window.showInformationMessage("No active diff session");
+        return;
+      }
+
+      const handler = state.verticalDiffManager.getHandlerForFile(fileUri);
+      if (!handler || !handler.hasDiffForCurrentFile()) {
+        vscode.window.showInformationMessage("No active diff changes in this file");
+        return;
+      }
+
+      const blocks = state.verticalDiffManager.fileUriToCodeLens.get(fileUri) || [];
+      const totalGreen = blocks.reduce((sum, b) => sum + b.numGreen, 0);
+      const totalRed = blocks.reduce((sum, b) => sum + b.numRed, 0);
+
+      const action = await vscode.window.showQuickPick(
+        [
+          {
+            label: `$(check) Accept All Changes (${totalGreen}+ ${totalRed}-)`,
+            description: "Accept all diff changes in this file",
+            value: "accept",
+          },
+          {
+            label: `$(x) Reject All Changes`,
+            description: "Reject all diff changes in this file",
+            value: "reject",
+          },
+        ],
+        {
+          placeHolder: "Choose an action for all diff changes",
+        },
+      );
+
+      if (action?.value === "accept") {
+        await vscode.commands.executeCommand("konveyor.acceptDiff", filePath);
+      } else if (action?.value === "reject") {
+        await vscode.commands.executeCommand("konveyor.rejectDiff", filePath);
+      }
+    },
   };
 };
 
@@ -828,5 +986,30 @@ export function registerAllCommands(state: ExtensionState) {
     } catch (error) {
       throw new Error(`Failed to register command '${command}': ${error}`);
     }
+  }
+
+  // Create and register CodeLens provider for vertical diff blocks
+  try {
+    if (state.verticalDiffManager) {
+      const verticalCodeLensProvider = new VerticalDiffCodeLensProvider(state.verticalDiffManager);
+
+      state.extensionContext.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(
+          [{ scheme: "file" }, { scheme: "untitled" }],
+          verticalCodeLensProvider,
+        ),
+        verticalCodeLensProvider,
+      );
+
+      // Connect refresh callback
+      state.verticalDiffManager.refreshCodeLens = () => verticalCodeLensProvider.refresh();
+
+      logger.info("Vertical diff CodeLens provider registered successfully");
+    } else {
+      logger.warn("Vertical diff manager not initialized, skipping CodeLens registration");
+    }
+  } catch (error) {
+    logger.error("Failed to register vertical diff CodeLens provider:", error);
+    throw new Error(`Failed to register vertical diff CodeLens provider: ${error}`);
   }
 }
