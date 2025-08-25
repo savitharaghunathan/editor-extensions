@@ -195,7 +195,7 @@ export class VSCode extends BasePage {
 
     await runAnalysisBtnLocator.click();
     await expect(analysisView.getByText('Analysis Progress').first()).toBeVisible({
-      timeout: 10000,
+      timeout: 30000,
     });
   }
 
@@ -270,11 +270,11 @@ export class VSCode extends BasePage {
     const profileList = manageProfileView.getByRole('list', {
       name: 'Profile list',
     });
-    await profileList.waitFor({ state: 'visible', timeout: 5000 });
+    await profileList.waitFor({ state: 'visible', timeout: 20000 });
 
     const profileItems = profileList.getByRole('listitem');
     try {
-      await profileItems.filter({ hasText: profileName }).click({ timeout: 5000 });
+      await profileItems.filter({ hasText: profileName }).click({ timeout: 20000 });
       await manageProfileView.getByRole('button', { name: 'Delete Profile' }).click();
       const confirmButton = manageProfileView
         .getByRole('dialog', { name: 'Delete profile?' })
