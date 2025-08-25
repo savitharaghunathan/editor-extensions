@@ -55,10 +55,15 @@ export const useModifiedFileData = (
         isNew: data.isNew || false,
         isDeleted: data.isDeleted || false,
         diff: data.diff || "",
-        status: data.status || null,
+        status: (data.status as "applied" | "rejected" | null) || null,
         content: data.content || "",
         messageToken: data.messageToken || "",
-        quickResponses: data.quickResponses,
+        quickResponses:
+          data.quickResponses &&
+          Array.isArray(data.quickResponses) &&
+          data.quickResponses.length > 0
+            ? data.quickResponses
+            : undefined,
         originalContent: data.originalContent || "",
       };
     } else if (isLocalChange(data)) {

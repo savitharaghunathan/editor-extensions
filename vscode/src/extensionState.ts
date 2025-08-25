@@ -5,16 +5,16 @@ import { AnalysisProfile, ExtensionData, ModifiedFileState } from "@editor-exten
 import {
   type InMemoryCacheWithRevisions,
   type KaiInteractiveWorkflow,
-  type SolutionServerClient,
   type KaiModelProvider,
+  type SolutionServerClient,
 } from "@editor-extensions/agentic";
 import { Immutable } from "immer";
 import { IssuesModel } from "./issueView";
 import { DiagnosticTaskManager } from "./taskManager/taskManager";
-import { MemFS } from "./data/fileSystemProvider";
-import { KonveyorFileModel } from "./diffView/fileModel";
 import { EventEmitter } from "events";
 import winston from "winston";
+import { VerticalDiffManager } from "./diff/vertical/manager";
+import { StaticDiffAdapter } from "./diff/staticDiffAdapter";
 
 export interface ExtensionState {
   analyzerClient: AnalyzerClient;
@@ -22,8 +22,6 @@ export interface ExtensionState {
   webviewProviders: Map<string, KonveyorGUIWebviewViewProvider>;
   extensionContext: vscode.ExtensionContext;
   diagnosticCollection: vscode.DiagnosticCollection;
-  memFs: MemFS;
-  fileModel: KonveyorFileModel;
   issueModel: IssuesModel;
   data: Immutable<ExtensionData>;
   mutateData: (recipe: (draft: ExtensionData) => void) => Immutable<ExtensionData>;
@@ -50,4 +48,6 @@ export interface ExtensionState {
   currentTaskManagerIterations: number;
   logger: winston.Logger;
   modelProvider: KaiModelProvider | undefined;
+  verticalDiffManager?: VerticalDiffManager;
+  staticDiffAdapter?: StaticDiffAdapter;
 }

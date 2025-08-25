@@ -109,20 +109,6 @@ export async function handleFileResponse(
       return;
     }
 
-    const msg = state.data.chatMessages[messageIndex];
-
-    // Add user's response to chat
-    state.mutateData((draft) => {
-      draft.chatMessages.push({
-        kind: ChatMessageType.String,
-        messageToken: msg.messageToken,
-        timestamp: new Date().toISOString(),
-        value: {
-          message: responseId === "apply" ? "Applied file changes" : "Rejected file changes",
-        },
-      });
-    });
-
     if (responseId === "apply") {
       const uri = vscode.Uri.file(path);
       const fileMessage = state.data.chatMessages.find(
@@ -180,6 +166,34 @@ export async function handleFileResponse(
       } catch (error) {
         logger.error("Error notifying solution server:", error);
       }
+
+      // Update the chat message status in the centralized state (for Accept/Reject All consistency)
+      state.mutateData((draft) => {
+        const messageIndex = draft.chatMessages.findIndex(
+          (msg) => msg.messageToken === messageToken,
+        );
+        if (
+          messageIndex >= 0 &&
+          draft.chatMessages[messageIndex].kind === ChatMessageType.ModifiedFile
+        ) {
+          const modifiedFileMessage = draft.chatMessages[messageIndex].value as any;
+          modifiedFileMessage.status = "applied";
+        }
+      });
+    } else {
+      // For reject, also update the global state
+      state.mutateData((draft) => {
+        const messageIndex = draft.chatMessages.findIndex(
+          (msg) => msg.messageToken === messageToken,
+        );
+        if (
+          messageIndex >= 0 &&
+          draft.chatMessages[messageIndex].kind === ChatMessageType.ModifiedFile
+        ) {
+          const modifiedFileMessage = draft.chatMessages[messageIndex].value as any;
+          modifiedFileMessage.status = "rejected";
+        }
+      });
     }
 
     // Trigger the pending interaction resolver which will handle queue processing
