@@ -291,7 +291,12 @@ export class VSCode extends BasePage {
 
         await customRulesButton.click();
 
-        await this.window.waitForTimeout(2000);
+        const folderName = customRulesPath.split('/').pop() || 'unknown';
+
+        const customRulesLabel = manageProfileView
+          .locator('[class*="label"], [class*="Label"]')
+          .filter({ hasText: folderName });
+        await expect(customRulesLabel.first()).toBeVisible({ timeout: 30000 });
       }
     }
     return nameToUse;

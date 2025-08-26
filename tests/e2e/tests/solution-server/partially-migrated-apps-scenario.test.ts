@@ -107,7 +107,10 @@ class SolutionServerWorkflowHelper {
         undefined,
         customRulesPath
       );
-      this.logger.success(`Profile created for ${appName}`);
+
+      this.logger.success(
+        `Profile created for ${appName} with custom rules from ${customRulesSubPath}`
+      );
     } catch (error) {
       throw new Error(`Profile creation failed for ${appName}: ${error}`);
     }
