@@ -18,6 +18,10 @@ import { Configuration } from '../../pages/configuration.page';
 import { ConfigurationOptions } from '../../enums/configuration-options.enum';
 import { DEFAULT_PROVIDER } from '../../fixtures/provider-configs.fixture';
 import { MCPClient } from '../../../mcp-client/mcp-client.model';
+import {
+  SuccessRateResponse,
+  BestHintResponse,
+} from '../../../mcp-client/mcp-client-responses.model';
 import { FixTypes } from '../../enums/fix-types.enum';
 import { KAIViews } from '../../enums/views.enum';
 import { execSync } from 'child_process';
@@ -551,7 +555,7 @@ class SolutionServerWorkflowHelper {
    */
   async captureSolutionServerMetrics(
     mcpClient: MCPClient
-  ): Promise<{ successRate: any; bestHint: any }> {
+  ): Promise<{ successRate: SuccessRateResponse; bestHint: BestHintResponse }> {
     try {
       const metricsQuery = {
         ruleset_name: 'audit-logging-migration',
