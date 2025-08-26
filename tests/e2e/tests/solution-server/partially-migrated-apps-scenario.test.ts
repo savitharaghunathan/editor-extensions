@@ -24,8 +24,8 @@ import {
 } from '../../../mcp-client/mcp-client-responses.model';
 import { FixTypes } from '../../enums/fix-types.enum';
 import { KAIViews } from '../../enums/views.enum';
-import { execSync } from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
 import { TestLogger } from '../../utilities/logger';
 
 class SolutionServerWorkflowHelper {
@@ -33,6 +33,39 @@ class SolutionServerWorkflowHelper {
 
   constructor() {
     this.logger = new TestLogger('Solution-Server-Workflow');
+  }
+
+  private findFilesRecursively(dirPath: string, pattern: RegExp): string[] {
+    return this.findFilesRecursivelyHelper(dirPath, dirPath, pattern);
+  }
+
+  private findFilesRecursivelyHelper(
+    searchRoot: string,
+    currentDir: string,
+    pattern: RegExp
+  ): string[] {
+    const results: string[] = [];
+
+    try {
+      const items = fs.readdirSync(currentDir);
+
+      for (const item of items) {
+        const fullPath = path.join(currentDir, item);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          // Recursively search subdirectories
+          results.push(...this.findFilesRecursivelyHelper(searchRoot, fullPath, pattern));
+        } else if (stat.isFile() && pattern.test(item)) {
+          const relativePath = path.relative(searchRoot, fullPath);
+          results.push(relativePath);
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`Could not read directory ${currentDir}: ${error}`);
+    }
+
+    return results;
   }
 
   async setupRepository(
@@ -470,11 +503,12 @@ class SolutionServerWorkflowHelper {
       const repoPath = appName.includes('Inventory') ? 'inventory_management' : 'ehr_viewer';
 
       try {
-        const findCmd = `find ${process.cwd()}/${repoPath} -name "*Service.java" -type f 2>/dev/null || true`;
-        const serviceFiles = execSync(findCmd, { encoding: 'utf8', stdio: 'pipe' })
-          .split('\n')
-          .filter((file) => file.trim().length > 0)
-          .map((file) => file.replace(`${process.cwd()}/${repoPath}/`, ''));
+        const repoFullPath = path.join(process.cwd(), repoPath);
+        this.logger.debug(`Searching for Service.java files in: ${repoFullPath}`);
+        const serviceFiles = this.findFilesRecursively(repoFullPath, /.*Service\.java$/);
+        this.logger.debug(
+          `Found ${serviceFiles.length} Service.java files: ${JSON.stringify(serviceFiles)}`
+        );
 
         if (serviceFiles.length > 0) {
           await this.validateFileChanges(appName, repoPath, serviceFiles);
@@ -505,10 +539,12 @@ class SolutionServerWorkflowHelper {
       let hasCorrectChanges = false;
 
       for (const filePath of expectedFiles) {
-        const fullPath = path.join(process.cwd(), repoPath, filePath);
+        const searchDirPath = path.join(process.cwd(), repoPath);
+        const fullPath = path.join(searchDirPath, filePath);
+        this.logger.debug(`Validating file: ${filePath} -> ${fullPath}`);
 
         try {
-          const fileContent = execSync(`cat "${fullPath}"`, { encoding: 'utf8', stdio: 'pipe' });
+          const fileContent = fs.readFileSync(fullPath, 'utf8');
 
           if (fileContent.includes('StreamableAuditLogger')) {
             this.logger.success(`Found StreamableAuditLogger in ${filePath}`);
