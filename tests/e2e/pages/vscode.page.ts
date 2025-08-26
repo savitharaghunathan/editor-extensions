@@ -291,12 +291,16 @@ export class VSCode extends BasePage {
 
         await customRulesButton.click();
 
-        const folderName = customRulesPath.split('/').pop() || 'unknown';
+        const folderName = path.basename(customRulesPath);
+        console.log(
+          `Waiting for custom rules label with folder name: "${folderName}" from path: "${customRulesPath}"`
+        );
 
         const customRulesLabel = manageProfileView
           .locator('[class*="label"], [class*="Label"]')
           .filter({ hasText: folderName });
         await expect(customRulesLabel.first()).toBeVisible({ timeout: 30000 });
+        console.log(`Custom rules label for "${folderName}" is now visible`);
       }
     }
     return nameToUse;
