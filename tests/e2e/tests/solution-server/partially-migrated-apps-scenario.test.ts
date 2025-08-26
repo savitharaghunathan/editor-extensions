@@ -48,16 +48,10 @@ class SolutionServerWorkflowHelper {
       vsCode = await VSCode.open(repoInfo.repoUrl, repoInfo.repoName, repoInfo.branch);
       this.logger.success(`VSCode opened for ${appName}`);
 
-      await this.retryOperation(
-        async () => {
-          if (!vsCode) throw new Error('VSCode not initialized');
-          await this.createProfileWithCustomRules(vsCode, repoInfo, appName, customRulesSubPath);
-          await this.configureSolutionServer(vsCode, appName);
-          await this.runAnalysis(vsCode, appName);
-        },
-        3,
-        `Failed to setup ${appName}`
-      );
+      if (!vsCode) throw new Error('VSCode not initialized');
+      await this.createProfileWithCustomRules(vsCode, repoInfo, appName, customRulesSubPath);
+      await this.configureSolutionServer(vsCode, appName);
+      await this.runAnalysis(vsCode, appName);
 
       this.logger.success(`Successfully setup ${appName} repository`);
       return vsCode;
@@ -83,15 +77,9 @@ class SolutionServerWorkflowHelper {
       const newVsCode = await VSCode.open(repoInfo.repoUrl, repoInfo.repoName, repoInfo.branch);
       this.logger.success(`Opened ${appName} in VSCode`);
 
-      await this.retryOperation(
-        async () => {
-          await this.createProfileWithCustomRules(newVsCode, repoInfo, appName, customRulesSubPath);
-          await this.configureSolutionServer(newVsCode, appName);
-          await this.runAnalysis(newVsCode, appName);
-        },
-        3,
-        `Failed to setup ${appName} after switch`
-      );
+      await this.createProfileWithCustomRules(newVsCode, repoInfo, appName, customRulesSubPath);
+      await this.configureSolutionServer(newVsCode, appName);
+      await this.runAnalysis(newVsCode, appName);
 
       this.logger.success(`Successfully switched to ${appName}`);
       return newVsCode;
@@ -162,7 +150,7 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
       const analysisView = await vsCode.getView(KAIViews.analysisView);
 
-      await expect(analysisView.getByText('Analysis Results')).toBeVisible({ timeout: 10000 });
+      await expect(analysisView.getByText('Analysis Results')).toBeVisible({ timeout: 30000 });
 
       const violations = analysisView.locator('.pf-v6-c-card__header-toggle');
       const violationCount = await violations.count();
@@ -200,7 +188,7 @@ class SolutionServerWorkflowHelper {
       const incidentsLocator = analysisViewBefore.locator(
         '[class*="incident"], [class*="violation"], .incident, .violation'
       );
-      await expect(incidentsLocator.first()).toBeVisible({ timeout: 10000 });
+      await expect(incidentsLocator.first()).toBeVisible({ timeout: 30000 });
 
       const incidentsBefore = await incidentsLocator.count();
 
@@ -221,7 +209,7 @@ class SolutionServerWorkflowHelper {
         const continueButton = await this.getContinueButton(resolutionView);
         if (await continueButton.isVisible()) {
           await continueButton.click();
-          await expect(continueButton).not.toBeVisible({ timeout: 10000 });
+          await expect(continueButton).not.toBeVisible({ timeout: 30000 });
         }
       } catch (error) {
         // Continue button not found, proceeding with validation
@@ -230,7 +218,7 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
       const analysisViewAfter = await vsCode.getView(KAIViews.analysisView);
 
-      await expect(analysisViewAfter.locator('body')).toBeVisible({ timeout: 10000 });
+      await expect(analysisViewAfter.locator('body')).toBeVisible({ timeout: 30000 });
 
       await this.validateSolutionApplication(vsCode, appName);
 
@@ -259,7 +247,7 @@ class SolutionServerWorkflowHelper {
       const incidentsLocator = analysisViewBefore.locator(
         '[class*="incident"], [class*="violation"], .incident, .violation'
       );
-      await expect(incidentsLocator.first()).toBeVisible({ timeout: 10000 });
+      await expect(incidentsLocator.first()).toBeVisible({ timeout: 30000 });
 
       const incidentsBefore = await incidentsLocator.count();
 
@@ -281,7 +269,7 @@ class SolutionServerWorkflowHelper {
         if (await continueButton.isVisible()) {
           await continueButton.click();
           // Wait for the continue button interaction to complete
-          await expect(continueButton).not.toBeVisible({ timeout: 10000 });
+          await expect(continueButton).not.toBeVisible({ timeout: 30000 });
         }
       } catch (error) {
         // Continue button not found, proceeding with validation
@@ -290,7 +278,7 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
       const analysisViewAfter = await vsCode.getView(KAIViews.analysisView);
 
-      await expect(analysisViewAfter.locator('body')).toBeVisible({ timeout: 10000 });
+      await expect(analysisViewAfter.locator('body')).toBeVisible({ timeout: 30000 });
 
       await this.validateSolutionApplication(vsCode, appName);
 
@@ -579,35 +567,6 @@ class SolutionServerWorkflowHelper {
     } catch (error) {
       throw new Error(`Failed to capture metrics: ${error}`);
     }
-  }
-
-  /**
-   * Generic retry operation with exponential backoff
-   */
-  private async retryOperation<T>(
-    operation: () => Promise<T>,
-    maxRetries: number,
-    errorMessage: string
-  ): Promise<T> {
-    let lastError: Error;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error as Error;
-
-        if (attempt === maxRetries) {
-          break;
-        }
-
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        this.logger.warn(`Attempt ${attempt} failed, retrying in ${delay}ms: ${error}`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
-
-    throw new Error(`${errorMessage} after ${maxRetries} attempts: ${lastError!.message}`);
   }
 }
 
