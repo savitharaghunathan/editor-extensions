@@ -196,11 +196,13 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
 
       const analysisViewBefore = await vsCode.getView(KAIViews.analysisView);
-      await vsCode.getWindow().waitForTimeout(2000);
 
-      const incidentsBefore = await analysisViewBefore
-        .locator('[class*="incident"], [class*="violation"], .incident, .violation')
-        .count();
+      const incidentsLocator = analysisViewBefore.locator(
+        '[class*="incident"], [class*="violation"], .incident, .violation'
+      );
+      await expect(incidentsLocator.first()).toBeVisible({ timeout: 10000 });
+
+      const incidentsBefore = await incidentsLocator.count();
 
       const violationText =
         'Replace `FileSystemAuditLogger` instantiation with `StreamableAuditLogger` over TCP';
@@ -216,11 +218,10 @@ class SolutionServerWorkflowHelper {
       this.logger.success('Audit logger fix solution applied');
 
       try {
-        await vsCode.getWindow().waitForTimeout(3000);
         const continueButton = await this.getContinueButton(resolutionView);
         if (await continueButton.isVisible()) {
           await continueButton.click();
-          await vsCode.getWindow().waitForTimeout(2000);
+          await expect(continueButton).not.toBeVisible({ timeout: 10000 });
         }
       } catch (error) {
         // Continue button not found, proceeding with validation
@@ -229,7 +230,7 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
       const analysisViewAfter = await vsCode.getView(KAIViews.analysisView);
 
-      await vsCode.getWindow().waitForTimeout(5000);
+      await expect(analysisViewAfter.locator('body')).toBeVisible({ timeout: 10000 });
 
       await this.validateSolutionApplication(vsCode, appName);
 
@@ -254,11 +255,13 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
 
       const analysisViewBefore = await vsCode.getView(KAIViews.analysisView);
-      await vsCode.getWindow().waitForTimeout(2000);
 
-      const incidentsBefore = await analysisViewBefore
-        .locator('[class*="incident"], [class*="violation"], .incident, .violation')
-        .count();
+      const incidentsLocator = analysisViewBefore.locator(
+        '[class*="incident"], [class*="violation"], .incident, .violation'
+      );
+      await expect(incidentsLocator.first()).toBeVisible({ timeout: 10000 });
+
+      const incidentsBefore = await incidentsLocator.count();
 
       const violationText =
         'The java.annotation (Common Annotations) module has been removed from OpenJDK 11';
@@ -274,11 +277,11 @@ class SolutionServerWorkflowHelper {
       this.logger.success('Java annotation fix solution applied');
 
       try {
-        await vsCode.getWindow().waitForTimeout(3000);
         const continueButton = await this.getContinueButton(resolutionView);
         if (await continueButton.isVisible()) {
           await continueButton.click();
-          await vsCode.getWindow().waitForTimeout(2000);
+          // Wait for the continue button interaction to complete
+          await expect(continueButton).not.toBeVisible({ timeout: 10000 });
         }
       } catch (error) {
         // Continue button not found, proceeding with validation
@@ -287,7 +290,7 @@ class SolutionServerWorkflowHelper {
       await vsCode.openAnalysisView();
       const analysisViewAfter = await vsCode.getView(KAIViews.analysisView);
 
-      await vsCode.getWindow().waitForTimeout(5000);
+      await expect(analysisViewAfter.locator('body')).toBeVisible({ timeout: 10000 });
 
       await this.validateSolutionApplication(vsCode, appName);
 
@@ -305,7 +308,6 @@ class SolutionServerWorkflowHelper {
 
     while (attempts < maxAttempts) {
       try {
-        // Use the new getAcceptButton method with current selectors
         const button = await this.getAcceptButton(resolutionView);
         if (button && (await button.isVisible())) {
           this.logger.success('Found accept button using current selectors');
