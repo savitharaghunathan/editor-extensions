@@ -24,7 +24,7 @@ export class VSCode extends BasePage {
     super(app, window);
   }
 
-  public static async open(repoUrl?: string, repoDir?: string) {
+  public static async open(repoUrl?: string, repoDir?: string, branch?: string) {
     /**
      * user-data-dir is passed to force opening a new instance avoiding the process to couple with an existing vscode instance
      * so Playwright doesn't detect that the process has finished
@@ -40,8 +40,15 @@ export class VSCode extends BasePage {
         if (repoDir) {
           await cleanupRepo(repoDir);
         }
-        console.log(`Cloning repository from ${repoUrl}`);
-        execSync(`git clone ${repoUrl}`);
+        console.log(`Cloning repository from ${repoUrl}${branch ? ` (branch: ${branch})` : ''}`);
+
+        if (branch) {
+          // Clone specific branch
+          execSync(`git clone -b ${branch} ${repoUrl}`);
+        } else {
+          // Clone default branch
+          execSync(`git clone ${repoUrl}`);
+        }
       }
     } catch (error: any) {
       throw new Error('Failed to clone the repository');
@@ -85,14 +92,15 @@ export class VSCode extends BasePage {
    * launches VSCode with KAI plugin installed and repoUrl app opened.
    * @param repoUrl
    * @param repoDir path to repo
+   * @param branch optional branch to clone from
    */
-  public static async init(repoUrl?: string, repoDir?: string): Promise<VSCode> {
+  public static async init(repoUrl?: string, repoDir?: string, branch?: string): Promise<VSCode> {
     try {
-      if (process.env.VSIX_FILE_PATH || process.env.VSIX_DOWNLOAD_URL) {
+      if (process.env.VSCODE_EXECUTABLE_PATH || process.env.VSIX_DOWNLOAD_URL) {
         await installExtension();
       }
 
-      return repoUrl ? VSCode.open(repoUrl, repoDir) : VSCode.open();
+      return repoUrl ? VSCode.open(repoUrl, repoDir, branch) : VSCode.open();
     } catch (error) {
       console.error('Error launching VSCode:', error);
       throw error;
@@ -236,14 +244,13 @@ export class VSCode extends BasePage {
     await this.executeQuickCommand('Konveyor: Manage Analysis Profile');
 
     const manageProfileView = await this.getView(KAIViews.manageProfiles);
-    // TODO ask for/add test-id for this button and comboboxes
+
     await manageProfileView.getByRole('button', { name: '+ New Profile' }).click();
 
     const randomName = generateRandomString();
     const nameToUse = profileName ? profileName : randomName;
     await manageProfileView.getByRole('textbox', { name: 'Profile Name' }).fill(nameToUse);
 
-    // Select Targets
     const targetsInput = manageProfileView
       .getByRole('combobox', { name: 'Type to filter' })
       .first();
@@ -257,7 +264,6 @@ export class VSCode extends BasePage {
     }
     await this.window.keyboard.press('Escape');
 
-    // Select Source
     const sourceInput = manageProfileView.getByRole('combobox', { name: 'Type to filter' }).nth(1);
     await sourceInput.click({ delay: 500 });
 
@@ -273,27 +279,21 @@ export class VSCode extends BasePage {
     if (customRulesPath) {
       console.log(`Creating profile with custom rules from: ${customRulesPath}`);
 
-      // Look for the "Select Custom Rules..." button
       const customRulesButton = manageProfileView.getByRole('button', {
         name: 'Select Custom Rules…',
       });
 
       if (await customRulesButton.isVisible()) {
-        // Stub the file dialog to return the custom rules path
         await stubDialog(this.app, 'showOpenDialog', {
           filePaths: [customRulesPath],
           canceled: false,
         });
 
-        // Click the custom rules button
         await customRulesButton.click();
 
-        // Wait for the dialog to be processed
         await this.window.waitForTimeout(2000);
       }
     }
-
-    // Return the profile name that was created
     return nameToUse;
   }
 
