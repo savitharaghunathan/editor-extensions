@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { EventEmitter } from "events";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
-import { registerAllCommands as registerAllCommands } from "./commands";
+import { registerAllCommands as registerAllCommands, executeExtensionCommand } from "./commands";
 import { ExtensionState } from "./extensionState";
 import {
   ConfigError,
@@ -54,6 +54,7 @@ import { OutputChannelTransport } from "winston-transport-vscode";
 import { VerticalDiffManager } from "./diff/vertical/manager";
 import { StaticDiffAdapter } from "./diff/staticDiffAdapter";
 import { FileEditor } from "./utilities/ideUtils";
+import { BUILD_INFO, EXTENSION_ID } from "./utilities/constants";
 
 class VsCodeExtension {
   public state: ExtensionState;
@@ -215,6 +216,7 @@ class VsCodeExtension {
     try {
       // Initialize vertical diff system
       this.initializeVerticalDiff();
+
       const bundled = getBundledProfiles();
       const user = getUserProfiles(this.context);
       const allProfiles = [...bundled, ...user];
@@ -421,7 +423,7 @@ class VsCodeExtension {
         }),
       );
 
-      vscode.commands.executeCommand("konveyor.loadResultsFromDataFolder");
+      executeExtensionCommand("loadResultsFromDataFolder");
       this.state.logger.info("Extension initialized");
 
       // Setup diff status bar item
@@ -694,6 +696,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   logger.info("Logger created");
+  logger.info(`Extension ${EXTENSION_ID} starting`, { buildInfo: BUILD_INFO });
 
   try {
     const paths = await ensurePaths(context, logger);
