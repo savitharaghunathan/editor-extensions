@@ -97,31 +97,6 @@ class SolutionServerWorkflowHelper {
     }
   }
 
-  async switchToRepository(
-    vsCode: VSCode,
-    repoInfo: any,
-    appName: string,
-    customRulesSubPath: string
-  ): Promise<VSCode> {
-    this.logger.info(`Switching to ${appName} repository`);
-
-    try {
-      await vsCode.closeVSCode();
-      const newVsCode = await VSCode.open(repoInfo.repoUrl, repoInfo.repoName, repoInfo.branch);
-      this.logger.success(`Opened ${appName} in VSCode`);
-
-      await this.createProfileWithCustomRules(newVsCode, repoInfo, appName, customRulesSubPath);
-      await this.configureSolutionServer(newVsCode, appName);
-      await this.runAnalysis(newVsCode, appName);
-
-      this.logger.success(`Successfully switched to ${appName}`);
-      return newVsCode;
-    } catch (error) {
-      this.logger.error(`Failed to switch to ${appName}: ${error}`);
-      throw error;
-    }
-  }
-
   /**
    * Creates profile with custom rules using proper test fixture data
    */
@@ -665,7 +640,8 @@ test.describe.serial('Solution Server Workflow', () => {
     }
 
     const ehrRepoInfo = testRepoData['ehr'];
-    vsCode = await helper.switchToRepository(vsCode, ehrRepoInfo, 'EHR Viewer', 'rules');
+    await vsCode.closeVSCode();
+    vsCode = await helper.setupRepository(ehrRepoInfo, 'EHR Viewer', 'rules');
 
     const ehrViolations = await helper.validateAnalysisResults(vsCode, 'EHR Viewer');
     expect(ehrViolations).toBeGreaterThan(0);
