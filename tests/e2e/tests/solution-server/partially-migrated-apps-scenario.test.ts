@@ -214,16 +214,6 @@ class SolutionServerWorkflowHelper {
       await acceptButton.click();
       this.logger.success('Audit logger fix solution applied');
 
-      try {
-        const continueButton = await this.getContinueButton(resolutionView);
-        if (await continueButton.isVisible()) {
-          await continueButton.click();
-          await expect(continueButton).not.toBeVisible({ timeout: 30000 });
-        }
-      } catch (error) {
-        // Continue button not found, proceeding with validation
-      }
-
       await vsCode.openAnalysisView();
       const analysisViewAfter = await vsCode.getView(KAIViews.analysisView);
 
@@ -268,17 +258,6 @@ class SolutionServerWorkflowHelper {
 
       await acceptButton.click();
       this.logger.success('Java annotation fix solution applied');
-
-      try {
-        const continueButton = await this.getContinueButton(resolutionView);
-        if (await continueButton.isVisible()) {
-          await continueButton.click();
-          // Wait for the continue button interaction to complete
-          await expect(continueButton).not.toBeVisible({ timeout: 30000 });
-        }
-      } catch (error) {
-        // Continue button not found, proceeding with validation
-      }
 
       await vsCode.openAnalysisView();
       const analysisViewAfter = await vsCode.getView(KAIViews.analysisView);
@@ -332,22 +311,6 @@ class SolutionServerWorkflowHelper {
     }
 
     throw new Error('Accept button not found in resolution view');
-  }
-
-  /**
-   * Gets the Continue button that appears after accepting changes
-   */
-  private async getContinueButton(resolutionView: any): Promise<any> {
-    const selectors = ['button:has-text("Continue")', 'button.continue-button'];
-
-    for (const selector of selectors) {
-      const button = resolutionView.locator(selector);
-      if (await button.isVisible()) {
-        return button;
-      }
-    }
-
-    throw new Error('Continue button not found in resolution view');
   }
 
   /**
