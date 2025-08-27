@@ -279,14 +279,10 @@ class SolutionServerWorkflowHelper {
     let attempts = 0;
 
     while (attempts < maxAttempts) {
-      try {
-        const button = await this.getAcceptButton(resolutionView);
-        if (button && (await button.isVisible())) {
-          this.logger.success('Found accept button using current selectors');
-          return button;
-        }
-      } catch (error) {
-        // Button not found yet, continue waiting
+      const button = await this.getAcceptButton(resolutionView);
+      if (button && (await button.isVisible())) {
+        this.logger.success('Found accept button using current selectors');
+        return button;
       }
 
       attempts++;
@@ -300,7 +296,7 @@ class SolutionServerWorkflowHelper {
     throw new Error('Solution generation timed out after 5 minutes');
   }
 
-  private async getAcceptButton(resolutionView: any): Promise<any> {
+  private async getAcceptButton(resolutionView: any): Promise<any | null> {
     const selectors = ['button:has-text("Accept All")', 'button.main-accept-button'];
 
     for (const selector of selectors) {
@@ -310,7 +306,7 @@ class SolutionServerWorkflowHelper {
       }
     }
 
-    throw new Error('Accept button not found in resolution view');
+    return null;
   }
 
   /**
