@@ -32,7 +32,7 @@ class SolutionServerWorkflowHelper {
   public logger: TestLogger;
 
   constructor() {
-    this.logger = new TestLogger('Solution-Server-Workflow');
+    this.logger = new TestLogger('Solution-Server-Workflow', 'SUCCESS');
   }
 
   private findFilesRecursively(dirPath: string, pattern: RegExp): string[] {
@@ -73,20 +73,20 @@ class SolutionServerWorkflowHelper {
     appName: string,
     customRulesSubPath: string
   ): Promise<VSCode> {
-    this.logger.info(`Setting up ${appName} repository`);
+    this.logger.debug(`Setting up ${appName} repository`);
 
     let vsCode: VSCode | undefined;
 
     try {
       vsCode = await VSCode.open(repoInfo.repoUrl, repoInfo.repoName, repoInfo.branch);
-      this.logger.success(`VSCode opened for ${appName}`);
+      this.logger.debug(`VSCode opened for ${appName}`);
 
       if (!vsCode) throw new Error('VSCode not initialized');
       await this.createProfileWithCustomRules(vsCode, repoInfo, appName, customRulesSubPath);
       await this.configureSolutionServer(vsCode, appName);
       await this.runAnalysis(vsCode, appName);
 
-      this.logger.success(`Successfully setup ${appName} repository`);
+      this.logger.debug(`Successfully setup ${appName} repository`);
       return vsCode;
     } catch (error) {
       this.logger.error(`Setup failed for ${appName}: ${error}`);
@@ -133,7 +133,7 @@ class SolutionServerWorkflowHelper {
       await vsCode.configureGenerativeAI(DEFAULT_PROVIDER.config);
       await vsCode.startServer();
 
-      this.logger.success(`Solution server configured for ${appName}`);
+      this.logger.debug(`Solution server configured for ${appName}`);
     } catch (error) {
       throw new Error(`Solution server configuration failed for ${appName}: ${error}`);
     }
@@ -150,7 +150,7 @@ class SolutionServerWorkflowHelper {
       });
 
       const analysisTime = Date.now() - analysisStart;
-      this.logger.success(`Analysis completed for ${appName} in ${analysisTime}ms`);
+      this.logger.debug(`Analysis completed for ${appName} in ${analysisTime}ms`);
     } catch (error) {
       throw new Error(`Analysis failed for ${appName}: ${error}`);
     }
@@ -281,7 +281,7 @@ class SolutionServerWorkflowHelper {
     while (attempts < maxAttempts) {
       const button = await this.getAcceptButton(resolutionView);
       if (button && (await button.isVisible())) {
-        this.logger.success('Found accept button using current selectors');
+        this.logger.debug('Found accept button using current selectors');
         return button;
       }
 
@@ -422,7 +422,7 @@ class SolutionServerWorkflowHelper {
         metricsQuery.violation_name
       );
 
-      this.logger.success(
+      this.logger.debug(
         `Solution server metrics captured - Accepted: ${successRate.accepted_solutions}, ` +
           `Pending: ${successRate.pending_solutions}, Hint ID: ${bestHint.hint_id}`
       );
@@ -446,7 +446,7 @@ test.describe.serial('Solution Server Workflow', () => {
 
     try {
       mcpClient = await MCPClient.connect('http://localhost:8000');
-      helper.logger.success('Connected to MCP client');
+      helper.logger.debug('Connected to MCP client');
     } catch (error) {
       throw new Error(`Failed to connect to MCP client: ${error}`);
     }
@@ -541,20 +541,20 @@ test.describe.serial('Solution Server Workflow', () => {
 
     // Log final workflow completion
     helper.logger.success('Complete solution server workflow validated');
-    helper.logger.info(
+    helper.logger.debug(
       `Final metrics - Total accepted: ${afterSolution.successRate.accepted_solutions}, ` +
         `Latest hint ID: ${afterSolution.bestHint.hint_id}`
     );
   });
 
   test.afterEach(async () => {
-    helper.logger.info(`Test completed: ${test.info().title}`);
+    helper.logger.debug(`Test completed: ${test.info().title}`);
   });
 
   test.afterAll(async () => {
     if (vsCode) {
       await vsCode.closeVSCode();
     }
-    helper.logger.success('Solution server workflow test suite completed');
+    helper.logger.debug('Solution server workflow test suite completed');
   });
 });
