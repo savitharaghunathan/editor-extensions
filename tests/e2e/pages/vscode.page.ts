@@ -43,7 +43,6 @@ export class VSCode extends BasePage {
         console.log(`Cloning repository from ${repoUrl}${branch ? ` (branch: ${branch})` : ''}`);
 
         if (branch) {
-          // Clone specific branch
           execSync(`git clone -b ${branch} ${repoUrl}`);
         } else {
           // Clone default branch
