@@ -209,8 +209,6 @@ class SolutionServerWorkflowHelper {
 
       const resolutionView = await vsCode.getView(KAIViews.resolutionDetails);
 
-      await this.reviewChangesBeforeAccepting(resolutionView);
-
       const acceptButton = await this.waitForSolutionGeneration(resolutionView);
 
       await acceptButton.click();
@@ -260,15 +258,11 @@ class SolutionServerWorkflowHelper {
       );
       await expect(incidentsLocator.first()).toBeVisible({ timeout: 30000 });
 
-      const incidentsBefore = await incidentsLocator.count();
-
       const violationText =
         'The java.annotation (Common Annotations) module has been removed from OpenJDK 11';
       await vsCode.searchAndRequestFix(violationText, FixTypes.Incident);
 
       const resolutionView = await vsCode.getView(KAIViews.resolutionDetails);
-
-      await this.reviewChangesBeforeAccepting(resolutionView);
 
       const acceptButton = await this.waitForSolutionGeneration(resolutionView);
 
@@ -340,77 +334,6 @@ class SolutionServerWorkflowHelper {
     throw new Error('Accept button not found in resolution view');
   }
 
-  private async getRejectButton(resolutionView: any): Promise<any> {
-    const selectors = ['button:has-text("Reject All")', 'button.main-reject-button'];
-
-    for (const selector of selectors) {
-      const button = resolutionView.locator(selector);
-      if (await button.isVisible()) {
-        return button;
-      }
-    }
-
-    throw new Error('Reject button not found in resolution view');
-  }
-
-  /**
-   * Gets the Review Changes button from the resolution view using current selectors
-   */
-  private async getReviewChangesButton(resolutionView: any): Promise<any> {
-    const selectors = ['button:has-text("Review Changes")', 'button.view-with-decorations-button'];
-
-    for (const selector of selectors) {
-      const button = resolutionView.locator(selector);
-      if (await button.isVisible()) {
-        return button;
-      }
-    }
-
-    throw new Error('Review Changes button not found in resolution view');
-  }
-
-  /**
-   * Gets modified file messages from the resolution view
-   */
-  private async getModifiedFileMessages(resolutionView: any): Promise<any> {
-    const selectors = [
-      '.modified-file-message',
-      '[class*="modified-file"]',
-      '[class*="file-message"]',
-      '.file-change-message',
-    ];
-
-    for (const selector of selectors) {
-      const messages = resolutionView.locator(selector);
-      if ((await messages.count()) > 0) {
-        return messages;
-      }
-    }
-
-    throw new Error('Modified file messages not found in resolution view');
-  }
-
-  /**
-   * Gets the diff status banner that shows the current state
-   */
-  private async getDiffStatusBanner(resolutionView: any): Promise<any> {
-    const selectors = [
-      '.diff-status-banner',
-      '[class*="diff-status"]',
-      '[class*="status-banner"]',
-      '.status-indicator',
-    ];
-
-    for (const selector of selectors) {
-      const banner = resolutionView.locator(selector);
-      if (await banner.isVisible()) {
-        return banner;
-      }
-    }
-
-    return null;
-  }
-
   /**
    * Gets the Continue button that appears after accepting changes
    */
@@ -425,38 +348,6 @@ class SolutionServerWorkflowHelper {
     }
 
     throw new Error('Continue button not found in resolution view');
-  }
-
-  /**
-   * Reviews changes in the resolution view before accepting them
-   * Demonstrates usage of the new button methods
-   */
-  async reviewChangesBeforeAccepting(resolutionView: any): Promise<void> {
-    try {
-      const modifiedMessages = await this.getModifiedFileMessages(resolutionView);
-      const messageCount = await modifiedMessages.count();
-
-      if (messageCount > 0) {
-        try {
-          const reviewButton = await this.getReviewChangesButton(resolutionView);
-          if (await reviewButton.isVisible()) {
-            await reviewButton.click();
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-          }
-        } catch (error) {
-          // Review Changes button not available, proceeding with inline review
-        }
-
-        const statusBanner = await this.getDiffStatusBanner(resolutionView);
-        if (statusBanner) {
-          const bannerText = await statusBanner.textContent();
-        }
-      }
-
-      this.logger.success('Changes reviewed successfully');
-    } catch (error) {
-      this.logger.warn(`Error during change review: ${error}`);
-    }
   }
 
   /**
@@ -665,8 +556,6 @@ test.describe.serial('Solution Server Workflow', () => {
 
     const totalSolutions = solutionServerMetrics.successRate.counted_solutions;
     expect(totalSolutions).toBeGreaterThan(0);
-    helper.logger.success(`Validated solution server has processed ${totalSolutions} solutions`);
-
     helper.logger.success('Solution server metrics validated successfully');
   });
 
