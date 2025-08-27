@@ -95,7 +95,7 @@ export class VSCode extends BasePage {
    */
   public static async init(repoUrl?: string, repoDir?: string, branch?: string): Promise<VSCode> {
     try {
-      if (process.env.VSCODE_EXECUTABLE_PATH || process.env.VSIX_DOWNLOAD_URL) {
+      if (process.env.VSIX_FILE_PATH || process.env.VSIX_DOWNLOAD_URL) {
         await installExtension();
       }
 
