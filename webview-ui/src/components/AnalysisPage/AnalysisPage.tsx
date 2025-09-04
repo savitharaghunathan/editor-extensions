@@ -57,6 +57,7 @@ import { ViolationsCount } from "../ViolationsCount/ViolationsCount";
 import ViolationIncidentsList from "../ViolationIncidentsList";
 import { ProfileSelector } from "../ProfileSelector/ProfileSelector";
 import ProgressIndicator from "../ProgressIndicator";
+import ConfigAlerts from "./ConfigAlerts";
 import { Incident } from "@editor-extensions/shared";
 
 const AnalysisPage: React.FC = () => {
@@ -69,16 +70,15 @@ const AnalysisPage: React.FC = () => {
     isFetchingSolution: isWaitingForSolution,
     ruleSets: analysisResults,
     enhancedIncidents,
-    configErrors,
+    configErrors: rawConfigErrors,
     profiles,
     activeProfileId,
     serverState,
     solutionServerEnabled,
     localChanges,
     isAgentMode,
+    solutionServerConnected,
   } = state;
-
-  console.log(configErrors);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [focusedIncident, setFocusedIncident] = useState<Incident | null>(null);
@@ -89,15 +89,21 @@ const AnalysisPage: React.FC = () => {
   const hasViolations = violations.length > 0;
   const hasAnalysisResults = !!analysisResults;
   const serverRunning = serverState === "running";
+  const isGenAIDisabled = rawConfigErrors.some((error) => error.type === "genai-disabled");
 
   const drawerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (enhancedIncidents.length > 0 && solutionServerEnabled) {
+    if (enhancedIncidents.length > 0 && solutionServerEnabled && solutionServerConnected) {
       dispatch(getSuccessRate());
-      console.log("Fetching success rates for incidents...", enhancedIncidents);
     }
-  }, [enhancedIncidents.length, localChanges.length, solutionServerEnabled, dispatch]);
+  }, [
+    enhancedIncidents.length,
+    localChanges.length,
+    solutionServerEnabled,
+    solutionServerConnected,
+    dispatch,
+  ]);
 
   const handleIncidentSelect = (incident: Incident) => {
     setFocusedIncident(incident);
@@ -153,24 +159,26 @@ const AnalysisPage: React.FC = () => {
                             hasWarning={configInvalid}
                           />
                         </ToolbarItem>
-                        <ToolbarItem>
-                          <div>
-                            <div className="agent-mode-wrapper">
-                              <Switch
-                                id="agent-mode-switch"
-                                isChecked={isAgentMode}
-                                label="Agent Mode"
-                                onChange={(_event) => handleAgentModeToggle()}
-                                aria-label="Toggle Agent Mode"
-                                isReversed
-                              />
+                        {!isGenAIDisabled && (
+                          <ToolbarItem>
+                            <div>
+                              <div className="agent-mode-wrapper">
+                                <Switch
+                                  id="agent-mode-switch"
+                                  isChecked={isAgentMode}
+                                  label="Agent Mode"
+                                  onChange={(_event) => handleAgentModeToggle()}
+                                  aria-label="Toggle Agent Mode"
+                                  isReversed
+                                />
+                              </div>
                             </div>
-                          </div>
-                        </ToolbarItem>
+                          </ToolbarItem>
+                        )}
                         <ToolbarItem>
                           <ConfigButton
                             onClick={() => setIsConfigOpen(true)}
-                            hasWarning={configErrors.length > 0}
+                            hasWarning={rawConfigErrors.length > 0}
                             warningMessage="Please review your configuration before running analysis."
                           />
                         </ToolbarItem>
@@ -181,22 +189,6 @@ const AnalysisPage: React.FC = () => {
               </Masthead>
             }
           >
-            {!selectedProfile && (
-              <PageSection padding={{ default: "noPadding" }}>
-                <Card isCompact style={{ maxWidth: "600px", margin: "0 auto" }}>
-                  <Alert variant="danger" title="No active profile selected">
-                    Please select or create a profile before running an analysis.
-                    <Button
-                      variant="link"
-                      onClick={() => dispatch({ type: "OPEN_PROFILE_MANAGER", payload: {} })}
-                      style={{ marginLeft: "0.5rem" }}
-                    >
-                      Manage Profiles
-                    </Button>
-                  </Alert>
-                </Card>
-              </PageSection>
-            )}
             {errorMessage && (
               <PageSection padding={{ default: "noPadding" }}>
                 <Card isCompact style={{ maxWidth: "600px", margin: "0 auto" }}>
@@ -222,21 +214,13 @@ const AnalysisPage: React.FC = () => {
                 </Card>
               </PageSection>
             )}
-            {configErrors.length > 0 && (
-              <PageSection padding={{ default: "noPadding" }}>
-                {configErrors.map((error, index) => (
-                  <Card
-                    isCompact
-                    style={{ maxWidth: "600px", marginTop: "1rem", margin: "0 auto" }}
-                    key={index}
-                  >
-                    <Alert variant="warning" title={error.message}>
-                      {error.error ?? ""}
-                    </Alert>
-                  </Card>
-                ))}
-              </PageSection>
-            )}
+            <ConfigAlerts
+              configErrors={rawConfigErrors}
+              solutionServerEnabled={solutionServerEnabled}
+              solutionServerConnected={solutionServerConnected}
+              onOpenProfileManager={() => dispatch({ type: "OPEN_PROFILE_MANAGER", payload: {} })}
+              dispatch={dispatch}
+            />
             {selectedProfile && (
               <PageSection padding={{ default: "padding" }}>
                 <Card isCompact>
@@ -307,7 +291,6 @@ const AnalysisPage: React.FC = () => {
                 </Card>
               </PageSection>
             )}
-
             <PageSection>
               <Stack hasGutter>
                 <StackItem>

@@ -34,6 +34,20 @@ await copy({
           rulesets: "./assets/rulesets",
         };
 
+        // Override realm configuration based on environment variable
+        const targetRealm = process.env.KONVEYOR_REALM;
+        if (targetRealm) {
+          const configProps = packageJson.contributes?.configuration?.properties;
+          // First check for the new correct key
+          if (configProps?.["konveyor.solutionServer.auth.realm"]) {
+            configProps["konveyor.solutionServer.auth.realm"].default = targetRealm;
+          }
+          // Fall back to legacy key if new one doesn't exist
+          else if (configProps?.["konveyor.solutionServer.realm"]) {
+            configProps["konveyor.solutionServer.realm"].default = targetRealm;
+          }
+        }
+
         return JSON.stringify(packageJson, null, 2);
       },
     },
@@ -81,13 +95,6 @@ await copy({
       context: "downloaded_assets/opensource-labels-file",
       src: ["*"],
       dest: "dist/assets/opensource-labels-file",
-    },
-
-    // seed assets - jdt.ls v1.38.0
-    {
-      context: "downloaded_assets/jdt.ls-1.38.0",
-      src: ["**/*", "!*.tar.gz"],
-      dest: "dist/assets/jdtls",
     },
 
     // seed assets - kai binaries

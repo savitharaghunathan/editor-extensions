@@ -25,6 +25,13 @@ export interface SuccessRateMetric {
   unknown_solutions: number;
 }
 
+export interface SolutionServerAuthConfig {
+  username: string;
+  password: string;
+  realm: string;
+  clientId: string;
+}
+
 export interface Violation {
   description: string;
   category?: Category;
@@ -173,6 +180,8 @@ export interface ExtensionData {
   activeProfileId: string | null;
   solutionServerEnabled: boolean;
   isAgentMode: boolean;
+  activeDecorators?: Record<string, string>;
+  solutionServerConnected: boolean;
 }
 
 export type ConfigErrorType =
@@ -181,7 +190,10 @@ export type ConfigErrorType =
   | "invalid-label-selector"
   | "provider-not-configured"
   | "provider-connection-failed"
-  | "no-custom-rules";
+  | "no-custom-rules"
+  | "missing-auth-credentials"
+  | "genai-disabled"
+  | "solution-server-disconnected";
 
 export interface ConfigError {
   type: ConfigErrorType;
@@ -218,6 +230,22 @@ export const createConfigError = {
   noCustomRules: (): ConfigError => ({
     type: "no-custom-rules",
     message: "No custom rules configured and default rules are disabled.",
+  }),
+
+  missingAuthCredentials: (): ConfigError => ({
+    type: "missing-auth-credentials",
+    message: "Authentication is enabled but credentials are not configured.",
+  }),
+
+  genaiDisabled: (): ConfigError => ({
+    type: "genai-disabled",
+    message: "GenAI functionality is disabled.",
+  }),
+  solutionServerDisconnected: (): ConfigError => ({
+    type: "solution-server-disconnected",
+    message: "Solution server is not connected",
+    error:
+      "The solution server is enabled but not connected. AI-powered solution suggestions may not work properly.",
   }),
 };
 
@@ -305,5 +333,3 @@ export interface InputOutputCache<K, V, C, O> {
   invalidate(input: K, opts?: O): Promise<void>;
   reset(): Promise<void>;
 }
-
-export const KONVEYOR_OUTPUT_CHANNEL_NAME = "Konveyor";

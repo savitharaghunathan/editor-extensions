@@ -1,40 +1,44 @@
 import * as vscode from "vscode";
 import { EventEmitter } from "events";
 import { KonveyorGUIWebviewViewProvider } from "./KonveyorGUIWebviewViewProvider";
-import { registerAllCommands as registerAllCommands } from "./commands";
+import { registerAllCommands as registerAllCommands, executeExtensionCommand } from "./commands";
 import { ExtensionState } from "./extensionState";
-import {
-  ConfigError,
-  createConfigError,
-  ExtensionData,
-  KONVEYOR_OUTPUT_CHANNEL_NAME,
-} from "@editor-extensions/shared";
+import { ConfigError, createConfigError, ExtensionData } from "@editor-extensions/shared";
 import { ViolationCodeActionProvider } from "./ViolationCodeActionProvider";
 import { AnalyzerClient } from "./client/analyzerClient";
+import {
+  BUILD_INFO,
+  EXTENSION_DISPLAY_NAME,
+  EXTENSION_ID,
+  EXTENSION_NAME,
+} from "./utilities/constants";
 import {
   KaiInteractiveWorkflow,
   InMemoryCacheWithRevisions,
   SolutionServerClient,
   FileBasedResponseCache,
 } from "@editor-extensions/agentic";
-import { KonveyorFileModel, registerDiffView } from "./diffView";
-import { MemFS } from "./data";
 import { Immutable, produce } from "immer";
 import { registerAnalysisTrigger } from "./analysis";
 import { IssuesModel, registerIssueView } from "./issueView";
-import { ExtensionPaths, ensurePaths, paths } from "./paths";
+import { ExtensionPaths, ensurePaths, paths, ensureKaiAnalyzerBinary } from "./paths";
 import { copySampleProviderSettings } from "./utilities/fileUtils";
 import {
   getExcludedDiagnosticSources,
   getConfigSolutionServerEnabled,
   getConfigSolutionServerUrl,
-  updateConfigErrors,
+  getConfigSolutionServerAuth,
+  getConfigSolutionServerRealm,
+  getConfigSolutionServerInsecure,
   getConfigAgentMode,
   getCacheDir,
   getTraceDir,
   getTraceEnabled,
   getConfigKaiDemoMode,
   getConfigLogLevel,
+  checkAndPromptForCredentials,
+  getConfigGenAIEnabled,
+  getConfigAutoAcceptOnSave,
 } from "./utilities";
 import { getBundledProfiles } from "./utilities/profiles/bundledProfiles";
 import { getUserProfiles } from "./utilities/profiles/profileService";
@@ -45,19 +49,29 @@ import { ParsedModelConfig } from "./modelProvider/types";
 import { getModelProviderFromConfig, parseModelConfig } from "./modelProvider";
 import winston from "winston";
 import { OutputChannelTransport } from "winston-transport-vscode";
+// Removed - replaced with vertical diff system
+// import { DiffDecorationManager } from "./decorations";
+import { VerticalDiffManager } from "./diff/vertical/manager";
+import { StaticDiffAdapter } from "./diff/staticDiffAdapter";
+import { FileEditor } from "./utilities/ideUtils";
 
 class VsCodeExtension {
-  private state: ExtensionState;
+  public state: ExtensionState;
   private data: Immutable<ExtensionData>;
   private _onDidChange = new vscode.EventEmitter<Immutable<ExtensionData>>();
   readonly onDidChangeData = this._onDidChange.event;
   private listeners: vscode.Disposable[] = [];
+  private diffStatusBarItem: vscode.StatusBarItem;
 
   constructor(
     public readonly paths: ExtensionPaths,
     public readonly context: vscode.ExtensionContext,
     logger: winston.Logger,
   ) {
+    this.diffStatusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      100,
+    );
     this.data = produce(
       {
         localChanges: [],
@@ -81,6 +95,8 @@ class VsCodeExtension {
         activeProfileId: "",
         profiles: [],
         isAgentMode: getConfigAgentMode(),
+        activeDecorators: {},
+        solutionServerConnected: false,
         analysisConfig: {
           labelSelector: "",
           labelSelectorValid: false,
@@ -109,13 +125,13 @@ class VsCodeExtension {
       solutionServerClient: new SolutionServerClient(
         getConfigSolutionServerUrl(),
         getConfigSolutionServerEnabled(),
+        getConfigSolutionServerAuth(),
+        getConfigSolutionServerInsecure(),
         logger,
       ),
       webviewProviders: new Map<string, KonveyorGUIWebviewViewProvider>(),
       extensionContext: context,
       diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
-      memFs: new MemFS(),
-      fileModel: new KonveyorFileModel(),
       issueModel: new IssuesModel(),
       kaiFsCache: new InMemoryCacheWithRevisions(true),
       taskManager,
@@ -129,7 +145,6 @@ class VsCodeExtension {
       isWaitingForUserInteraction: false,
       lastMessageId: "0",
       currentTaskManagerIterations: 0,
-
       workflowManager: {
         workflow: undefined,
         isInitialized: false,
@@ -192,11 +207,16 @@ class VsCodeExtension {
         },
       },
       modelProvider: undefined,
+      verticalDiffManager: undefined,
+      staticDiffAdapter: undefined,
     };
   }
 
   public async initialize(): Promise<void> {
     try {
+      // Initialize vertical diff system
+      this.initializeVerticalDiff();
+
       const bundled = getBundledProfiles();
       const user = getUserProfiles(this.context);
       const allProfiles = [...bundled, ...user];
@@ -208,10 +228,52 @@ class VsCodeExtension {
       const activeProfileId =
         matchingProfile?.id ?? (allProfiles.length > 0 ? allProfiles[0].id : null);
 
+      // Check for problematic solutionServer.auth configuration (should be an object, not boolean)
+      const config = vscode.workspace.getConfiguration(EXTENSION_NAME);
+      const authConfig = config.get("solutionServer.auth");
+      if (typeof authConfig === "boolean") {
+        this.state.logger.warn(
+          "Detected invalid configuration 'konveyor.solutionServer.auth' set to boolean. This setting should not be a boolean and can cause problems with other configuration keys.",
+        );
+        vscode.window
+          .showWarningMessage(
+            "Invalid configuration detected: 'konveyor.solutionServer.auth' is set to a boolean value (true/false). " +
+              "Please remove this setting from your VS Code settings. " +
+              "Use 'konveyor.solutionServer.auth.enabled' instead. " +
+              "This invalid setting can cause problems with other configuration options below it.",
+            "Open Settings",
+          )
+          .then((selection) => {
+            if (selection === "Open Settings") {
+              vscode.commands.executeCommand(
+                "workbench.action.openSettings",
+                "konveyor.solutionServer",
+              );
+            }
+          });
+      }
+
+      // Get credentials for solution server client if solution server and auth are both enabled
+      if (getConfigSolutionServerEnabled() && getConfigSolutionServerAuth()) {
+        const credentials = await checkAndPromptForCredentials(this.context, this.state.logger);
+        if (credentials) {
+          const authConfig = {
+            username: credentials.username,
+            password: credentials.password,
+            realm: getConfigSolutionServerRealm(),
+            clientId: `${getConfigSolutionServerRealm()}-ui`,
+          };
+          this.state.solutionServerClient.setAuthConfig(authConfig);
+        } else {
+          this.state.mutateData((draft) => {
+            draft.configErrors.push(createConfigError.missingAuthCredentials());
+          });
+        }
+      }
+
       this.state.mutateData((draft) => {
         draft.profiles = allProfiles;
         draft.activeProfileId = activeProfileId;
-        updateConfigErrors(draft, paths().settingsYaml.fsPath);
       });
 
       this.setupModelProvider(paths().settingsYaml)
@@ -234,14 +296,56 @@ class VsCodeExtension {
         });
 
       this.registerWebviewProvider();
-      this.listeners.push(this.onDidChangeData(registerDiffView(this.state)));
+      // Diff view removed - using unified decorator flow instead
       this.listeners.push(this.onDidChangeData(registerIssueView(this.state)));
       this.registerCommands();
       this.registerLanguageProviders();
+
+      this.context.subscriptions.push(this.diffStatusBarItem);
       this.checkContinueInstalled();
-      this.state.solutionServerClient.connect().catch((error) => {
-        this.state.logger.error("Error connecting to solution server", error);
+
+      // Only attempt to connect if solution server is enabled
+      if (getConfigSolutionServerEnabled()) {
+        this.state.solutionServerClient
+          .connect()
+          .then(() => {
+            // Update state to reflect successful connection
+            this.state.mutateData((draft) => {
+              draft.solutionServerConnected = true;
+            });
+          })
+          .catch((error) => {
+            this.state.logger.error("Error connecting to solution server", error);
+            // Update state to reflect failed connection
+            this.state.mutateData((draft) => {
+              draft.solutionServerConnected = false;
+            });
+          });
+      }
+
+      // Connection poll to catch network issues and missed connection state changes
+      const connectionPollInterval = setInterval(async () => {
+        if (getConfigSolutionServerEnabled()) {
+          try {
+            // Try to get server capabilities to check if connection is alive
+            await this.state.solutionServerClient.getServerCapabilities();
+            // If we get here, connection is working
+            this.state.mutateData((draft) => {
+              draft.solutionServerConnected = true;
+            });
+          } catch {
+            // If we can't get capabilities, assume disconnected
+            this.state.mutateData((draft) => {
+              draft.solutionServerConnected = false;
+            });
+          }
+        }
+      }, 2000); // Check every 2 seconds to catch network issues quickly
+
+      this.listeners.push({
+        dispose: () => clearInterval(connectionPollInterval),
       });
+
       this.checkJavaExtensionInstalled();
 
       // Listen for extension changes to update Continue installation status and Java extension status
@@ -271,8 +375,42 @@ class VsCodeExtension {
 
       registerAnalysisTrigger(this.listeners, this.state);
 
-      // Removed decorator-related editor change listener since we're using merge editor now
+      this.listeners.push(
+        vscode.workspace.onWillSaveTextDocument(async (event) => {
+          const doc = event.document;
 
+          // Auto-accept all diff decorations BEFORE saving (if enabled)
+          // This ensures the document is saved in its final state
+          if (getConfigAutoAcceptOnSave() && this.state.verticalDiffManager) {
+            const fileUri = doc.uri.toString();
+            const handler = this.state.verticalDiffManager.getHandlerForFile(fileUri);
+            if (handler && handler.hasDiffForCurrentFile()) {
+              try {
+                // Accept all diffs BEFORE the save operation
+                // This ensures the document is saved in its final state
+                await this.state.staticDiffAdapter?.acceptAll(doc.uri.fsPath);
+                this.state.logger.info(
+                  `Auto-accepted all diff decorations for ${doc.fileName} before save`,
+                );
+                // Show user feedback that diffs were auto-accepted
+                vscode.window.showInformationMessage(
+                  `Auto-accepted all diff changes for ${doc.fileName} - saving final state`,
+                );
+              } catch (error) {
+                this.state.logger.error(
+                  `Failed to auto-accept diff decorations before save for ${doc.fileName}:`,
+                  error,
+                );
+                vscode.window.showErrorMessage(
+                  `Failed to auto-accept diff changes for ${doc.fileName}: ${error}`,
+                );
+              }
+            }
+          }
+        }),
+      );
+
+      // Handle settings.yaml configuration changes AFTER save
       this.listeners.push(
         vscode.workspace.onDidSaveTextDocument(async (doc) => {
           if (doc.uri.fsPath === paths().settingsYaml.fsPath) {
@@ -282,31 +420,87 @@ class VsCodeExtension {
               if (configError) {
                 draft.configErrors.push(configError);
               }
-              updateConfigErrors(draft, paths().settingsYaml.fsPath);
             });
           }
         }),
       );
 
       this.listeners.push(
-        vscode.workspace.onDidChangeConfiguration((event) => {
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
           this.state.logger.info("Configuration modified!");
 
-          if (event.affectsConfiguration("konveyor.kai.getSolutionMaxEffort")) {
-            this.state.logger.info("Effort modified!");
+          if (
+            event.affectsConfiguration(`${EXTENSION_NAME}.kai.demoMode`) ||
+            event.affectsConfiguration(`${EXTENSION_NAME}.kai.cacheDir`) ||
+            event.affectsConfiguration(`${EXTENSION_NAME}.genai.enabled`)
+          ) {
+            this.setupModelProvider(paths().settingsYaml)
+              .then((configError) => {
+                this.state.mutateData((draft) => {
+                  // Clear all GenAI-related config errors
+                  draft.configErrors = draft.configErrors.filter(
+                    (e) =>
+                      e.type !== "genai-disabled" &&
+                      e.type !== "provider-not-configured" &&
+                      e.type !== "provider-connection-failed",
+                  );
+
+                  // Add new config error if one exists
+                  if (configError) {
+                    draft.configErrors.push(configError);
+                  }
+                });
+              })
+              .catch((error) => {
+                this.state.logger.error("Error setting up model provider:", error);
+                this.state.mutateData((draft) => {
+                  // Clear all GenAI-related config errors
+                  draft.configErrors = draft.configErrors.filter(
+                    (e) =>
+                      e.type !== "genai-disabled" &&
+                      e.type !== "provider-not-configured" &&
+                      e.type !== "provider-connection-failed",
+                  );
+
+                  // Add connection failed error
+                  const configError = createConfigError.providerConnnectionFailed();
+                  configError.error = error instanceof Error ? error.message : String(error);
+                  draft.configErrors.push(configError);
+                });
+              });
           }
-          if (event.affectsConfiguration("konveyor.kai.agentMode")) {
+
+          if (event.affectsConfiguration(`${EXTENSION_NAME}.kai.agentMode`)) {
             const agentMode = getConfigAgentMode();
             this.state.mutateData((draft) => {
               draft.isAgentMode = agentMode;
             });
           }
 
+          if (event.affectsConfiguration("konveyor.solutionServer.enabled")) {
+            const solutionServerEnabled = getConfigSolutionServerEnabled();
+            this.state.mutateData((draft) => {
+              draft.solutionServerEnabled = solutionServerEnabled;
+              // Let the connection poll handle updating the connection status
+              draft.solutionServerConnected = false;
+            });
+          }
+
           if (
-            event.affectsConfiguration("konveyor.solutionServer.url") ||
-            event.affectsConfiguration("konveyor.solutionServer.enabled")
+            event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer.url`) ||
+            event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer.enabled`) ||
+            event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer.auth.enabled`)
           ) {
             this.state.logger.info("Solution server configuration modified!");
+
+            // Update the enabled state immediately
+            const solutionServerEnabled = getConfigSolutionServerEnabled();
+            this.state.mutateData((draft) => {
+              draft.solutionServerEnabled = solutionServerEnabled;
+              // Let the connection poll handle updating the connection status
+              draft.solutionServerConnected = false;
+            });
+
             vscode.window
               .showInformationMessage(
                 "Solution server configuration has changed. Please restart the Konveyor extension for changes to take effect.",
@@ -318,14 +512,113 @@ class VsCodeExtension {
                 }
               });
           }
+
+          if (event.affectsConfiguration("konveyor.analyzerPath")) {
+            this.state.logger.info("Analyzer path configuration modified!");
+
+            // Check if server is currently running
+            const wasServerRunning = this.state.analyzerClient.isServerRunning();
+
+            // Stop server if it's running
+            if (wasServerRunning) {
+              this.state.logger.info("Stopping analyzer server for binary path change...");
+              await this.state.analyzerClient.stop();
+            }
+
+            // Re-ensure the binary (this will validate and reset if needed)
+            await ensureKaiAnalyzerBinary(this.context, this.state.logger);
+
+            // Restart server if it was running before
+            if (wasServerRunning) {
+              this.state.logger.info("Restarting analyzer server after binary path change...");
+              try {
+                if (await this.state.analyzerClient.canAnalyzeInteractive()) {
+                  await this.state.analyzerClient.start();
+                }
+              } catch (error) {
+                this.state.logger.error("Error restarting analyzer server:", error);
+                vscode.window.showErrorMessage(
+                  `Failed to restart analyzer server after binary path change: ${error}`,
+                );
+              }
+            }
+          }
         }),
       );
 
-      vscode.commands.executeCommand("konveyor.loadResultsFromDataFolder");
+      executeExtensionCommand("loadResultsFromDataFolder");
       this.state.logger.info("Extension initialized");
+
+      // Setup diff status bar item
+      this.setupDiffStatusBar();
     } catch (error) {
       this.state.logger.error("Error initializing extension", error);
       vscode.window.showErrorMessage(`Failed to initialize Konveyor extension: ${error}`);
+    }
+  }
+
+  private initializeVerticalDiff(): void {
+    // Create file editor implementation
+    const fileEditor = new FileEditor();
+
+    // Initialize managers
+    this.state.verticalDiffManager = new VerticalDiffManager(fileEditor, this.state);
+
+    // Set up the diff status change callback
+    this.state.verticalDiffManager.onDiffStatusChange = (fileUri: string) => {
+      this.updateDiffStatusBarForFile(fileUri);
+    };
+
+    this.state.staticDiffAdapter = new StaticDiffAdapter(
+      this.state.verticalDiffManager,
+      this.state.logger,
+    );
+
+    this.state.logger.info("Vertical diff system initialized");
+  }
+
+  private setupDiffStatusBar(): void {
+    this.diffStatusBarItem.name = "Konveyor Diff Status";
+    this.diffStatusBarItem.tooltip = "Click to accept/reject all diff changes";
+    this.diffStatusBarItem.command = `${EXTENSION_NAME}.showDiffActions`;
+    this.diffStatusBarItem.hide();
+
+    // Update status bar when active editor changes
+    this.listeners.push(
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        this.updateDiffStatusBar(editor);
+      }),
+    );
+
+    // Initial update
+    this.updateDiffStatusBar(vscode.window.activeTextEditor);
+  }
+
+  private updateDiffStatusBar(editor: vscode.TextEditor | undefined): void {
+    if (!editor || !this.state.verticalDiffManager) {
+      this.diffStatusBarItem.hide();
+      return;
+    }
+
+    const fileUri = editor.document.uri.toString();
+    const handler = this.state.verticalDiffManager.getHandlerForFile(fileUri);
+
+    if (handler && handler.hasDiffForCurrentFile()) {
+      const blocks = this.state.verticalDiffManager.fileUriToCodeLens.get(fileUri) || [];
+      const totalGreen = blocks.reduce((sum, b) => sum + b.numGreen, 0);
+      const totalRed = blocks.reduce((sum, b) => sum + b.numRed, 0);
+
+      this.diffStatusBarItem.text = `$(diff) ${totalGreen}+ ${totalRed}-`;
+      this.diffStatusBarItem.show();
+    } else {
+      this.diffStatusBarItem.hide();
+    }
+  }
+
+  public updateDiffStatusBarForFile(fileUri: string): void {
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document.uri.toString() === fileUri) {
+      this.updateDiffStatusBar(editor);
     }
   }
 
@@ -436,11 +729,17 @@ class VsCodeExtension {
   }
 
   private async setupModelProvider(settingsPath: vscode.Uri): Promise<ConfigError | undefined> {
+    // Check if GenAI is disabled via settings
+    if (!getConfigGenAIEnabled()) {
+      return createConfigError.genaiDisabled();
+    }
+
     let modelConfig: ParsedModelConfig;
     try {
       modelConfig = await parseModelConfig(settingsPath);
     } catch (err) {
       this.state.logger.error("Error getting model config:", err);
+
       const configError = createConfigError.providerNotConfigured();
       configError.error = err instanceof Error ? err.message : String(err);
       return configError;
@@ -454,6 +753,7 @@ class VsCodeExtension {
       );
     } catch (err) {
       this.state.logger.error("Error running model health check:", err);
+
       const configError = createConfigError.providerConnnectionFailed();
       configError.error =
         err instanceof Error
@@ -480,10 +780,19 @@ class VsCodeExtension {
       }
     }
 
+    // Decoration managers removed - using vertical diff system
+    // Cleanup is handled by vertical diff manager
+
     await this.state.analyzerClient?.stop();
     await this.state.solutionServerClient?.disconnect().catch((error) => {
       this.state.logger.error("Error disconnecting from solution server", error);
     });
+
+    // Update state to reflect disconnected status
+    this.state.mutateData((draft) => {
+      draft.solutionServerConnected = false;
+    });
+
     const disposables = this.listeners.splice(0, this.listeners.length);
     for (const disposable of disposables) {
       disposable.dispose();
@@ -495,7 +804,7 @@ let extension: VsCodeExtension | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // Logger is our bae...before anything else
-  const outputChannel = vscode.window.createOutputChannel(KONVEYOR_OUTPUT_CHANNEL_NAME);
+  const outputChannel = vscode.window.createOutputChannel(EXTENSION_DISPLAY_NAME);
   const logger = winston.createLogger({
     level: getConfigLogLevel(),
     format: winston.format.combine(
@@ -516,6 +825,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   logger.info("Logger created");
+  logger.info(`Extension ${EXTENSION_ID} starting`, { buildInfo: BUILD_INFO });
 
   try {
     const paths = await ensurePaths(context, logger);
@@ -533,6 +843,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export async function deactivate(): Promise<void> {
-  // Removed decorator disposal since we're using merge editor now
-  await extension?.dispose();
+  try {
+    // Clean up diff system managers to prevent resource leaks
+    if (extension?.state?.verticalDiffManager) {
+      await extension.state.verticalDiffManager.dispose();
+      extension.state.verticalDiffManager = undefined;
+    }
+
+    if (extension?.state?.staticDiffAdapter) {
+      //Disposal and lifecycle is handled by vertical diff manager
+      extension.state.staticDiffAdapter = undefined;
+    }
+
+    // Clean up the main extension
+    await extension?.dispose();
+  } catch (error) {
+    console.error("Error during extension deactivation:", error);
+  } finally {
+    extension = undefined;
+  }
 }

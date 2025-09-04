@@ -30,6 +30,16 @@ export const stopServer = (): WebviewAction<WebviewActionType, unknown> => ({
   payload: {},
 });
 
+export const restartSolutionServer = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "RESTART_SOLUTION_SERVER",
+  payload: {},
+});
+
+export const enableGenAI = (): WebviewAction<WebviewActionType, unknown> => ({
+  type: "ENABLE_GENAI",
+  payload: {},
+});
+
 export const cancelSolution = (): WebviewAction<WebviewActionType, unknown> => ({
   type: "CANCEL_SOLUTION",
   payload: {},
@@ -62,31 +72,6 @@ export const viewFix = (change: LocalChange): WebviewAction<WebviewActionType, L
   payload: change,
 });
 
-export interface ApplyFilePayload {
-  path: string;
-  messageToken?: string;
-  content?: string;
-}
-
-export const applyFile = (
-  payload: ApplyFilePayload,
-): WebviewAction<WebviewActionType, ApplyFilePayload> => ({
-  type: "APPLY_FILE",
-  payload,
-});
-
-export interface DiscardFilePayload {
-  path: string;
-  messageToken?: string;
-}
-
-export const discardFile = (
-  payload: LocalChange | DiscardFilePayload,
-): WebviewAction<WebviewActionType, LocalChange | DiscardFilePayload> => ({
-  type: "DISCARD_FILE",
-  payload,
-});
-
 export const configureLabelSelector = (): WebviewAction<WebviewActionType, unknown> => ({
   type: "CONFIGURE_LABEL_SELECTOR",
   payload: {}, // no payload needed here, but could pass data if needed
@@ -99,11 +84,6 @@ export const configureSourcesTargets = (): WebviewAction<WebviewActionType, unkn
 
 export const overrideAnalyzerBinaries = (): WebviewAction<WebviewActionType, unknown> => ({
   type: "OVERRIDE_ANALYZER_BINARIES",
-  payload: {},
-});
-
-export const overrideKaiRpcServerBinaries = (): WebviewAction<WebviewActionType, unknown> => ({
-  type: "OVERRIDE_RPC_SERVER_BINARIES",
   payload: {},
 });
 

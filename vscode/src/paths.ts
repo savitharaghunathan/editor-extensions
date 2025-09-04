@@ -1,9 +1,16 @@
-import { relative, dirname, posix } from "node:path";
-import { readFileSync } from "node:fs";
+import { relative, dirname, posix, join } from "node:path";
+import { readFileSync, createWriteStream, createReadStream } from "node:fs";
 import { globbySync, isIgnoredByIgnoreFilesSync } from "globby";
 import * as vscode from "vscode";
 import slash from "slash";
 import winston from "winston";
+import { createHash } from "node:crypto";
+import { mkdir, chmod, unlink } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
+import { platform, arch } from "node:process";
+import { existsSync } from "node:fs";
+import { getConfigAnalyzerPath } from "./utilities/configuration";
+import { EXTENSION_NAME } from "./utilities/constants";
 
 export interface ExtensionPaths {
   /** Directory with the extension's sample resources. */
@@ -49,6 +56,132 @@ async function ensureDirectory(uri: vscode.Uri, ...parts: string[]): Promise<vsc
   return joined;
 }
 
+/**
+ * Downloads the kai-analyzer-rpc binary for the current platform if it doesn't exist
+ */
+export async function ensureKaiAnalyzerBinary(
+  context: vscode.ExtensionContext,
+  logger: winston.Logger,
+): Promise<void> {
+  // First check if user has configured a custom analyzer path
+  const userAnalyzerPath = getConfigAnalyzerPath();
+
+  if (userAnalyzerPath !== "") {
+    logger.info(`Checking user-configured analyzer path: ${userAnalyzerPath}`);
+
+    // Import checkIfExecutable dynamically to avoid circular imports
+    const { checkIfExecutable } = await import("./utilities/fileUtils");
+    const { updateAnalyzerPath } = await import("./utilities/configuration");
+
+    const isValid = await checkIfExecutable(userAnalyzerPath);
+    if (!isValid) {
+      logger.warn(
+        `Invalid analyzer path detected at startup: ${userAnalyzerPath}. Resetting to default.`,
+      );
+
+      // Reset the configuration to undefined
+      await updateAnalyzerPath(undefined);
+
+      // Show error message to user
+      vscode.window.showErrorMessage(
+        `The configured analyzer binary path is invalid: ${userAnalyzerPath}. ` +
+          `The setting has been reset to use the bundled binary.`,
+      );
+    } else {
+      logger.info(`User-configured analyzer path is valid: ${userAnalyzerPath}`);
+      return; // Use the user's valid path, no need to download bundled binary
+    }
+  }
+
+  const packageJson = context.extension.packageJSON;
+  const assetPaths = {
+    kai: "./kai",
+    ...packageJson.includedAssetPaths,
+  };
+  const platformKey = `${platform}-${arch}`;
+
+  // Convert to absolute paths
+  const kaiDir = context.asAbsolutePath(assetPaths.kai);
+  const kaiAnalyzerPath = join(
+    kaiDir,
+    platformKey,
+    `kai-analyzer-rpc${platform === "win32" ? ".exe" : ""}`,
+  );
+
+  if (existsSync(kaiAnalyzerPath)) {
+    return; // Binary already exists
+  }
+
+  logger.info(`kai-analyzer-rpc not found at ${kaiAnalyzerPath}, downloading...`);
+
+  const fallbackConfig = packageJson[`${EXTENSION_NAME}.fallbackAssets`];
+  if (!fallbackConfig) {
+    throw new Error("No fallback asset configuration found in package.json");
+  }
+
+  const assetConfig = fallbackConfig.assets[platformKey];
+
+  if (!assetConfig) {
+    throw new Error(`No fallback asset available for platform: ${platformKey}`);
+  }
+
+  const downloadUrl = `${fallbackConfig.baseUrl}${assetConfig.file}`;
+
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Downloading kai-analyzer-rpc",
+      cancellable: false,
+    },
+    async (progress) => {
+      progress.report({ message: "Downloading..." });
+
+      // Create target directory
+      await mkdir(dirname(kaiAnalyzerPath), { recursive: true });
+
+      // Download file
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error("Response body is null");
+      }
+
+      const fileStream = createWriteStream(kaiAnalyzerPath);
+      await pipeline(response.body as any, fileStream);
+
+      progress.report({ message: "Verifying..." });
+
+      // Verify SHA256
+      const hash = createHash("sha256");
+      const verifyStream = createReadStream(kaiAnalyzerPath);
+      await pipeline(verifyStream, hash);
+      const actualSha256 = hash.digest("hex");
+
+      if (actualSha256 !== assetConfig.sha256) {
+        try {
+          await unlink(kaiAnalyzerPath);
+        } catch (err) {
+          logger.error(`Error deleting file: ${kaiAnalyzerPath}`, err);
+        }
+        throw new Error(
+          `SHA256 mismatch. Expected: ${assetConfig.sha256}, Actual: ${actualSha256}`,
+        );
+      }
+
+      // Make executable on Unix systems
+      if (platform !== "win32") {
+        await chmod(kaiAnalyzerPath, 0o755);
+      }
+
+      progress.report({ message: "Complete!" });
+      logger.info(`Successfully downloaded kai-analyzer-rpc to: ${kaiAnalyzerPath}`);
+    },
+  );
+}
+
 export async function ensurePaths(
   context: vscode.ExtensionContext,
   logger: winston.Logger,
@@ -78,7 +211,7 @@ export async function ensurePaths(
   _paths = {
     extResources,
     workspaceRepo: firstWorkspace.uri,
-    data: await ensureDirectory(workspaceRepoScope, "konveyor"),
+    data: await ensureDirectory(workspaceRepoScope, EXTENSION_NAME.toLowerCase()),
     settings: await ensureDirectory(settings),
     settingsYaml,
     serverCwd: await ensureDirectory(workspaceScope, "kai-rpc-server"),
@@ -88,6 +221,14 @@ export async function ensurePaths(
   _fsPaths = {} as ExtensionFsPaths;
   for (const key of Object.keys(_paths) as Array<keyof ExtensionPaths>) {
     _fsPaths[key] = _paths[key].fsPath;
+  }
+
+  // Ensure kai-analyzer-rpc binary exists
+  try {
+    await ensureKaiAnalyzerBinary(context, logger);
+  } catch (error) {
+    logger.error("Failed to install kai analyzer:", error);
+    throw error;
   }
 
   return _paths;

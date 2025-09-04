@@ -1,7 +1,8 @@
 import { ExtensionState } from "../../extensionState";
 import * as vscode from "vscode";
 import { ChatMessageType } from "@editor-extensions/shared";
-import { getConfigAgentMode } from "../configuration";
+import { getConfigAgentMode, getConfigAnalyzeOnSave } from "../configuration";
+import { executeExtensionCommand } from "../../commands";
 
 /**
  * Creates a new file with the specified content
@@ -109,20 +110,6 @@ export async function handleFileResponse(
       return;
     }
 
-    const msg = state.data.chatMessages[messageIndex];
-
-    // Add user's response to chat
-    state.mutateData((draft) => {
-      draft.chatMessages.push({
-        kind: ChatMessageType.String,
-        messageToken: msg.messageToken,
-        timestamp: new Date().toISOString(),
-        value: {
-          message: responseId === "apply" ? "Applied file changes" : "Rejected file changes",
-        },
-      });
-    });
-
     if (responseId === "apply") {
       const uri = vscode.Uri.file(path);
       const fileMessage = state.data.chatMessages.find(
@@ -151,9 +138,9 @@ export async function handleFileResponse(
           await updateExistingFile(uri, path, fileContent, state);
         }
 
-        // Trigger analysis after file changes are applied in agentic mode
+        // Trigger analysis after file changes are applied in agentic mode or when analyze on save is enabled
         // This ensures that the tasks interaction can detect new diagnostic issues
-        if (getConfigAgentMode()) {
+        if (getConfigAgentMode() || getConfigAnalyzeOnSave()) {
           try {
             await state.analyzerClient.runAnalysis([uri]);
           } catch (analysisError) {
@@ -169,6 +156,45 @@ export async function handleFileResponse(
         vscode.window.showErrorMessage(`Failed to apply changes: ${error}`);
         throw error;
       }
+
+      // Notify solution server of the change
+      try {
+        if (isDeleted) {
+          await executeExtensionCommand("changeDiscarded", path);
+        } else {
+          await executeExtensionCommand("changeApplied", path, fileContent);
+        }
+      } catch (error) {
+        logger.error("Error notifying solution server:", error);
+      }
+
+      // Update the chat message status in the centralized state (for Accept/Reject All consistency)
+      state.mutateData((draft) => {
+        const messageIndex = draft.chatMessages.findIndex(
+          (msg) => msg.messageToken === messageToken,
+        );
+        if (
+          messageIndex >= 0 &&
+          draft.chatMessages[messageIndex].kind === ChatMessageType.ModifiedFile
+        ) {
+          const modifiedFileMessage = draft.chatMessages[messageIndex].value as any;
+          modifiedFileMessage.status = "applied";
+        }
+      });
+    } else {
+      // For reject, also update the global state
+      state.mutateData((draft) => {
+        const messageIndex = draft.chatMessages.findIndex(
+          (msg) => msg.messageToken === messageToken,
+        );
+        if (
+          messageIndex >= 0 &&
+          draft.chatMessages[messageIndex].kind === ChatMessageType.ModifiedFile
+        ) {
+          const modifiedFileMessage = draft.chatMessages[messageIndex].value as any;
+          modifiedFileMessage.status = "rejected";
+        }
+      });
     }
 
     // Trigger the pending interaction resolver which will handle queue processing

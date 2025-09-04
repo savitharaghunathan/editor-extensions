@@ -1,6 +1,10 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { EnhancedIncident, SuccessRateMetric } from "@editor-extensions/shared";
+import {
+  EnhancedIncident,
+  SuccessRateMetric,
+  SolutionServerAuthConfig,
+} from "@editor-extensions/shared";
 import { Logger } from "winston";
 
 export interface SolutionFile {
@@ -32,26 +36,79 @@ export class SolutionServerClientError extends Error {
   }
 }
 
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+}
+
 export class SolutionServerClient {
   private mcpClient: Client | null = null;
   private serverUrl: string;
   private isConnected: boolean = false;
   private enabled: boolean;
+  private authEnabled: boolean;
+  private insecure: boolean;
+  private authConfig: SolutionServerAuthConfig | null = null;
+  private bearerToken: string | null = null;
+  private refreshToken: string | null = null;
+  private tokenExpiresAt: number | null = null;
+  private refreshTimer: NodeJS.Timeout | null = null;
   private currentClientId: string = "";
   private logger: Logger;
+  private sslBypassCleanup: (() => void) | null = null;
 
-  constructor(serverUrl: string, enabled: boolean = true, logger: Logger) {
+  constructor(
+    serverUrl: string,
+    enabled: boolean = true,
+    authEnabled: boolean = false,
+    insecure: boolean = false,
+    logger: Logger,
+  ) {
     this.serverUrl = serverUrl;
     this.enabled = enabled;
+    this.authEnabled = authEnabled;
+    this.insecure = insecure;
+    this.authConfig = null; // Will be set via setAuthConfig if needed
     this.logger = logger.child({
       component: "SolutionServerClient",
     });
+  }
+
+  public setAuthConfig(authConfig: SolutionServerAuthConfig | null): void {
+    this.authConfig = authConfig;
   }
 
   public async connect(): Promise<void> {
     if (!this.enabled) {
       this.logger.info("Solution server is disabled, skipping connection");
       return;
+    }
+
+    // Apply SSL bypass for development/testing if insecure flag is enabled
+    if (this.insecure) {
+      this.sslBypassCleanup = this.applySSLBypass();
+    }
+
+    if (this.authEnabled) {
+      if (!this.authConfig) {
+        throw new SolutionServerClientError(
+          "Authentication is enabled but no auth config provided",
+        );
+      }
+
+      // Always get fresh tokens on startup/connect
+      try {
+        if (!this.bearerToken) {
+          await this.exchangeForTokens();
+        }
+        this.startTokenRefreshTimer();
+      } catch (error) {
+        this.logger.error("Failed to exchange for tokens", error);
+        await this.disconnect();
+        return;
+      }
     }
 
     this.mcpClient = new Client(
@@ -69,14 +126,13 @@ export class SolutionServerClient {
       },
     );
 
-    try {
-      await this.mcpClient?.connect(new StreamableHTTPClientTransport(new URL(this.serverUrl)));
-      this.logger.info("Connected to MCP solution server");
-      this.isConnected = true;
-    } catch (error) {
-      this.logger.error("Failed to connect to MCP solution server", error);
-      this.isConnected = false;
-      throw error;
+    // Try connection with retry logic for trailing slash
+    const success = await this.attemptConnectionWithSlashRetry();
+    if (!success) {
+      await this.disconnect();
+      throw new SolutionServerClientError(
+        "Failed to connect after trying with and without trailing slash",
+      );
     }
 
     try {
@@ -91,6 +147,61 @@ export class SolutionServerClient {
     }
   }
 
+  private async attemptConnectionWithSlashRetry(): Promise<boolean> {
+    const transportOptions: any = {};
+
+    if (this.authEnabled && this.bearerToken) {
+      transportOptions.requestInit = {
+        headers: {
+          Authorization: `Bearer ${this.bearerToken}`,
+        },
+      };
+      this.logger.debug("Added bearer token authentication");
+    }
+
+    // First attempt with original URL
+    try {
+      this.logger.debug(`Connecting to MCP server at: ${this.serverUrl}`);
+      await this.mcpClient?.connect(
+        new StreamableHTTPClientTransport(new URL(this.serverUrl), transportOptions),
+      );
+      this.logger.info("Connected to MCP solution server");
+      this.isConnected = true;
+      return true;
+    } catch (error) {
+      this.logger.warn(`Failed to connect with original URL (${this.serverUrl})`, error);
+    }
+
+    // Second attempt with trailing slash behavior toggled
+    const alternativeUrl = this.getAlternativeUrl(this.serverUrl);
+    if (alternativeUrl !== this.serverUrl) {
+      try {
+        this.logger.debug(`Retrying connection to MCP server at: ${alternativeUrl}`);
+        await this.mcpClient?.connect(
+          new StreamableHTTPClientTransport(new URL(alternativeUrl), transportOptions),
+        );
+        this.logger.info(
+          `Connected to MCP solution server using alternative URL: ${alternativeUrl}`,
+        );
+        this.isConnected = true;
+        return true;
+      } catch (error) {
+        this.logger.error(`Failed to connect with alternative URL (${alternativeUrl})`, error);
+      }
+    }
+
+    return false;
+  }
+
+  private getAlternativeUrl(url: string): string {
+    // If URL ends with trailing slash, remove it; if not, add it
+    if (url.endsWith("/")) {
+      return url.slice(0, -1);
+    } else {
+      return url + "/";
+    }
+  }
+
   public async disconnect(): Promise<void> {
     if (!this.enabled) {
       this.logger.info("Solution server is disabled, skipping disconnect");
@@ -98,6 +209,15 @@ export class SolutionServerClient {
     }
 
     this.logger.info("Disconnecting from MCP solution server...");
+
+    // Clear refresh timer
+    this.clearTokenRefreshTimer();
+
+    // Restore SSL settings
+    if (this.sslBypassCleanup) {
+      this.sslBypassCleanup();
+      this.sslBypassCleanup = null;
+    }
 
     try {
       if (this.mcpClient) {
@@ -527,7 +647,7 @@ export class SolutionServerClient {
     }
   }
 
-  public async acceptFile(clientId: string, uri: string, content: string): Promise<void> {
+  public async acceptFile(uri: string, content: string): Promise<void> {
     if (!this.enabled) {
       this.logger.info("Solution server is disabled, skipping accept_file");
       return;
@@ -546,7 +666,7 @@ export class SolutionServerClient {
       await this.mcpClient!.callTool({
         name: "accept_file",
         arguments: {
-          client_id: clientId,
+          client_id: this.currentClientId,
           solution_file: {
             uri: uri,
             content: content,
@@ -561,7 +681,7 @@ export class SolutionServerClient {
     }
   }
 
-  public async rejectFile(clientId: string, uri: string): Promise<void> {
+  public async rejectFile(uri: string): Promise<void> {
     if (!this.enabled) {
       this.logger.info("Solution server is disabled, skipping reject_file");
       return;
@@ -580,7 +700,7 @@ export class SolutionServerClient {
       await this.mcpClient!.callTool({
         name: "reject_file",
         arguments: {
-          client_id: clientId,
+          client_id: this.currentClientId,
           file_uri: uri,
         },
       });
@@ -590,5 +710,187 @@ export class SolutionServerClient {
       this.logger.error(`Error rejecting file ${uri}: ${error}`);
       throw error;
     }
+  }
+
+  private async exchangeForTokens(): Promise<void> {
+    if (!this.authConfig) {
+      throw new SolutionServerClientError("No auth config available for token exchange");
+    }
+
+    const url = new URL(this.serverUrl);
+    const keycloakUrl = `${url.protocol}//${url.host}/auth`;
+    const tokenUrl = `${keycloakUrl}/realms/${this.authConfig.realm}/protocol/openid-connect/token`;
+
+    const params = new URLSearchParams();
+    params.append("grant_type", "password");
+    params.append("client_id", this.authConfig.clientId);
+    params.append("username", this.authConfig.username);
+    params.append("password", this.authConfig.password);
+
+    try {
+      this.logger.debug(`Attempting token exchange with ${tokenUrl}`);
+
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: params,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Token exchange failed: ${response.status} ${response.statusText}`,
+          errorText,
+        );
+        throw new SolutionServerClientError(
+          `Authentication failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const tokenResponse = (await response.json()) as TokenResponse;
+      this.logger.info("Token exchange successful");
+
+      this.bearerToken = tokenResponse.access_token;
+      this.refreshToken = tokenResponse.refresh_token || null;
+      this.tokenExpiresAt = Date.now() + tokenResponse.expires_in * 1000 - 30000; // 30 second buffer
+    } catch (error) {
+      this.logger.error("Token exchange failed", error);
+      if (error instanceof SolutionServerClientError) {
+        throw error;
+      }
+      throw new SolutionServerClientError(
+        `Token exchange failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async refreshTokens(): Promise<void> {
+    if (!this.refreshToken) {
+      this.logger.warn("No refresh token available, cannot refresh");
+      return;
+    }
+
+    if (!this.authConfig) {
+      this.logger.warn("No auth config available for token refresh");
+      return;
+    }
+
+    const url = new URL(this.serverUrl);
+    const keycloakUrl = `${url.protocol}//${url.host}/auth`;
+    const tokenUrl = `${keycloakUrl}/realms/${this.authConfig.realm}/protocol/openid-connect/token`;
+
+    const params = new URLSearchParams();
+    params.append("grant_type", "refresh_token");
+    params.append("client_id", this.authConfig.clientId);
+    params.append("refresh_token", this.refreshToken);
+
+    try {
+      this.logger.debug(`Attempting token refresh with ${tokenUrl}`);
+
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: params,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Token refresh failed: ${response.status} ${response.statusText}`,
+          errorText,
+        );
+        throw new SolutionServerClientError(
+          `Token refresh failed: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const tokenResponse = (await response.json()) as TokenResponse;
+      this.logger.info("Token refresh successful");
+
+      this.bearerToken = tokenResponse.access_token;
+      this.refreshToken = tokenResponse.refresh_token || this.refreshToken;
+      this.tokenExpiresAt = Date.now() + tokenResponse.expires_in * 1000 - 30000; // 30 second buffer
+
+      if (this.isConnected) {
+        this.logger.info("Reconnecting to MCP solution server");
+        try {
+          await this.disconnect();
+          await this.connect();
+        } catch (error) {
+          this.logger.error("Error reconnecting to MCP solution server", error);
+        }
+      }
+
+      // Restart the refresh timer
+      this.startTokenRefreshTimer();
+    } catch (error) {
+      this.logger.error("Token refresh failed", error);
+      // For now, just log the error as requested
+    }
+  }
+
+  private startTokenRefreshTimer(): void {
+    this.clearTokenRefreshTimer();
+
+    if (!this.tokenExpiresAt) {
+      this.logger.warn("No token expiration time available, cannot start refresh timer");
+      return;
+    }
+
+    const now = Date.now();
+    const timeUntilRefresh = this.tokenExpiresAt - now;
+
+    if (timeUntilRefresh <= 0) {
+      // Token already expired, refresh immediately
+      this.refreshTokens().catch((error) => {
+        this.logger.error("Immediate token refresh failed", error);
+      });
+      return;
+    }
+
+    this.logger.info(`Starting token refresh timer, will refresh in ${timeUntilRefresh}ms`);
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTokens().catch((error) => {
+        this.logger.error("Token refresh timer failed", error);
+      });
+    }, timeUntilRefresh);
+  }
+
+  private clearTokenRefreshTimer(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  /**
+   * Apply SSL bypass for insecure connections (Node.js specific)
+   */
+  private applySSLBypass(): () => void {
+    this.logger.debug("Applying SSL bypass for insecure connections");
+
+    // Store original values
+    const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+
+    // Disable SSL verification through environment variable
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+    this.logger.warn("SSL certificate verification is disabled");
+
+    // Return cleanup function
+    return () => {
+      this.logger.debug("Restoring SSL settings");
+      if (originalRejectUnauthorized !== undefined) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized;
+      } else {
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      }
+    };
   }
 }

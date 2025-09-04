@@ -4,6 +4,16 @@ import { execSync } from 'child_process';
 import * as path from 'path';
 import type { TestInfo } from '@playwright/test';
 import { rm } from 'node:fs/promises';
+import process from 'process';
+
+export const extensionName = process.env.EXTENSION_NAME || 'konveyor';
+export const extensionPublisher = process.env.EXTENSION_PUBLISHER || 'konveyor';
+export const extensionId = `${extensionPublisher}.${extensionName}`;
+
+// Function to get the analysis view title based on extension name
+export function getAnalysisViewTitle(): string {
+  return `${extensionName.charAt(0).toUpperCase() + extensionName.slice(1)} Analysis View`;
+}
 
 // Function to get OS information
 export function getOSInfo(): string {
@@ -47,7 +57,7 @@ export async function cleanupRepo(repoDir: string) {
 
 export async function uninstallExtension() {
   try {
-    execSync('code --uninstall-extension konveyor.konveyor', {
+    execSync(`code --uninstall-extension ${extensionId}`, {
       stdio: 'inherit',
     });
   } catch (error) {
@@ -69,7 +79,7 @@ export function getRepoName(testInfo: TestInfo): string {
       `Invalid test file name format: ${testInfo.file}. Expected format: prefix_reponame.test.ts`
     );
   }
-  return parts[1];
+  return parts[parts.length - 1];
 }
 
 export function generateRandomString(length: number = 8): string {
