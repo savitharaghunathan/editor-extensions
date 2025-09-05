@@ -181,6 +181,21 @@ export async function handleFileResponse(
           modifiedFileMessage.status = "applied";
         }
       });
+    } else if (responseId === "noChanges") {
+      // For noChanges, update the global state to indicate no changes were needed
+      // No file operations or notifications needed
+      state.mutateData((draft) => {
+        const messageIndex = draft.chatMessages.findIndex(
+          (msg) => msg.messageToken === messageToken,
+        );
+        if (
+          messageIndex >= 0 &&
+          draft.chatMessages[messageIndex].kind === ChatMessageType.ModifiedFile
+        ) {
+          const modifiedFileMessage = draft.chatMessages[messageIndex].value as any;
+          modifiedFileMessage.status = "no_changes_needed";
+        }
+      });
     } else {
       // For reject, also update the global state
       state.mutateData((draft) => {
@@ -209,14 +224,18 @@ export async function handleFileResponse(
         logger.warn(`No pending interaction found for messageToken: ${messageToken}`);
         // As a fallback, reset the waiting flag if no pending interaction was found
         // This should rarely happen if the architecture is working correctly
-        state.isWaitingForUserInteraction = false;
+        state.mutateData((draft) => {
+          draft.isWaitingForUserInteraction = false;
+        });
       }
     } else {
       logger.warn(
         "resolvePendingInteraction function not available - this indicates a setup issue",
       );
       // As a fallback, reset the waiting flag
-      state.isWaitingForUserInteraction = false;
+      state.mutateData((draft) => {
+        draft.isWaitingForUserInteraction = false;
+      });
     }
   } catch (error) {
     logger.error("Error handling file response:", error);

@@ -11,19 +11,25 @@ import { NormalizedFileData } from "./useModifiedFileData";
 import "./modifiedFileActions.css";
 
 interface ModifiedFileActionsProps {
-  actionTaken: "applied" | "rejected" | "processing" | null;
+  actionTaken: "applied" | "rejected" | "processing" | "no_changes_needed" | null;
   normalizedData: NormalizedFileData;
   onApply: () => void;
   onReject: () => void;
   onViewWithDecorations?: (path: string, diff: string) => void;
   isViewingDiff?: boolean;
   onContinue?: () => void;
-  onSetActionTaken?: (action: "applied" | "rejected" | "processing" | null) => void;
+  onSetActionTaken?: (
+    action: "applied" | "rejected" | "processing" | "no_changes_needed" | null,
+  ) => void;
   hasActiveDecorators?: boolean;
+  shouldShowNoChangesNeeded?: boolean;
+  onHandleNoChangesNeeded?: () => void;
 }
 
 // Status Display Component
-const StatusDisplay: React.FC<{ status: "applied" | "rejected" | "processing" }> = ({ status }) => (
+const StatusDisplay: React.FC<{
+  status: "applied" | "rejected" | "processing" | "no_changes_needed";
+}> = ({ status }) => (
   <Flex className="modified-file-actions">
     <FlexItem>
       <span>
@@ -34,6 +40,10 @@ const StatusDisplay: React.FC<{ status: "applied" | "rejected" | "processing" }>
         ) : status === "rejected" ? (
           <>
             <TimesCircleIcon color="red" /> Changes rejected
+          </>
+        ) : status === "no_changes_needed" ? (
+          <>
+            <CheckCircleIcon color="green" /> No changes needed - code already compatible
           </>
         ) : (
           <>
@@ -51,32 +61,52 @@ const DiffStatusBanner: React.FC<{
   hasActiveDecorators?: boolean;
   onSetActionTaken?: (action: "applied" | "rejected" | "processing" | null) => void;
 }> = ({ onApplyChanges, hasActiveDecorators, onSetActionTaken }) => {
-  // For DiffStatusBanner, we don't need actionTaken since we only show this when viewing diff
+  const showReviewingState = hasActiveDecorators === true || hasActiveDecorators === undefined;
+
   return (
     <Flex className="modified-file-actions" justifyContent={{ default: "justifyContentCenter" }}>
       <FlexItem>
         <div className="diff-status-banner">
-          <Icon status="warning">
-            <ExclamationTriangleIcon color="#b98412" />
+          <Icon status={showReviewingState ? "warning" : "success"}>
+            {showReviewingState ? (
+              <ExclamationTriangleIcon color="#b98412" />
+            ) : (
+              <CheckCircleIcon color="green" />
+            )}
           </Icon>
-          <span>Reviewing changes in editor</span>
+          <span>
+            {showReviewingState
+              ? "Reviewing changes in editor."
+              : "All changes have been resolved. Press continue to resume."}
+          </span>
           <Tooltip
             content={
-              <div>
-                The file has opened in the editor to the right of this panel with inline diff
-                decorations.
-                <br />
-                <br />
-                <strong>To accept or reject changes:</strong>
-                <ul style={{ marginLeft: "20px", marginTop: "8px" }}>
-                  <li>Use the CodeLens buttons at the top of the file to Accept/Reject All</li>
-                  <li>Or use individual block buttons to accept/reject specific changes</li>
-                  <li>Changes are auto-accepted when you save the file (Ctrl/Cmd+S)</li>
-                </ul>
-                <br />
-                <strong>Important:</strong> Save your changes (Ctrl/Cmd+S) before clicking Continue
-                to preserve any edits you&apos;ve made.
-              </div>
+              showReviewingState ? (
+                <div>
+                  The file has opened in the editor to the right of this panel with inline diff
+                  decorations.
+                  <br />
+                  <br />
+                  <strong>To accept or reject changes:</strong>
+                  <ul style={{ marginLeft: "20px", marginTop: "8px" }}>
+                    <li>Use the CodeLens buttons at the top of the file to Accept/Reject All</li>
+                    <li>Or use individual block buttons to accept/reject specific changes</li>
+                    <li>Changes are auto-accepted when you save the file (Ctrl/Cmd+S)</li>
+                  </ul>
+                  <br />
+                  <strong>Important:</strong> Save your changes (Ctrl/Cmd+S) before clicking
+                  Continue to preserve any edits you&apos;ve made.
+                </div>
+              ) : (
+                <div>
+                  <strong>All changes have been resolved!</strong>
+                  <br />
+                  <br />
+                  Click <strong>Continue</strong> to resume.
+                  <br />
+                  <br />
+                </div>
+              )
             }
             position="bottom"
           >
@@ -91,7 +121,7 @@ const DiffStatusBanner: React.FC<{
               onApplyChanges();
             }}
             className="continue-button"
-            isDisabled={hasActiveDecorators}
+            isDisabled={showReviewingState}
           >
             Continue
           </Button>
@@ -101,10 +131,34 @@ const DiffStatusBanner: React.FC<{
   );
 };
 
+// No Changes Needed Actions Component
+const NoChangesNeededActions: React.FC<{
+  onHandleNoChangesNeeded: () => void;
+}> = ({ onHandleNoChangesNeeded }) => (
+  <Flex className="modified-file-actions" justifyContent={{ default: "justifyContentCenter" }}>
+    <FlexItem>
+      <div className="no-changes-info">
+        <Icon status="success">
+          <CheckCircleIcon color="#3e8635" />
+        </Icon>
+        <span>No additional changes are needed at this time. The code is already compatible.</span>
+        <Button
+          variant="link"
+          icon={<CheckCircleIcon />}
+          onClick={onHandleNoChangesNeeded}
+          className="continue-button"
+        >
+          Continue
+        </Button>
+      </div>
+    </FlexItem>
+  </Flex>
+);
+
 // Primary Action Buttons Component
 const PrimaryActionButtons: React.FC<{
   isNew: boolean;
-  actionTaken: "applied" | "rejected" | "processing" | null;
+  actionTaken: "applied" | "rejected" | "processing" | "no_changes_needed" | null;
   onViewWithDecorations?: () => void;
   onApply: () => void;
   onReject: () => void;
@@ -176,12 +230,19 @@ const ModifiedFileActions: React.FC<ModifiedFileActionsProps> = ({
   onContinue,
   onSetActionTaken,
   hasActiveDecorators,
+  shouldShowNoChangesNeeded,
+  onHandleNoChangesNeeded,
 }) => {
   const { isNew } = normalizedData;
 
   // If action already taken or processing, show status
   if (actionTaken) {
     return <StatusDisplay status={actionTaken} />;
+  }
+
+  // If no meaningful changes needed, show special handling
+  if (shouldShowNoChangesNeeded && onHandleNoChangesNeeded) {
+    return <NoChangesNeededActions onHandleNoChangesNeeded={onHandleNoChangesNeeded} />;
   }
 
   if (isViewingDiff && actionTaken === null) {

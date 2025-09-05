@@ -39,6 +39,7 @@ import {
   checkAndPromptForCredentials,
   getConfigGenAIEnabled,
   getConfigAutoAcceptOnSave,
+  updateConfigErrors,
 } from "./utilities";
 import { getBundledProfiles } from "./utilities/profiles/bundledProfiles";
 import { getUserProfiles } from "./utilities/profiles/profileService";
@@ -97,6 +98,7 @@ class VsCodeExtension {
         isAgentMode: getConfigAgentMode(),
         activeDecorators: {},
         solutionServerConnected: false,
+        isWaitingForUserInteraction: false,
         analysisConfig: {
           labelSelector: "",
           labelSelectorValid: false,
@@ -142,7 +144,6 @@ class VsCodeExtension {
       mutateData,
       modifiedFiles: new Map(),
       modifiedFilesEventEmitter: new EventEmitter(),
-      isWaitingForUserInteraction: false,
       lastMessageId: "0",
       currentTaskManagerIterations: 0,
       workflowManager: {
@@ -274,6 +275,8 @@ class VsCodeExtension {
       this.state.mutateData((draft) => {
         draft.profiles = allProfiles;
         draft.activeProfileId = activeProfileId;
+        // Initialize configuration errors after setting profiles and activeProfileId
+        this.updateConfigurationErrors(draft);
       });
 
       this.setupModelProvider(paths().settingsYaml)
@@ -621,6 +624,19 @@ class VsCodeExtension {
     }
   }
 
+  private updateConfigurationErrors(draft: ExtensionData): void {
+    // Clear profile-related errors first
+    draft.configErrors = draft.configErrors.filter(
+      (error) =>
+        error.type !== "no-active-profile" &&
+        error.type !== "invalid-label-selector" &&
+        error.type !== "no-custom-rules",
+    );
+
+    // Update with current profile errors using the existing utility function
+    updateConfigErrors(draft, this.paths.settingsYaml.fsPath);
+  }
+
   private registerWebviewProvider(): void {
     const sidebarProvider = new KonveyorGUIWebviewViewProvider(this.state, "sidebar");
     const resolutionViewProvider = new KonveyorGUIWebviewViewProvider(this.state, "resolution");
@@ -768,7 +784,9 @@ class VsCodeExtension {
   public async dispose() {
     // Clean up pending interactions and resolver function to prevent memory leaks
     this.state.resolvePendingInteraction = undefined;
-    this.state.isWaitingForUserInteraction = false;
+    this.state.mutateData((draft) => {
+      draft.isWaitingForUserInteraction = false;
+    });
 
     // Dispose workflow manager
     if (this.state.workflowManager && this.state.workflowManager.dispose) {

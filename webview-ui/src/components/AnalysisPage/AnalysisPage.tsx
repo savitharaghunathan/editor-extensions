@@ -47,6 +47,7 @@ import {
   stopServer,
   getSuccessRate,
   toggleAgentMode,
+  openResolutionPanel,
 } from "../../hooks/actions";
 import { useViolations } from "../../hooks/useViolations";
 import { useExtensionStateContext } from "../../context/ExtensionStateContext";
@@ -78,6 +79,7 @@ const AnalysisPage: React.FC = () => {
     localChanges,
     isAgentMode,
     solutionServerConnected,
+    isWaitingForUserInteraction,
   } = state;
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -344,13 +346,22 @@ const AnalysisPage: React.FC = () => {
                 </StackItem>
               </Stack>
             </PageSection>
-            {isWaitingForSolution && (
+            {(isWaitingForSolution || isWaitingForUserInteraction) && (
               <Backdrop>
                 <div style={{ textAlign: "center", paddingTop: "15rem" }}>
                   <Spinner size="lg" />
                   <Title headingLevel="h2" size="lg">
-                    Waiting for solution confirmation...
+                    {isWaitingForUserInteraction
+                      ? "Waiting for user action..."
+                      : "Waiting for solution confirmation..."}
                   </Title>
+                  <Button
+                    variant="primary"
+                    onClick={() => dispatch(openResolutionPanel())}
+                    style={{ marginTop: "1rem" }}
+                  >
+                    Open Resolution Panel
+                  </Button>
                 </div>
               </Backdrop>
             )}
