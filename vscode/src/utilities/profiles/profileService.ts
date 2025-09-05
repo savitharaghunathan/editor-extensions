@@ -85,3 +85,40 @@ export function updateActiveProfile(
     }
   });
 }
+
+export function getProgrammingLanguage(state: ExtensionState): string {
+  return getActiveProfile(state)?.language ?? "Java";
+}
+
+export async function detectLanguageFromBuildFiles(): Promise<string | null> {
+  const buildFileToLanguage: { [pattern: string]: string } = {
+    "**/pom.xml": "Java",
+    "**/build.gradle": "Java",
+    "**/build.gradle.kts": "Java",
+    "**/go.mod": "Go",
+    "**/package.json": "JavaScript",
+    "**/requirements.txt": "Python",
+    "**/setup.py": "Python",
+    "**/pyproject.toml": "Python",
+    "**/Cargo.toml": "Rust",
+    "**/composer.json": "PHP",
+    "**/Gemfile": "Ruby",
+  };
+
+  for (const [pattern, language] of Object.entries(buildFileToLanguage)) {
+    try {
+      const files = await vscode.workspace.findFiles(pattern, null, 1);
+      if (files.length > 0) {
+        return language;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+export function getSupportedLanguages(): string[] {
+  return ["Java", "Go", "Python", "JavaScript", "TypeScript", "C#", "C++", "Rust", "PHP", "Ruby"];
+}

@@ -24,6 +24,7 @@ export const UPDATE_PROFILE = "UPDATE_PROFILE";
 export const QUICK_RESPONSE = "QUICK_RESPONSE";
 export const OPEN_FILE_IN_EDITOR = "OPEN_FILE_IN_EDITOR";
 export const TOGGLE_AGENT_MODE = "TOGGLE_AGENT_MODE";
+export const DETECT_LANGUAGE = "DETECT_LANGUAGE";
 
 export type WebviewActionType =
   | typeof SET_STATE
@@ -52,7 +53,8 @@ export type WebviewActionType =
   | typeof OPEN_PROFILE_MANAGER
   | typeof QUICK_RESPONSE
   | typeof OPEN_FILE_IN_EDITOR
-  | typeof TOGGLE_AGENT_MODE;
+  | typeof TOGGLE_AGENT_MODE
+  | typeof DETECT_LANGUAGE;
 export interface WebviewAction<S, T> {
   type: S;
   payload: T;

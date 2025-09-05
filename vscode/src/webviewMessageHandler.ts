@@ -9,6 +9,7 @@ import {
   CONFIGURE_LABEL_SELECTOR,
   CONFIGURE_SOURCES_TARGETS,
   DELETE_PROFILE,
+  DETECT_LANGUAGE,
   GET_SOLUTION,
   GET_SOLUTION_WITH_KONVEYOR_CONTEXT,
   GET_SUCCESS_RATE,
@@ -156,6 +157,9 @@ const actions: {
   },
   [CONFIGURE_CUSTOM_RULES]: async ({ profileId }, state) => {
     executeExtensionCommand("configureCustomRules", profileId);
+  },
+  [DETECT_LANGUAGE]: async (_payload, _state) => {
+    executeExtensionCommand("detectLanguage");
   },
 
   [OVERRIDE_ANALYZER_BINARIES]() {

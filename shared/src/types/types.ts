@@ -295,6 +295,7 @@ export interface AnalysisProfile {
   useDefaultRules: boolean;
   labelSelector: string;
   readOnly?: boolean;
+  language?: string;
 }
 
 export type ToolMessageValue = { toolName: string; toolStatus: string };

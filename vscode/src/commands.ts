@@ -51,6 +51,10 @@ import { MessageQueueManager } from "./utilities/ModifiedFiles/queueManager";
 import { VerticalDiffCodeLensProvider } from "./diff/verticalDiffCodeLens";
 import type { Logger } from "winston";
 import { parseModelConfig, getProviderConfigKeys } from "./modelProvider/config";
+import {
+  getProgrammingLanguage,
+  detectLanguageFromBuildFiles,
+} from "./utilities/profiles/profileService";
 
 const isWindows = process.platform === "win32";
 
@@ -274,7 +278,7 @@ const commandsMap: (
           const input: KaiInteractiveWorkflowInput = {
             incidents,
             migrationHint: profileName,
-            programmingLanguage: "Java",
+            programmingLanguage: getProgrammingLanguage(state),
             enableAgentMode: agentMode,
           };
 
@@ -997,6 +1001,18 @@ const commandsMap: (
         await executeExtensionCommand("acceptDiff", filePath);
       } else if (action?.value === "reject") {
         await executeExtensionCommand("rejectDiff", filePath);
+      }
+    },
+
+    [`${EXTENSION_NAME}.detectLanguage`]: async () => {
+      const detectedLanguage = await detectLanguageFromBuildFiles();
+
+      const profilesProvider = state.webviewProviders.get("profiles");
+      if (profilesProvider) {
+        profilesProvider.sendMessageToWebview({
+          type: "LANGUAGE_DETECTED",
+          detectedLanguage,
+        });
       }
     },
   };

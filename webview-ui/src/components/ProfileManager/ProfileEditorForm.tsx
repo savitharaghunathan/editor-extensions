@@ -20,6 +20,8 @@ import {
   Stack,
   Title,
   Icon,
+  FormSelect,
+  FormSelectOption,
 } from "@patternfly/react-core";
 import {
   ExclamationCircleIcon,
@@ -67,6 +69,8 @@ export const ProfileEditorForm: React.FC<{
 
   const [nameValidation, setNameValidation] = useState<"default" | "error">("default");
   const [nameErrorMsg, setNameErrorMsg] = useState<string | null>(null);
+  
+  const [isLanguageAutoDetected, setIsLanguageAutoDetected] = useState(false);
 
   const { dispatch } = useExtensionStateContext();
 
@@ -94,7 +98,34 @@ export const ProfileEditorForm: React.FC<{
 
     setSelectedSources(parsedSources);
     setSelectedTargets(parsedTargets);
-  }, [profile]);
+    
+
+    if (!profile.language && !profile.readOnly) {
+      
+      dispatch({
+        type: "DETECT_LANGUAGE" as const,
+        payload: {}
+      });
+    }
+  }, [profile, dispatch]);
+
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'LANGUAGE_DETECTED' && event.data?.detectedLanguage) {
+        const detectedLanguage = event.data.detectedLanguage;
+        if (detectedLanguage && !localProfile.language) {
+          const updatedProfile = { ...localProfile, language: detectedLanguage };
+          setLocalProfile(updatedProfile);
+          setIsLanguageAutoDetected(true);
+          debouncedChange(updatedProfile);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [localProfile, debouncedChange]);
 
   const handleInputChange = (value: string, field: keyof AnalysisProfile) => {
     const updated = { ...localProfile, [field]: value };
@@ -214,6 +245,40 @@ export const ProfileEditorForm: React.FC<{
             </HelperText>
           </FormHelperText>
         )}
+      </FormGroup>
+
+      <FormGroup label="Programming Language" fieldId="language" isRequired>
+        <FormSelect
+          id="language"
+          isDisabled={profile.readOnly}
+          value={localProfile.language || 'Java'}
+          onChange={(_e, value) => {
+            const updated = { ...localProfile, language: value };
+            setLocalProfile(updated);
+            setIsLanguageAutoDetected(false); // Reset auto-detected flag when user manually changes
+            debouncedChange(updated);
+          }}
+        >
+          <FormSelectOption value="Java" label="Java" />
+          <FormSelectOption value="Go" label="Go" />
+          <FormSelectOption value="Python" label="Python" />
+          <FormSelectOption value="JavaScript" label="JavaScript" />
+          <FormSelectOption value="TypeScript" label="TypeScript" />
+          <FormSelectOption value="C#" label="C#" />
+          <FormSelectOption value="C++" label="C++" />
+          <FormSelectOption value="Rust" label="Rust" />
+          <FormSelectOption value="PHP" label="PHP" />
+          <FormSelectOption value="Ruby" label="Ruby" />
+        </FormSelect>
+        <FormHelperText>
+          <HelperText>
+            <HelperTextItem icon={<InfoCircleIcon />}>
+              {isLanguageAutoDetected 
+                ? "Language auto-detected from workspace build files" 
+                : "Primary programming language for this migration profile"}
+            </HelperTextItem>
+          </HelperText>
+        </FormHelperText>
       </FormGroup>
 
       <FormGroup label="Target Technologies" fieldId="targets" isRequired>
