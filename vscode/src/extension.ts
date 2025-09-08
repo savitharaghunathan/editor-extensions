@@ -25,11 +25,9 @@ import { ExtensionPaths, ensurePaths, paths, ensureKaiAnalyzerBinary } from "./p
 import { copySampleProviderSettings } from "./utilities/fileUtils";
 import {
   getExcludedDiagnosticSources,
+  getConfigSolutionServer,
   getConfigSolutionServerEnabled,
-  getConfigSolutionServerUrl,
   getConfigSolutionServerAuth,
-  getConfigSolutionServerRealm,
-  getConfigSolutionServerInsecure,
   getConfigAgentMode,
   getCacheDir,
   getTraceDir,
@@ -69,6 +67,7 @@ class VsCodeExtension {
     public readonly context: vscode.ExtensionContext,
     logger: winston.Logger,
   ) {
+    const solutionServerConfig = getConfigSolutionServer();
     this.diffStatusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
       100,
@@ -91,7 +90,7 @@ class VsCodeExtension {
         workspaceRoot: paths.workspaceRepo.toString(true),
         chatMessages: [],
         solutionState: "none",
-        solutionServerEnabled: getConfigSolutionServerEnabled(),
+        solutionServerEnabled: solutionServerConfig.enabled, // should we pass the full config object?
         configErrors: [],
         activeProfileId: "",
         profiles: [],
@@ -124,13 +123,7 @@ class VsCodeExtension {
 
     this.state = {
       analyzerClient: new AnalyzerClient(context, mutateData, getData, taskManager, logger),
-      solutionServerClient: new SolutionServerClient(
-        getConfigSolutionServerUrl(),
-        getConfigSolutionServerEnabled(),
-        getConfigSolutionServerAuth(),
-        getConfigSolutionServerInsecure(),
-        logger,
-      ),
+      solutionServerClient: new SolutionServerClient(solutionServerConfig, logger),
       webviewProviders: new Map<string, KonveyorGUIWebviewViewProvider>(),
       extensionContext: context,
       diagnosticCollection: vscode.languages.createDiagnosticCollection("konveyor"),
@@ -254,24 +247,6 @@ class VsCodeExtension {
           });
       }
 
-      // Get credentials for solution server client if solution server and auth are both enabled
-      if (getConfigSolutionServerEnabled() && getConfigSolutionServerAuth()) {
-        const credentials = await checkAndPromptForCredentials(this.context, this.state.logger);
-        if (credentials) {
-          const authConfig = {
-            username: credentials.username,
-            password: credentials.password,
-            realm: getConfigSolutionServerRealm(),
-            clientId: `${getConfigSolutionServerRealm()}-ui`,
-          };
-          this.state.solutionServerClient.setAuthConfig(authConfig);
-        } else {
-          this.state.mutateData((draft) => {
-            draft.configErrors.push(createConfigError.missingAuthCredentials());
-          });
-        }
-      }
-
       this.state.mutateData((draft) => {
         draft.profiles = allProfiles;
         draft.activeProfileId = activeProfileId;
@@ -307,23 +282,9 @@ class VsCodeExtension {
       this.context.subscriptions.push(this.diffStatusBarItem);
       this.checkContinueInstalled();
 
-      // Only attempt to connect if solution server is enabled
+      // Connect to solution server
       if (getConfigSolutionServerEnabled()) {
-        this.state.solutionServerClient
-          .connect()
-          .then(() => {
-            // Update state to reflect successful connection
-            this.state.mutateData((draft) => {
-              draft.solutionServerConnected = true;
-            });
-          })
-          .catch((error) => {
-            this.state.logger.error("Error connecting to solution server", error);
-            // Update state to reflect failed connection
-            this.state.mutateData((draft) => {
-              draft.solutionServerConnected = false;
-            });
-          });
+        await this.connectToSolutionServer();
       }
 
       // Connection poll to catch network issues and missed connection state changes
@@ -480,40 +441,33 @@ class VsCodeExtension {
             });
           }
 
-          if (event.affectsConfiguration("konveyor.solutionServer.enabled")) {
-            const solutionServerEnabled = getConfigSolutionServerEnabled();
-            this.state.mutateData((draft) => {
-              draft.solutionServerEnabled = solutionServerEnabled;
-              // Let the connection poll handle updating the connection status
-              draft.solutionServerConnected = false;
-            });
-          }
-
-          if (
-            event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer.url`) ||
-            event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer.enabled`) ||
-            event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer.auth.enabled`)
-          ) {
+          // Handle solution server configuration changes with auto-restart
+          if (event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer`)) {
             this.state.logger.info("Solution server configuration modified!");
+            const newConfig = getConfigSolutionServer();
 
             // Update the enabled state immediately
-            const solutionServerEnabled = getConfigSolutionServerEnabled();
             this.state.mutateData((draft) => {
-              draft.solutionServerEnabled = solutionServerEnabled;
-              // Let the connection poll handle updating the connection status
+              draft.solutionServerEnabled = newConfig.enabled;
+              // Reset connection status
               draft.solutionServerConnected = false;
             });
 
-            vscode.window
-              .showInformationMessage(
-                "Solution server configuration has changed. Please restart the Konveyor extension for changes to take effect.",
-                "Restart Now",
-              )
-              .then((selection) => {
-                if (selection === "Restart Now") {
-                  vscode.commands.executeCommand("workbench.action.reloadWindow");
-                }
-              });
+            // Disconnect and reconnect with new configuration
+            try {
+              await this.state.solutionServerClient.disconnect();
+              this.state.logger.info(
+                "Disconnected from solution server due to configuration change",
+              );
+
+              // Update client configuration
+              this.state.solutionServerClient.updateConfig(newConfig);
+
+              // Reconnect with new configuration
+              await this.connectToSolutionServer();
+            } catch (error) {
+              this.state.logger.error("Error handling solution server configuration change", error);
+            }
           }
 
           if (event.affectsConfiguration("konveyor.analyzerPath")) {
@@ -635,6 +589,44 @@ class VsCodeExtension {
 
     // Update with current profile errors using the existing utility function
     updateConfigErrors(draft, this.paths.settingsYaml.fsPath);
+  }
+
+  private async connectToSolutionServer(): Promise<void> {
+    if (!getConfigSolutionServerEnabled()) {
+      this.state.logger.info("Solution server is disabled, skipping connection");
+      return;
+    }
+
+    // Only attempt to connect if solution server is enabled
+    let username: string = "";
+    let password: string = "";
+    if (getConfigSolutionServerAuth()) {
+      const credentials = await checkAndPromptForCredentials(this.context, this.state.logger);
+      if (!credentials) {
+        this.state.mutateData((draft) => {
+          draft.configErrors.push(createConfigError.missingAuthCredentials());
+        });
+        return;
+      }
+      username = credentials.username;
+      password = credentials.password;
+    }
+
+    this.state.solutionServerClient
+      .connect(username, password)
+      .then(() => {
+        // Update state to reflect successful connection
+        this.state.mutateData((draft) => {
+          draft.solutionServerConnected = true;
+        });
+      })
+      .catch((error) => {
+        this.state.logger.error("Error connecting to solution server", error);
+        // Update state to reflect failed connection
+        this.state.mutateData((draft) => {
+          draft.solutionServerConnected = false;
+        });
+      });
   }
 
   private registerWebviewProvider(): void {
