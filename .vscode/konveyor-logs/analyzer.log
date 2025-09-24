@@ -1,0 +1,757 @@
+{"time":"2025-08-11T11:45:16.331966-04:00","level":"INFO","msg":"Starting Server"}
+{"time":"2025-08-11T11:45:16.332213-04:00","level":"INFO","msg":"dialing connection connections"}
+{"time":"2025-08-11T11:45:16.332489-04:00","level":"INFO","msg":"logger","logger":"analyzer-service","v":{"Log":{}}}
+{"time":"2025-08-11T11:45:16.921769-04:00","level":"INFO","msg":"using rulesets","logger":"analyzer-service","discoverRulesets":9,"violationRulesets":25}
+{"time":"2025-08-11T11:45:16.921825-04:00","level":"INFO","msg":"got connection","conn":"&{{0x14000aaab00}}"}
+{"time":"2025-08-11T11:45:16.921874-04:00","level":"INFO","msg":"connection","localAddr":{"Name":"/var/folders/4f/bv2hh9jd44b94_4zf2qby2sh0000gn/T/vscode-35777c8ef178fdbc387dc190c9ebcb0b1e67da355c.sock","Net":"unix"},"remoteAddr":{"Name":"","Net":"unix"}}
+{"time":"2025-08-11T11:45:16.921961-04:00","level":"INFO","msg":"server codec","codec":"&{reader:0x140003c01e0 writer:0x140009008c0 logger:{sink:0x14000d5a2a0 level:0} scanner:0x14000aaac00 msg:{Method: Params:<nil> Id:<nil> Result:<nil> Error:<nil> JsonRPCVersion:} serverRequest:{Method: Params:<nil> Id:<nil> unMarshalledId:<nil>} clientResponse:{Id:0 Result:<nil> Error:<nil> JsonRPCVersion:} isLanguageServer:true state:0x1400032c000 ctx:0x14000145c70 notificationServiceName:notification.Notify}"}
+{"time":"2025-08-11T11:45:17.866897-04:00","level":"INFO","msg":"got connection","conn":"&{{0x14000aaae00}}"}
+{"time":"2025-08-11T11:45:18.026275-04:00","level":"INFO","msg":"connection","localAddr":{"Name":"/var/folders/4f/bv2hh9jd44b94_4zf2qby2sh0000gn/T/vscode-35777c8ef178fdbc387dc190c9ebcb0b1e67da355c.sock","Net":"unix"},"remoteAddr":{"Name":"","Net":"unix"}}
+{"time":"2025-08-11T11:45:18.026335-04:00","level":"INFO","msg":"server codec","codec":"&{reader:0x140003c0240 writer:0x14000900ac0 logger:{sink:0x14000d5a3c0 level:0} scanner:0x14000aaaf80 msg:{Method: Params:<nil> Id:<nil> Result:<nil> Error:<nil> JsonRPCVersion:} serverRequest:{Method: Params:<nil> Id:<nil> unMarshalledId:<nil>} clientResponse:{Id:0 Result:<nil> Error:<nil> JsonRPCVersion:} isLanguageServer:true state:0x1400032c000 ctx:0x14000145c70 notificationServiceName:notification.Notify}"}
+{"time":"2025-08-11T11:45:19.873751-04:00","level":"INFO","msg":"server request","logger":"conn/json codec","server request":{"method":"start","params":{"type":"start"},"id":null},"notificationService":"notification.Notify"}
+{"time":"2025-08-11T11:45:19.873909-04:00","level":"INFO","msg":"here in notification service !! Notify","args":{"type":"start"}}
+{"time":"2025-08-11T11:45:35.500199-04:00","level":"INFO","msg":"here - waiting for more data from buffer in scanner","logger":"conn/json codec"}
+{"time":"2025-08-11T11:45:35.500378-04:00","level":"INFO","msg":"b","logger":"conn/json codec","b":"MA=="}
+{"time":"2025-08-11T11:45:35.500392-04:00","level":"INFO","msg":"server request","logger":"conn/json codec","server request":{"method":"analysis_engine.Analyze","params":{"label_selector":"(konveyor.io/target=openjdk21) || (discovery)","reset_cache":true,"excluded_paths":["/Users/sraghuna/local_dev/editor-extensions/node_modules/","/Users/sraghuna/local_dev/editor-extensions/dist/","/Users/sraghuna/local_dev/editor-extensions/downloaded_assets/"]},"id":0},"notificationService":"notification.Notify"}
+{"time":"2025-08-11T11:45:35.500517-04:00","level":"INFO","msg":"logger","logger":"analyzer-service/provider update","v":{"Log":{}}}
+{"time":"2025-08-11T11:45:35.960302-04:00","level":"INFO","msg":"updated rulesets","logger":"analyzer-service","discovery":9,"violations":25}
+{"time":"2025-08-11T11:45:35.9604-04:00","level":"INFO","msg":"Have selectors","logger":"analyzer-service","selectors":[{}]}
+{"time":"2025-08-11T11:45:35.960431-04:00","level":"DEBUG+2","msg":"Using exclusion scope","logger":"analyzer-service","scope":"ExcludedPathsScope"}
+{"time":"2025-08-11T11:45:35.960441-04:00","level":"INFO","msg":"using scopes","logger":"analyzer-service","scope":"ExcludedPathsScope"}
+{"time":"2025-08-11T11:45:35.960445-04:00","level":"INFO","msg":"added scopes to condition context","logger":"analyzer-service","scopes":{},"conditionContext":{"Tags":{},"Template":{"konveyor.io/path-scope":{"Filepaths":null,"Extras":null,"ExcludedPaths":["/Users/sraghuna/local_dev/editor-extensions/node_modules","/Users/sraghuna/local_dev/editor-extensions/dist","/Users/sraghuna/local_dev/editor-extensions/downloaded_assets"]}},"RuleID":""}}
+{"time":"2025-08-11T11:45:35.960477-04:00","level":"INFO","msg":"inject span info","logger":"analyzer-service","carrier":{}}
+{"time":"2025-08-11T11:45:35.983281-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00030"}
+{"time":"2025-08-11T11:45:36.908648-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00030"}
+{"time":"2025-08-11T11:45:36.908667-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"embedded-framework-05900"}
+{"time":"2025-08-11T11:45:37.751116-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:37.751205-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:37.751246-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:37.751284-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:37.751328-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:37.751365-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:37.751433-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"discover-manifest-file"}
+{"time":"2025-08-11T11:45:38.734856-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"discover-manifest-file"}
+{"time":"2025-08-11T11:45:38.734896-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"discover-java-files"}
+{"time":"2025-08-11T11:45:39.412639-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412679-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412698-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412715-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.41273-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412747-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412763-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412778-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412794-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412813-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412829-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412845-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412861-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412877-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412895-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412911-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.41294-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412955-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412972-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.412987-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413002-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413016-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413031-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413047-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413063-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413078-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413093-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413114-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.41313-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413146-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413161-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413177-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413193-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413209-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413226-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413241-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413257-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:39.413281-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"discover-maven-xml"}
+{"time":"2025-08-11T11:45:40.207117-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:40.207165-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:40.207182-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:40.207209-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"windup-discover-ejb-configuration"}
+{"time":"2025-08-11T11:45:41.029582-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.029621-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031155-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031177-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031196-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031215-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031234-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031263-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031281-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.0313-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031319-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031337-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031355-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031373-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031396-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031414-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031432-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03145-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031469-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031488-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031506-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031524-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031542-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031559-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031577-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031595-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031613-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03163-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031648-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031666-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031684-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031702-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03172-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031737-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031755-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031773-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03179-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031807-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031825-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031844-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031866-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031884-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031902-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03192-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031937-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031954-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031973-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.031991-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032008-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032025-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032044-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032062-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032079-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032102-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032122-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03214-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032158-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032176-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032194-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032212-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03223-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032248-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032266-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032284-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032302-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032319-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032337-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032355-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032372-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03239-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032408-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032425-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032443-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032464-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032482-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.0325-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032518-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032535-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032553-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032571-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032588-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032606-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032624-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032641-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032659-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032676-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032694-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032712-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03273-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032747-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032765-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032782-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.0328-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032823-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032841-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03286-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032877-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032894-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032912-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03293-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032947-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032966-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.032984-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033001-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033019-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033037-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033058-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033075-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033093-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033111-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033128-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033146-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033164-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033182-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.0332-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033217-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033235-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033253-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03327-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033447-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033486-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033519-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03355-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033582-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033613-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033644-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033676-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033708-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03374-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033771-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033807-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033845-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033876-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.033984-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034073-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034183-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03426-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034448-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034479-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034507-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034526-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034547-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034567-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034586-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034605-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034623-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034641-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034659-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034678-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034696-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034714-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034733-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034752-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034769-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034789-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034807-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034824-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034842-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034868-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034888-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034907-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034925-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034944-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034962-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.034981-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035018-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035036-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035055-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035074-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035093-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035111-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035134-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035152-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035171-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035189-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035208-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035226-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035244-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035263-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035281-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035298-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035317-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035335-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035353-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035371-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035389-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035407-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035425-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035443-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03546-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035479-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035496-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035514-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035531-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03555-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035568-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035585-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035603-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035621-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035639-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035657-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035675-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035692-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03571-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.03573-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035749-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035766-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035784-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035801-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035819-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035836-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035853-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035871-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:41.035893-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"windup-discover-spring-configuration"}
+{"time":"2025-08-11T11:45:41.874854-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"windup-discover-jpa-configuration"}
+{"time":"2025-08-11T11:45:44.499806-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"windup-discover-web-configuration"}
+{"time":"2025-08-11T11:45:45.293199-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-connect-01300"}
+{"time":"2025-08-11T11:45:45.293367-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:45.308109-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.resource*","Location":"CONSTRUCTOR_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:45.308301-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:45.31424-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.resource*","Location":"IMPORT","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:45.314622-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:45.318529-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.resource*","Location":"INHERITANCE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:45.318696-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:45.410783-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.resource*","Location":"METHOD_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:45.410973-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:45.414122-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.resource*","Location":"VARIABLE_DECLARATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.043506-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-connect-01300"}
+{"time":"2025-08-11T11:45:47.043544-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-connect-01200"}
+{"time":"2025-08-11T11:45:47.04368-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.05372-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.mail*","Location":"PACKAGE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.053873-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.057449-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"com.sun.mail*","Location":"PACKAGE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.057588-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.060293-04:00","level":"INFO","msg":"here - waiting for more data from buffer in scanner","logger":"conn/json codec"}
+{"time":"2025-08-11T11:45:47.060314-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"org.simplejavamail*","Location":"PACKAGE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.060445-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.063944-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"org.apache.commons.mail*","Location":"PACKAGE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.063969-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-connect-01200"}
+{"time":"2025-08-11T11:45:47.063976-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-connect-01101"}
+{"time":"2025-08-11T11:45:47.064101-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.066323-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"com.sun.jna*","Location":"CONSTRUCTOR_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.066465-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.068336-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"com.sun.jna*","Location":"IMPORT","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.068459-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.070028-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"com.sun.jna*","Location":"INHERITANCE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.070147-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.090167-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"com.sun.jna(*)","Location":"METHOD_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.090344-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.092348-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"com.sun.jna*","Location":"VARIABLE_DECLARATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.092383-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-connect-01101"}
+{"time":"2025-08-11T11:45:47.092397-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-connect-01100"}
+{"time":"2025-08-11T11:45:47.092613-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.14102-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"java.lang.System.(load|loadLibrary|mapLibraryName)*","Location":"METHOD_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.141193-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.159163-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"java.lang.Runtime.load(*)","Location":"METHOD_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.15933-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.178802-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"java.lang.Runtime.loadLibrary(*)","Location":"METHOD_CALL","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.178859-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-connect-01100"}
+{"time":"2025-08-11T11:45:47.178875-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01400"}
+{"time":"2025-08-11T11:45:47.178975-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01400"}
+{"time":"2025-08-11T11:45:47.178981-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-connect-01000"}
+{"time":"2025-08-11T11:45:47.1791-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.241328-04:00","level":"INFO","msg":"here - waiting for more data from buffer in scanner","logger":"conn/json codec"}
+{"time":"2025-08-11T11:45:47.241347-04:00","level":"INFO","msg":"here - waiting for more data from buffer in scanner","logger":"conn/json codec"}
+{"time":"2025-08-11T11:45:47.241356-04:00","level":"INFO","msg":"here - waiting for more data from buffer in scanner","logger":"conn/json codec"}
+{"time":"2025-08-11T11:45:47.241618-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":33,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.ws.rs.Path","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.242663-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:47.260234-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"jakarta.ws.rs.Path","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:47.262003-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-database-01300"}
+{"time":"2025-08-11T11:45:48.075391-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:48.075544-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:48.07567-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-database-01200"}
+{"time":"2025-08-11T11:45:48.075897-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.120805-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":9,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.persistence.Entity","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.121516-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.153414-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":9,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.persistence.Table","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.154182-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.161777-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.persistence.NamedQuery","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.162069-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.172831-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.persistence.NamedQueries","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.174454-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.18333-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.persistence.DiscriminatorValue","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.183578-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.201182-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"jakarta.persistence.Entity","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.201422-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.212393-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"jakarta.persistence.Table","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.212576-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.214655-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"jakarta.persistence.NamedQuery","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.214922-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.2165-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"jakarta.persistence.NamedQueries","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.216651-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:48.2182-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"jakarta.persistence.DiscriminatorValue","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:48.218867-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-database-01100"}
+{"time":"2025-08-11T11:45:51.937939-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:51.93883-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:51.938874-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:51.938915-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:51.938949-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:51.938983-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:45:51.93908-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-database-01001"}
+{"time":"2025-08-11T11:45:51.939263-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:51.941633-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.annotation.sql.DataSourceDefinition","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:51.941652-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-database-01001"}
+{"time":"2025-08-11T11:45:51.94166-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-database-01000"}
+{"time":"2025-08-11T11:45:51.941797-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:45:51.943484-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.annotation.sql.DataSourceDefinition","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:45:51.943499-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-database-01000"}
+{"time":"2025-08-11T11:45:51.943506-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-02400"}
+{"time":"2025-08-11T11:45:57.795367-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-02400"}
+{"time":"2025-08-11T11:45:57.795406-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-02300"}
+{"time":"2025-08-11T11:45:59.39261-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-02300"}
+{"time":"2025-08-11T11:45:59.392653-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-02200"}
+{"time":"2025-08-11T11:46:00.865261-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-02200"}
+{"time":"2025-08-11T11:46:00.865318-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-02100"}
+{"time":"2025-08-11T11:46:02.386896-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-02100"}
+{"time":"2025-08-11T11:46:02.386935-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-02000"}
+{"time":"2025-08-11T11:46:03.8312-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-02000"}
+{"time":"2025-08-11T11:46:03.831241-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01900"}
+{"time":"2025-08-11T11:46:05.290257-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01900"}
+{"time":"2025-08-11T11:46:05.290297-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01800"}
+{"time":"2025-08-11T11:46:06.643175-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01800"}
+{"time":"2025-08-11T11:46:06.643235-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01700"}
+{"time":"2025-08-11T11:46:08.213402-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:46:08.213471-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01600"}
+{"time":"2025-08-11T11:46:10.641082-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01600"}
+{"time":"2025-08-11T11:46:10.641117-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01500"}
+{"time":"2025-08-11T11:46:11.739925-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01500"}
+{"time":"2025-08-11T11:46:11.739964-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01400"}
+{"time":"2025-08-11T11:46:11.740108-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:46:11.743245-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"java.applet.Applet","Location":"INHERITANCE","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:46:12.963996-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01400"}
+{"time":"2025-08-11T11:46:12.964035-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01300"}
+{"time":"2025-08-11T11:46:12.964189-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:46:12.978833-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.websocket.server.ServerEndpoint","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:46:12.978864-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01300"}
+{"time":"2025-08-11T11:46:12.978882-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-web-01100"}
+{"time":"2025-08-11T11:46:15.99832-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-web-01100"}
+{"time":"2025-08-11T11:46:15.99839-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"web-01000"}
+{"time":"2025-08-11T11:46:17.355312-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"web-01000"}
+{"time":"2025-08-11T11:46:17.355372-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00370"}
+{"time":"2025-08-11T11:46:18.709738-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:46:18.710495-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:46:18.710527-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:46:18.710571-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00360"}
+{"time":"2025-08-11T11:46:19.937942-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00360"}
+{"time":"2025-08-11T11:46:19.93799-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00350"}
+{"time":"2025-08-11T11:46:21.169611-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00350"}
+{"time":"2025-08-11T11:46:21.16965-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00340"}
+{"time":"2025-08-11T11:46:22.417754-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00340"}
+{"time":"2025-08-11T11:46:22.417798-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00330"}
+{"time":"2025-08-11T11:46:23.625529-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00330"}
+{"time":"2025-08-11T11:46:23.625576-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00320"}
+{"time":"2025-08-11T11:46:24.79348-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00320"}
+{"time":"2025-08-11T11:46:24.793529-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00310"}
+{"time":"2025-08-11T11:46:26.021717-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00310"}
+{"time":"2025-08-11T11:46:26.021771-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00300"}
+{"time":"2025-08-11T11:46:27.230092-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00300"}
+{"time":"2025-08-11T11:46:27.230166-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00290"}
+{"time":"2025-08-11T11:46:28.491524-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00290"}
+{"time":"2025-08-11T11:46:28.491568-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00280"}
+{"time":"2025-08-11T11:46:29.676438-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00280"}
+{"time":"2025-08-11T11:46:29.676483-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00270"}
+{"time":"2025-08-11T11:46:30.935444-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00270"}
+{"time":"2025-08-11T11:46:30.935465-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00260"}
+{"time":"2025-08-11T11:46:32.198225-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00260"}
+{"time":"2025-08-11T11:46:32.198268-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00560"}
+{"time":"2025-08-11T11:46:33.43109-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00560"}
+{"time":"2025-08-11T11:46:33.43116-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00240"}
+{"time":"2025-08-11T11:46:34.678508-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00240"}
+{"time":"2025-08-11T11:46:34.678556-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00230"}
+{"time":"2025-08-11T11:46:35.573674-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00230"}
+{"time":"2025-08-11T11:46:35.573815-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00220"}
+{"time":"2025-08-11T11:46:36.536117-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00220"}
+{"time":"2025-08-11T11:46:36.536155-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00210"}
+{"time":"2025-08-11T11:46:37.421635-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00210"}
+{"time":"2025-08-11T11:46:37.421689-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"embedded-framework-06800"}
+{"time":"2025-08-11T11:46:38.378087-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"embedded-framework-06800"}
+{"time":"2025-08-11T11:46:38.378132-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00190"}
+{"time":"2025-08-11T11:46:39.256765-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00190"}
+{"time":"2025-08-11T11:46:39.256813-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00180"}
+{"time":"2025-08-11T11:46:40.173285-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00180"}
+{"time":"2025-08-11T11:46:40.173335-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00170"}
+{"time":"2025-08-11T11:46:41.113678-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00170"}
+{"time":"2025-08-11T11:46:41.113715-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00160"}
+{"time":"2025-08-11T11:46:41.989559-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00160"}
+{"time":"2025-08-11T11:46:41.989604-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00150"}
+{"time":"2025-08-11T11:46:42.856235-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00150"}
+{"time":"2025-08-11T11:46:42.856281-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00140"}
+{"time":"2025-08-11T11:46:43.903924-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00140"}
+{"time":"2025-08-11T11:46:43.90401-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00130"}
+{"time":"2025-08-11T11:46:44.784527-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00130"}
+{"time":"2025-08-11T11:46:44.784574-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00120"}
+{"time":"2025-08-11T11:46:45.662862-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00120"}
+{"time":"2025-08-11T11:46:45.662903-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00110"}
+{"time":"2025-08-11T11:46:46.521276-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00110"}
+{"time":"2025-08-11T11:46:46.521322-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"technology-usage-security-01000"}
+{"time":"2025-08-11T11:46:47.743525-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:46:47.74716-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"javax.annotation.security*","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:46:49.416793-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"technology-usage-security-01000"}
+{"time":"2025-08-11T11:46:49.416826-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00100"}
+{"time":"2025-08-11T11:46:50.53466-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00100"}
+{"time":"2025-08-11T11:46:50.534721-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00090"}
+{"time":"2025-08-11T11:46:51.77167-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00090"}
+{"time":"2025-08-11T11:46:51.77172-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00080"}
+{"time":"2025-08-11T11:46:52.86552-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00080"}
+{"time":"2025-08-11T11:46:52.865584-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00070"}
+{"time":"2025-08-11T11:46:54.01681-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00070"}
+{"time":"2025-08-11T11:46:54.016882-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00060"}
+{"time":"2025-08-11T11:46:55.382088-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00060"}
+{"time":"2025-08-11T11:46:55.382161-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00050"}
+{"time":"2025-08-11T11:46:57.06291-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00050"}
+{"time":"2025-08-11T11:46:57.062974-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00040"}
+{"time":"2025-08-11T11:46:58.538115-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00040"}
+{"time":"2025-08-11T11:46:58.53818-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00030"}
+{"time":"2025-08-11T11:46:59.759088-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00030"}
+{"time":"2025-08-11T11:46:59.759134-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00020"}
+{"time":"2025-08-11T11:47:01.003851-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00020"}
+{"time":"2025-08-11T11:47:01.003907-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"test-frameworks-sauge-00010"}
+{"time":"2025-08-11T11:47:02.281552-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"test-frameworks-sauge-00010"}
+{"time":"2025-08-11T11:47:02.281598-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"spring-catchall-00001"}
+{"time":"2025-08-11T11:47:03.144238-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"spring-catchall-00001"}
+{"time":"2025-08-11T11:47:03.14436-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03600"}
+{"time":"2025-08-11T11:47:03.144389-04:00","level":"DEBUG","msg":"running dependency analysis","provider":"java","logger":"analyzer-service/provider update"}
+{"time":"2025-08-11T11:47:03.144442-04:00","level":"INFO","msg":"unable to get dependencies (none found), using fallback","provider":"java","logger":"analyzer-service/provider update"}
+{"time":"2025-08-11T11:47:03.144564-04:00","level":"ERROR","msg":"Analyzing POM","provider":"java","logger":"analyzer-service/provider update","err":"EOF"}
+{"time":"2025-08-11T11:47:03.144575-04:00","level":"DEBUG","msg":"running dependency analysis","provider":"java","logger":"analyzer-service/provider update"}
+{"time":"2025-08-11T11:47:03.144584-04:00","level":"ERROR","msg":"failed to evaluate rule","logger":"analyzer-service","err":"EOF","ruleID":"security-03600"}
+{"time":"2025-08-11T11:47:03.14459-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03500"}
+{"time":"2025-08-11T11:47:04.449128-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-03500"}
+{"time":"2025-08-11T11:47:04.44919-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03400"}
+{"time":"2025-08-11T11:47:05.724856-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-03400"}
+{"time":"2025-08-11T11:47:05.724901-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03300"}
+{"time":"2025-08-11T11:47:06.957094-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-03300"}
+{"time":"2025-08-11T11:47:06.957141-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03200"}
+{"time":"2025-08-11T11:47:08.247457-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-03200"}
+{"time":"2025-08-11T11:47:08.247501-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03100"}
+{"time":"2025-08-11T11:47:09.504465-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-03100"}
+{"time":"2025-08-11T11:47:09.504507-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-03000"}
+{"time":"2025-08-11T11:47:10.768576-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-03000"}
+{"time":"2025-08-11T11:47:10.768623-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02900"}
+{"time":"2025-08-11T11:47:11.968244-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02900"}
+{"time":"2025-08-11T11:47:11.96829-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02800"}
+{"time":"2025-08-11T11:47:13.489221-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02800"}
+{"time":"2025-08-11T11:47:13.489268-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02700"}
+{"time":"2025-08-11T11:47:14.694761-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02700"}
+{"time":"2025-08-11T11:47:14.69481-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02600"}
+{"time":"2025-08-11T11:47:15.899594-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02600"}
+{"time":"2025-08-11T11:47:15.899635-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02500"}
+{"time":"2025-08-11T11:47:16.841838-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02500"}
+{"time":"2025-08-11T11:47:16.841872-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02400"}
+{"time":"2025-08-11T11:47:17.938457-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02400"}
+{"time":"2025-08-11T11:47:17.938484-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02300"}
+{"time":"2025-08-11T11:47:19.454313-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02300"}
+{"time":"2025-08-11T11:47:19.454361-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02200"}
+{"time":"2025-08-11T11:47:20.662052-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02200"}
+{"time":"2025-08-11T11:47:20.662104-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02100"}
+{"time":"2025-08-11T11:47:21.882147-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02100"}
+{"time":"2025-08-11T11:47:21.882196-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-02000"}
+{"time":"2025-08-11T11:47:29.350299-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-02000"}
+{"time":"2025-08-11T11:47:29.350346-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01900"}
+{"time":"2025-08-11T11:47:30.615088-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01900"}
+{"time":"2025-08-11T11:47:30.615136-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01800"}
+{"time":"2025-08-11T11:47:31.847606-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01800"}
+{"time":"2025-08-11T11:47:31.84765-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01700"}
+{"time":"2025-08-11T11:47:33.15312-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01700"}
+{"time":"2025-08-11T11:47:33.153162-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01600"}
+{"time":"2025-08-11T11:47:34.326145-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01600"}
+{"time":"2025-08-11T11:47:34.32619-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01500"}
+{"time":"2025-08-11T11:47:35.55353-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01500"}
+{"time":"2025-08-11T11:47:35.553572-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01400"}
+{"time":"2025-08-11T11:47:36.915503-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01400"}
+{"time":"2025-08-11T11:47:36.915545-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01300"}
+{"time":"2025-08-11T11:47:38.35312-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01300"}
+{"time":"2025-08-11T11:47:38.353188-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01200"}
+{"time":"2025-08-11T11:47:39.912016-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01200"}
+{"time":"2025-08-11T11:47:39.912059-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"security-01100"}
+{"time":"2025-08-11T11:47:41.598759-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"security-01100"}
+{"time":"2025-08-11T11:47:41.598802-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"observability-0200"}
+{"time":"2025-08-11T11:47:41.598956-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:47:41.601242-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"org.springframework.jmx*","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:47:42.395976-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"observability-0200"}
+{"time":"2025-08-11T11:47:42.396017-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"observability-0100"}
+{"time":"2025-08-11T11:47:42.396032-04:00","level":"DEBUG","msg":"running dependency analysis","provider":"java","logger":"analyzer-service/provider update"}
+{"time":"2025-08-11T11:47:42.396048-04:00","level":"ERROR","msg":"failed to evaluate rule","logger":"analyzer-service","err":"EOF","ruleID":"observability-0100"}
+{"time":"2025-08-11T11:47:42.396056-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-06000"}
+{"time":"2025-08-11T11:47:43.644897-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-06000"}
+{"time":"2025-08-11T11:47:43.644935-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05900"}
+{"time":"2025-08-11T11:47:44.9063-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05900"}
+{"time":"2025-08-11T11:47:44.90637-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05800"}
+{"time":"2025-08-11T11:47:46.161488-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05800"}
+{"time":"2025-08-11T11:47:46.161534-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05700"}
+{"time":"2025-08-11T11:47:47.467832-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05700"}
+{"time":"2025-08-11T11:47:47.467895-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05600"}
+{"time":"2025-08-11T11:47:48.817629-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05600"}
+{"time":"2025-08-11T11:47:48.817697-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05500"}
+{"time":"2025-08-11T11:47:50.49349-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05500"}
+{"time":"2025-08-11T11:47:50.493548-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05400"}
+{"time":"2025-08-11T11:47:52.335207-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05400"}
+{"time":"2025-08-11T11:47:52.33525-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05300"}
+{"time":"2025-08-11T11:47:53.916724-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05300"}
+{"time":"2025-08-11T11:47:53.916768-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05200"}
+{"time":"2025-08-11T11:47:55.257778-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05200"}
+{"time":"2025-08-11T11:47:55.257829-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05100"}
+{"time":"2025-08-11T11:47:56.475626-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05100"}
+{"time":"2025-08-11T11:47:56.475675-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-05000"}
+{"time":"2025-08-11T11:47:57.738929-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-05000"}
+{"time":"2025-08-11T11:47:57.739028-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04900"}
+{"time":"2025-08-11T11:47:59.058843-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04900"}
+{"time":"2025-08-11T11:47:59.058879-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04800"}
+{"time":"2025-08-11T11:48:00.308917-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04800"}
+{"time":"2025-08-11T11:48:00.308959-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04700"}
+{"time":"2025-08-11T11:48:01.471802-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04700"}
+{"time":"2025-08-11T11:48:01.471839-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04600"}
+{"time":"2025-08-11T11:48:02.265477-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04600"}
+{"time":"2025-08-11T11:48:02.265517-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04500"}
+{"time":"2025-08-11T11:48:03.536277-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04500"}
+{"time":"2025-08-11T11:48:03.536318-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04400"}
+{"time":"2025-08-11T11:48:04.789489-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04400"}
+{"time":"2025-08-11T11:48:04.789531-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04300"}
+{"time":"2025-08-11T11:48:05.977922-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04300"}
+{"time":"2025-08-11T11:48:05.977966-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04200"}
+{"time":"2025-08-11T11:48:07.319947-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04200"}
+{"time":"2025-08-11T11:48:07.319985-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04100"}
+{"time":"2025-08-11T11:48:08.612722-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04100"}
+{"time":"2025-08-11T11:48:08.61276-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-04000"}
+{"time":"2025-08-11T11:48:10.002944-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-04000"}
+{"time":"2025-08-11T11:48:10.002984-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03900"}
+{"time":"2025-08-11T11:48:11.455321-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03900"}
+{"time":"2025-08-11T11:48:11.45537-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03800"}
+{"time":"2025-08-11T11:48:13.112165-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03800"}
+{"time":"2025-08-11T11:48:13.112245-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03700"}
+{"time":"2025-08-11T11:48:14.522848-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03700"}
+{"time":"2025-08-11T11:48:14.523176-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03600"}
+{"time":"2025-08-11T11:48:15.777289-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03600"}
+{"time":"2025-08-11T11:48:15.777333-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03500"}
+{"time":"2025-08-11T11:48:17.067468-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03500"}
+{"time":"2025-08-11T11:48:17.067511-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03400"}
+{"time":"2025-08-11T11:48:18.368163-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03400"}
+{"time":"2025-08-11T11:48:18.368188-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03300"}
+{"time":"2025-08-11T11:48:19.607324-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03300"}
+{"time":"2025-08-11T11:48:19.607367-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03200"}
+{"time":"2025-08-11T11:48:20.820706-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03200"}
+{"time":"2025-08-11T11:48:20.820751-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03100"}
+{"time":"2025-08-11T11:48:21.977393-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03100"}
+{"time":"2025-08-11T11:48:21.977436-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-03000"}
+{"time":"2025-08-11T11:48:23.194101-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-03000"}
+{"time":"2025-08-11T11:48:23.194143-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02900"}
+{"time":"2025-08-11T11:48:24.416851-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02900"}
+{"time":"2025-08-11T11:48:24.416876-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02800"}
+{"time":"2025-08-11T11:48:25.737315-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02800"}
+{"time":"2025-08-11T11:48:25.737582-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02700"}
+{"time":"2025-08-11T11:48:27.048533-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02700"}
+{"time":"2025-08-11T11:48:27.0486-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02600"}
+{"time":"2025-08-11T11:48:28.383344-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02600"}
+{"time":"2025-08-11T11:48:28.383386-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02500"}
+{"time":"2025-08-11T11:48:29.805325-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02500"}
+{"time":"2025-08-11T11:48:29.805392-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02400"}
+{"time":"2025-08-11T11:48:30.98241-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02400"}
+{"time":"2025-08-11T11:48:30.982454-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02300"}
+{"time":"2025-08-11T11:48:32.647441-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02300"}
+{"time":"2025-08-11T11:48:32.647501-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02200"}
+{"time":"2025-08-11T11:48:33.752441-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02200"}
+{"time":"2025-08-11T11:48:33.75251-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02100"}
+{"time":"2025-08-11T11:48:34.930696-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02100"}
+{"time":"2025-08-11T11:48:34.930741-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-02000"}
+{"time":"2025-08-11T11:48:36.03385-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-02000"}
+{"time":"2025-08-11T11:48:36.033886-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01900"}
+{"time":"2025-08-11T11:48:37.166154-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01900"}
+{"time":"2025-08-11T11:48:37.166197-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01800"}
+{"time":"2025-08-11T11:48:38.344124-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01800"}
+{"time":"2025-08-11T11:48:38.344154-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01700"}
+{"time":"2025-08-11T11:48:39.525779-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01700"}
+{"time":"2025-08-11T11:48:39.525802-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01600"}
+{"time":"2025-08-11T11:48:40.663711-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01600"}
+{"time":"2025-08-11T11:48:40.663747-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01500"}
+{"time":"2025-08-11T11:48:41.850148-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01500"}
+{"time":"2025-08-11T11:48:41.850189-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01400"}
+{"time":"2025-08-11T11:48:42.999613-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01400"}
+{"time":"2025-08-11T11:48:42.999656-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01300"}
+{"time":"2025-08-11T11:48:44.121288-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01300"}
+{"time":"2025-08-11T11:48:44.12131-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01220"}
+{"time":"2025-08-11T11:48:44.121322-04:00","level":"DEBUG","msg":"running dependency analysis","provider":"java","logger":"analyzer-service/provider update"}
+{"time":"2025-08-11T11:48:44.121348-04:00","level":"ERROR","msg":"failed to evaluate rule","logger":"analyzer-service","err":"EOF","ruleID":"mvc-01220"}
+{"time":"2025-08-11T11:48:44.121355-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01210"}
+{"time":"2025-08-11T11:48:44.121496-04:00","level":"ERROR","msg":"could not construct dep label selector from condition context, search scope will not be limited","provider":"java","logger":"analyzer-service/provider update","err":"invalid expression ''"}
+{"time":"2025-08-11T11:48:44.124462-04:00","level":"INFO","msg":"Symbols retrieved","provider":"java","logger":"analyzer-service/provider update","symbols":0,"cap":"referenced","conditionInfo":{"Referenced":{"Pattern":"org.springframework.web.servlet.mvc.Controller","Location":"ANNOTATION","annotated":{"pattern":""},"Filepaths":null}}}
+{"time":"2025-08-11T11:48:44.124482-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01210"}
+{"time":"2025-08-11T11:48:44.124489-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01200"}
+{"time":"2025-08-11T11:48:45.347683-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01200"}
+{"time":"2025-08-11T11:48:45.347707-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01100"}
+{"time":"2025-08-11T11:48:46.506969-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01100"}
+{"time":"2025-08-11T11:48:46.507003-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"mvc-01000"}
+{"time":"2025-08-11T11:48:47.933099-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"mvc-01000"}
+{"time":"2025-08-11T11:48:47.933137-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00290"}
+{"time":"2025-08-11T11:48:49.025276-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00290"}
+{"time":"2025-08-11T11:48:49.025308-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00280"}
+{"time":"2025-08-11T11:48:50.036111-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00280"}
+{"time":"2025-08-11T11:48:50.036151-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00270"}
+{"time":"2025-08-11T11:48:50.929755-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00270"}
+{"time":"2025-08-11T11:48:50.92978-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00260"}
+{"time":"2025-08-11T11:48:51.792126-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00260"}
+{"time":"2025-08-11T11:48:51.792159-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00250"}
+{"time":"2025-08-11T11:48:53.207625-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00250"}
+{"time":"2025-08-11T11:48:53.207695-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00240"}
+{"time":"2025-08-11T11:48:54.909804-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00240"}
+{"time":"2025-08-11T11:48:54.910571-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00230"}
+{"time":"2025-08-11T11:48:56.101927-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00230"}
+{"time":"2025-08-11T11:48:56.101964-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00220"}
+{"time":"2025-08-11T11:48:57.289024-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00220"}
+{"time":"2025-08-11T11:48:57.289057-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00210"}
+{"time":"2025-08-11T11:48:58.529576-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00210"}
+{"time":"2025-08-11T11:48:58.529602-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00200"}
+{"time":"2025-08-11T11:48:59.675381-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00200"}
+{"time":"2025-08-11T11:48:59.675424-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00190"}
+{"time":"2025-08-11T11:49:00.847479-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00190"}
+{"time":"2025-08-11T11:49:00.847513-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00180"}
+{"time":"2025-08-11T11:49:02.040592-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00180"}
+{"time":"2025-08-11T11:49:02.040617-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00170"}
+{"time":"2025-08-11T11:49:02.918099-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00170"}
+{"time":"2025-08-11T11:49:02.918143-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00160"}
+{"time":"2025-08-11T11:49:03.749934-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:49:03.749982-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:49:03.750003-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:49:03.750049-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00150"}
+{"time":"2025-08-11T11:49:04.915388-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00150"}
+{"time":"2025-08-11T11:49:04.915423-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00140"}
+{"time":"2025-08-11T11:49:05.778037-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00140"}
+{"time":"2025-08-11T11:49:05.778073-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00130"}
+{"time":"2025-08-11T11:49:06.954635-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00130"}
+{"time":"2025-08-11T11:49:06.954675-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00120"}
+{"time":"2025-08-11T11:49:07.737289-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00120"}
+{"time":"2025-08-11T11:49:07.737329-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00110"}
+{"time":"2025-08-11T11:49:08.88257-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00110"}
+{"time":"2025-08-11T11:49:08.882643-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00100"}
+{"time":"2025-08-11T11:49:10.1319-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00100"}
+{"time":"2025-08-11T11:49:10.131932-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00090"}
+{"time":"2025-08-11T11:49:11.252834-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00090"}
+{"time":"2025-08-11T11:49:11.252867-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00080"}
+{"time":"2025-08-11T11:49:12.429353-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00080"}
+{"time":"2025-08-11T11:49:12.429385-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00050"}
+{"time":"2025-08-11T11:49:13.527989-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00050"}
+{"time":"2025-08-11T11:49:13.528008-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00040"}
+{"time":"2025-08-11T11:49:14.623779-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"logging-usage-00040"}
+{"time":"2025-08-11T11:49:14.623815-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00030"}
+{"time":"2025-08-11T11:49:15.769547-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:49:15.769624-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00020"}
+{"time":"2025-08-11T11:49:16.978618-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:49:16.978684-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"logging-usage-00010"}
+{"time":"2025-08-11T11:49:18.232543-04:00","level":"ERROR","msg":"unable to get code location","logger":"analyzer-service"}
+{"time":"2025-08-11T11:49:18.299227-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00210"}
+{"time":"2025-08-11T11:49:20.240772-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00210"}
+{"time":"2025-08-11T11:49:20.240811-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00200"}
+{"time":"2025-08-11T11:49:23.449124-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00200"}
+{"time":"2025-08-11T11:49:23.449154-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00190"}
+{"time":"2025-08-11T11:49:26.124379-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00190"}
+{"time":"2025-08-11T11:49:26.12445-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00180"}
+{"time":"2025-08-11T11:49:28.800009-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00180"}
+{"time":"2025-08-11T11:49:28.800069-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00170"}
+{"time":"2025-08-11T11:49:35.821288-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00170"}
+{"time":"2025-08-11T11:49:35.821323-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00160"}
+{"time":"2025-08-11T11:49:37.790232-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00160"}
+{"time":"2025-08-11T11:49:37.790256-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00150"}
+{"time":"2025-08-11T11:49:38.901018-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00150"}
+{"time":"2025-08-11T11:49:38.901077-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00140"}
+{"time":"2025-08-11T11:49:40.005486-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00140"}
+{"time":"2025-08-11T11:49:40.005528-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00130"}
+{"time":"2025-08-11T11:49:41.028196-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00130"}
+{"time":"2025-08-11T11:49:41.028231-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00120"}
+{"time":"2025-08-11T11:49:41.956519-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00120"}
+{"time":"2025-08-11T11:49:41.956574-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00110"}
+{"time":"2025-08-11T11:49:42.826919-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00110"}
+{"time":"2025-08-11T11:49:42.826966-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00100"}
+{"time":"2025-08-11T11:49:43.949483-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00100"}
+{"time":"2025-08-11T11:49:43.949524-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00090"}
+{"time":"2025-08-11T11:49:44.893286-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00090"}
+{"time":"2025-08-11T11:49:44.893329-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"jta-00080"}
+{"time":"2025-08-11T11:49:45.708102-04:00","level":"INFO","msg":"info rule not matched","logger":"analyzer-service","rule":"jta-00080"}
+{"time":"2025-08-11T11:49:45.708141-04:00","level":"INFO","msg":"processing rule","logger":"analyzer-service/process-rule","ruleID":"discover-license"}
+{"time":"2025-08-11T11:59:12.80896-04:00","level":"INFO","msg":"stopping server","signal":15}

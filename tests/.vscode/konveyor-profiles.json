@@ -1,0 +1,15 @@
+{
+  "profiles": [
+    {
+      "id": "auto-profile-1755027488267",
+      "name": "Auto Profile with Custom Rules",
+      "customRules": [
+        "/Users/sraghuna/local_dev/editor-extensions/tests/inventory_management/rules"
+      ],
+      "useDefaultRules": true,
+      "labelSelector": "konveyor.io/target=openjdk21",
+      "mode": "source-only"
+    }
+  ],
+  "activeProfileId": "auto-profile-1755027488267"
+}
