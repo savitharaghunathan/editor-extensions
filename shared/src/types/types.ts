@@ -25,11 +25,14 @@ export interface SuccessRateMetric {
   unknown_solutions: number;
 }
 
-export interface SolutionServerAuthConfig {
-  username: string;
-  password: string;
-  realm: string;
-  clientId: string;
+export interface SolutionServerConfig {
+  enabled: boolean;
+  url: string;
+  auth: {
+    enabled: boolean;
+    realm: string;
+    insecure: boolean;
+  };
 }
 
 export interface Violation {
@@ -156,6 +159,7 @@ export interface ChatMessage {
   extraContent?: React.ReactNode;
   quickResponses?: QuickResponse[];
   isCompact?: boolean;
+  selectedResponse?: string;
 }
 
 export interface ExtensionData {

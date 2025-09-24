@@ -36,6 +36,7 @@ import {
   getTraceDir,
   getConfigSolutionServerAuth,
   fileUriToPath,
+  getConfigSolutionServer,
 } from "./utilities/configuration";
 import { EXTENSION_NAME } from "./utilities/constants";
 import { promptForCredentials } from "./utilities/auth";
@@ -113,6 +114,12 @@ const commandsMap: (
     },
     [`${EXTENSION_NAME}.restartSolutionServer`]: async () => {
       const solutionServerClient = state.solutionServerClient;
+      const config = getConfigSolutionServer();
+      if (!config.enabled) {
+        logger.info("Solution server is disabled, skipping restart");
+        return;
+      }
+
       try {
         window.showInformationMessage("Restarting solution server...");
         await solutionServerClient.disconnect();
@@ -493,6 +500,8 @@ const commandsMap: (
 
       try {
         await state.solutionServerClient.acceptFile(path, finalContent);
+        // After we accept a file, we should update the success rates.
+        await executeExtensionCommand("getSuccessRate");
       } catch (error: any) {
         logger.error("Error notifying solution server of file acceptance", { error, path });
       }
@@ -513,6 +522,7 @@ const commandsMap: (
 
       try {
         await state.solutionServerClient.rejectFile(path);
+        await executeExtensionCommand("getSuccessRate");
       } catch (error: any) {
         logger.error("Error notifying solution server of file rejection", { error, path });
       }
@@ -787,6 +797,11 @@ const commandsMap: (
         return;
       }
 
+      // Update the solution server client with new credentials
+      // (credentials are already stored by promptForCredentials)
+      await state.solutionServerClient.authenticate(credentials.username, credentials.password);
+
+      // Restart the connection with new credentials
       await executeExtensionCommand("restartSolutionServer");
       logger.info("Solution server credentials updated successfully.");
     },

@@ -2,7 +2,12 @@ import * as vscode from "vscode";
 import * as pathlib from "path";
 import { fileURLToPath } from "url";
 import { EXTENSION_NAME } from "./constants";
-import { AnalysisProfile, createConfigError, ExtensionData } from "@editor-extensions/shared";
+import {
+  AnalysisProfile,
+  createConfigError,
+  ExtensionData,
+  SolutionServerConfig,
+} from "@editor-extensions/shared";
 
 function getConfigValue<T>(key: string): T | undefined {
   return vscode.workspace.getConfiguration(EXTENSION_NAME)?.get<T>(key);
@@ -17,31 +22,30 @@ async function updateConfigValue<T>(
 }
 
 export const getConfigAnalyzerPath = (): string => getConfigValue<string>("analyzerPath") || "";
-export const getConfigSolutionServerUrl = (): string =>
-  getConfigValue<string>("solutionServer.url") || "http://localhost:8000";
-export const getConfigSolutionServerEnabled = (): boolean =>
-  getConfigValue<boolean>("solutionServer.enabled") ?? false;
-export const getConfigSolutionServerAuth = (): boolean =>
-  getConfigValue<boolean>("solutionServer.auth.enabled") ?? false;
-export const getConfigSolutionServerRealm = (): string =>
-  getConfigValue<string>("solutionServer.auth.realm") || "tackle";
+
+export const getConfigSolutionServer = (): SolutionServerConfig => {
+  const config = getConfigValue<Partial<SolutionServerConfig>>("solutionServer") || {};
+  return {
+    enabled: config.enabled ?? false,
+    url: config.url || "http://localhost:8000",
+    auth: {
+      enabled: config.auth?.enabled ?? false,
+      realm: config.auth?.realm || "tackle",
+      insecure: config.auth?.insecure ?? false,
+    },
+  };
+};
+
+// Legacy getters for backward compatibility - will be removed after refactoring
+export const getConfigSolutionServerUrl = (): string => getConfigSolutionServer().url;
+export const getConfigSolutionServerEnabled = (): boolean => getConfigSolutionServer().enabled;
+export const getConfigSolutionServerAuth = (): boolean => getConfigSolutionServer().auth.enabled;
+export const getConfigSolutionServerRealm = (): string => getConfigSolutionServer().auth.realm;
 export const getConfigSolutionServerInsecure = (): boolean =>
-  getConfigValue<boolean>("solutionServer.auth.insecure") ?? false;
+  getConfigSolutionServer().auth.insecure;
 export const getConfigLogLevel = (): string => getConfigValue<string>("logLevel") || "debug";
-export const getConfigIncidentLimit = (): number =>
-  getConfigValue<number>("analysis.incidentLimit") || 10000;
-export const getConfigContextLines = (): number =>
-  getConfigValue<number>("analysis.contextLines") || 10;
-
-export const getConfigCodeSnipLimit = (): number =>
-  getConfigValue<number>("analysis.codeSnipLimit") || 10;
-
 export const getConfigLabelSelector = (): string =>
   getConfigValue<string>("analysis.labelSelector") || "discovery";
-export const getConfigAnalyzeKnownLibraries = (): boolean =>
-  getConfigValue<boolean>("analysis.analyzeKnownLibraries") ?? false;
-export const getConfigAnalyzeDependencies = (): boolean =>
-  getConfigValue<boolean>("analysis.analyzeDependencies") ?? true;
 export const getConfigAnalyzeOnSave = (): boolean => {
   const agentMode = getConfigAgentMode();
   const analyzeOnSave = getConfigValue<boolean>("analysis.analyzeOnSave") ?? true;
@@ -59,18 +63,21 @@ export const getConfigAnalyzeOnSave = (): boolean => {
 export const getConfigDiffEditorType = (): string =>
   getConfigValue<"diff" | "merge">("diffEditorType") || "diff";
 export const getCacheDir = (workspaceRoot: string | undefined): string | undefined =>
-  getWorkspaceRelativePath(getConfigValue<string>("kai.cacheDir"), workspaceRoot);
+  getWorkspaceRelativePath(getConfigValue<string>("genai.cacheDir"), workspaceRoot);
 export const getTraceDir = (workspaceRoot: string | undefined): string | undefined =>
-  getWorkspaceRelativePath(getConfigValue<string>("kai.traceDir"), workspaceRoot);
-export const getTraceEnabled = (): boolean => getConfigValue<boolean>("kai.traceEnabled") || false;
-export const getConfigKaiDemoMode = (): boolean => getConfigValue<boolean>("kai.demoMode") ?? false;
+  getWorkspaceRelativePath(getConfigValue<string>("genai.traceDir"), workspaceRoot);
+export const getTraceEnabled = (): boolean =>
+  getConfigValue<boolean>("genai.traceEnabled") || false;
+export const getConfigKaiDemoMode = (): boolean =>
+  getConfigValue<boolean>("genai.demoMode") ?? false;
 export const getConfigGenAIEnabled = (): boolean =>
   getConfigValue<boolean>("genai.enabled") ?? true;
-export const getConfigAgentMode = (): boolean => getConfigValue<boolean>("kai.agentMode") ?? false;
+export const getConfigAgentMode = (): boolean =>
+  getConfigValue<boolean>("genai.agentMode") ?? false;
 export const getConfigAutoAcceptOnSave = (): boolean =>
   getConfigValue<boolean>("diff.autoAcceptOnSave") ?? true;
 export const getExcludedDiagnosticSources = (): string[] =>
-  getConfigValue<string[]>("kai.excludedDiagnosticSources") ?? [];
+  getConfigValue<string[]>("genai.excludedDiagnosticSources") ?? [];
 
 /**
  * Get all configuration values for keys defined in the package.json file. Used in debugging.
@@ -87,18 +94,34 @@ export function getAllConfigurationValues(): Record<string, any> {
   return result;
 }
 
+export const updateSolutionServerConfig = async (
+  config: Partial<SolutionServerConfig>,
+): Promise<void> => {
+  const currentConfig = getConfigSolutionServer();
+  const newConfig = {
+    ...currentConfig,
+    ...config,
+    auth: {
+      ...currentConfig.auth,
+      ...config.auth,
+    },
+  };
+  await updateConfigValue("solutionServer", newConfig, vscode.ConfigurationTarget.Workspace);
+};
+
+// Legacy setters for backward compatibility - will be removed after refactoring
 export const updateSolutionServerUrl = async (value: string | undefined): Promise<void> => {
-  await updateConfigValue("solutionServer.url", value, vscode.ConfigurationTarget.Workspace);
+  await updateSolutionServerConfig({ url: value || "http://localhost:8000" });
 };
 export const updateSolutionServerEnabled = async (value: boolean): Promise<void> => {
-  await updateConfigValue("solutionServer.enabled", value, vscode.ConfigurationTarget.Workspace);
+  await updateSolutionServerConfig({ enabled: value });
 };
 export const updateAnalyzerPath = async (value: string | undefined): Promise<void> => {
   await updateConfigValue("analyzerPath", value, vscode.ConfigurationTarget.Workspace);
 };
 export const toggleAgentMode = async (): Promise<void> => {
   const currentValue = getConfigAgentMode();
-  await updateConfigValue("kai.agentMode", !currentValue, vscode.ConfigurationTarget.Workspace);
+  await updateConfigValue("genai.agentMode", !currentValue, vscode.ConfigurationTarget.Workspace);
 };
 
 export const enableGenAI = async (): Promise<void> => {

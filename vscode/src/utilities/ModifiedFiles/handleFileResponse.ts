@@ -1,8 +1,8 @@
 import { ExtensionState } from "../../extensionState";
 import * as vscode from "vscode";
 import { ChatMessageType } from "@editor-extensions/shared";
-import { getConfigAgentMode, getConfigAnalyzeOnSave } from "../configuration";
 import { executeExtensionCommand } from "../../commands";
+import { runPartialAnalysis } from "../../analysis/runAnalysis";
 
 /**
  * Creates a new file with the specified content
@@ -140,16 +140,14 @@ export async function handleFileResponse(
 
         // Trigger analysis after file changes are applied in agentic mode or when analyze on save is enabled
         // This ensures that the tasks interaction can detect new diagnostic issues
-        if (getConfigAgentMode() || getConfigAnalyzeOnSave()) {
-          try {
-            await state.analyzerClient.runAnalysis([uri]);
-          } catch (analysisError) {
-            logger.warn(
-              `Failed to trigger analysis after applying changes to ${path}:`,
-              analysisError,
-            );
-            // Don't throw here - file changes were successful, analysis failure is not critical
-          }
+        try {
+          await runPartialAnalysis(state, [uri]);
+        } catch (analysisError) {
+          logger.warn(
+            `Failed to trigger analysis after applying changes to ${path}:`,
+            analysisError,
+          );
+          // Don't throw here - file changes were successful, analysis failure is not critical
         }
       } catch (error) {
         logger.error("Error applying file changes:", error);
@@ -182,8 +180,6 @@ export async function handleFileResponse(
         }
       });
     } else if (responseId === "noChanges") {
-      // For noChanges, update the global state to indicate no changes were needed
-      // No file operations or notifications needed
       state.mutateData((draft) => {
         const messageIndex = draft.chatMessages.findIndex(
           (msg) => msg.messageToken === messageToken,
@@ -197,7 +193,12 @@ export async function handleFileResponse(
         }
       });
     } else {
-      // For reject, also update the global state
+      // For reject, notify the solution server that the change was discarded
+      try {
+        await executeExtensionCommand("changeDiscarded", path);
+      } catch (error) {
+        logger.error("Error notifying solution server of rejection:", error);
+      }
       state.mutateData((draft) => {
         const messageIndex = draft.chatMessages.findIndex(
           (msg) => msg.messageToken === messageToken,

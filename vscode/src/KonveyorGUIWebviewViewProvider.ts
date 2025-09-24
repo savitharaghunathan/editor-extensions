@@ -11,13 +11,12 @@ import {
   WebviewViewResolveContext,
   ViewColumn,
   window,
-  ColorThemeKind,
 } from "vscode";
 import { getNonce } from "./utilities/getNonce";
 import { ExtensionData, WebviewType } from "@editor-extensions/shared";
 import { Immutable } from "immer";
 import jsesc from "jsesc";
-import { EXTENSION_NAME } from "./utilities/constants";
+import { EXTENSION_NAME, EXTENSION_SHORT_NAME } from "./utilities/constants";
 
 const DEV_SERVER_ROOT = "http://localhost:5173/out/webview";
 
@@ -61,17 +60,17 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
         case "sidebar":
           return {
             viewType: KonveyorGUIWebviewViewProvider.SIDEBAR_VIEW_TYPE,
-            title: `${EXTENSION_NAME.charAt(0).toUpperCase() + EXTENSION_NAME.slice(1)} Analysis View`,
+            title: `${EXTENSION_SHORT_NAME} Analysis View`,
           };
         case "resolution":
           return {
             viewType: KonveyorGUIWebviewViewProvider.RESOLUTION_VIEW_TYPE,
-            title: "Resolution Details",
+            title: `${EXTENSION_SHORT_NAME} Resolution Details`,
           };
         case "profiles":
           return {
             viewType: KonveyorGUIWebviewViewProvider.PROFILES_VIEW_TYPE,
-            title: "Manage Profiles",
+            title: `${EXTENSION_SHORT_NAME} Manage Profiles`,
           };
         default:
           throw new Error(`Unsupported view type: ${this._viewType}`);
@@ -146,7 +145,7 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
-    <html lang="en" class="${window.activeColorTheme.kind === ColorThemeKind.Dark ? "pf-v6-theme-dark" : ""}">
+    <html lang="en" class="pf-v6-theme-dark">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />

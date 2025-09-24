@@ -5,7 +5,12 @@ import { _electron as electron, FrameLocator } from 'playwright';
 import { ElectronApplication, expect, Page } from '@playwright/test';
 import { MIN, SEC } from '../utilities/consts';
 import { createZip, extractZip } from '../utilities/archive';
-import { cleanupRepo, generateRandomString, getOSInfo } from '../utilities/utils';
+import {
+  cleanupRepo,
+  generateRandomString,
+  getOSInfo,
+  writeOrUpdateSettingsJson,
+} from '../utilities/utils';
 import { DEFAULT_PROVIDER } from '../fixtures/provider-configs.fixture';
 import { KAIViews } from '../enums/views.enum';
 import { TEST_DATA_DIR } from '../utilities/consts';
@@ -19,6 +24,7 @@ const COMMAND_CATEGORY = process.env.TEST_CATEGORY || 'Konveyor';
 
 type SortOrder = 'ascending' | 'descending';
 type ListKind = 'issues' | 'files';
+
 export class VSCode extends BasePage {
   constructor(
     app: ElectronApplication,
@@ -55,6 +61,11 @@ export class VSCode extends BasePage {
       args.push(path.resolve(repoDir));
     }
 
+    // set the log level prior to starting vscode
+    writeOrUpdateSettingsJson(path.join(repoDir ?? '', '.vscode', 'settings.json'), {
+      'konveyor.logLevel': 'silly',
+    });
+
     let executablePath = process.env.VSCODE_EXECUTABLE_PATH;
     if (!executablePath) {
       if (getOSInfo() === 'linux') {
@@ -77,12 +88,21 @@ export class VSCode extends BasePage {
     const vscodeApp = await electron.launch({
       executablePath: executablePath,
       args,
+      env: {
+        ...process.env,
+        __TEST_EXTENSION_END_TO_END__: 'true',
+      },
     });
     await vscodeApp.firstWindow();
 
     const window = await vscodeApp.firstWindow({ timeout: 60000 });
     console.log('VSCode opened');
-    return new VSCode(vscodeApp, window, repoDir);
+    const vscode = new VSCode(vscodeApp, window, repoDir);
+
+    // Wait for extension initialization in downstream environment
+    await vscode.waitForExtensionInitialization();
+
+    return vscode;
   }
 
   /**
@@ -115,6 +135,35 @@ export class VSCode extends BasePage {
       }
     } catch (error) {
       console.error('Error closing VSCode:', error);
+    }
+  }
+
+  /**
+   * Waits for the Konveyor extension to complete initialization by watching for
+   * the __EXTENSION_INITIALIZED__ info message signal.
+   */
+  public async waitForExtensionInitialization(): Promise<void> {
+    try {
+      console.log('Waiting for Konveyor extension initialization...');
+
+      // Trigger extension activation by opening the analysis view
+      // This was working before - the extension activates and opens the view
+      await this.executeQuickCommand(`${COMMAND_CATEGORY}: Open Analysis View`);
+
+      // Now wait for the initialization signal message to appear
+      // This message is shown by the extension when __TEST_EXTENSION_END_TO_END__ env var is set
+      const initializationMessage = this.window
+        .getByRole('alert')
+        .getByText('__EXTENSION_INITIALIZED__');
+      await expect(initializationMessage).toBeVisible({ timeout: 300000 }); // 5 minute timeout for asset downloads
+
+      // Dismiss the message
+      await this.window.keyboard.press('Escape');
+      await this.window.waitForTimeout(2000); // Give VSCode a chance to process the message
+      console.log('Konveyor extension initialized successfully');
+    } catch (error) {
+      console.error('Failed to wait for extension initialization:', error);
+      throw error;
     }
   }
 
@@ -255,6 +304,11 @@ export class VSCode extends BasePage {
     const kindButton = analysisView.getByRole('button', {
       name: kind === 'issues' ? 'Issues' : 'Files',
     });
+    const toggleFilterButton = analysisView.locator('button[aria-label="Show Filters"]');
+
+    if (!(await kindButton.isVisible()) && (await toggleFilterButton.isVisible())) {
+      await toggleFilterButton.click();
+    }
 
     await expect(kindButton).toBeVisible({ timeout: 5_000 });
     await expect(kindButton).toBeEnabled({ timeout: 3_000 });
@@ -328,7 +382,7 @@ export class VSCode extends BasePage {
     }
   }
 
-  public async getView(view: KAIViews): Promise<FrameLocator> {
+  public async getView(view: (typeof KAIViews)[keyof typeof KAIViews]): Promise<FrameLocator> {
     await this.window.locator(`div.tab.active[aria-label="${view}"]`).waitFor();
     await this.executeQuickCommand('View: Close Other Editors in Group');
 
@@ -459,7 +513,8 @@ export class VSCode extends BasePage {
 
       const deleteButton = manageProfileView.getByRole('button', { name: 'Delete Profile' });
       await deleteButton.waitFor({ state: 'visible', timeout: 10000 });
-      await deleteButton.click();
+      // Ensures the button is clicked even if there are notifications overlaying it due to screen size
+      await deleteButton.first().dispatchEvent('click');
 
       const confirmButton = manageProfileView
         .getByRole('dialog', { name: 'Delete profile?' })
@@ -555,31 +610,9 @@ export class VSCode extends BasePage {
    * @param settings - Key - value pair of settings to write or update, if a setting already exists, the new values will be merged
    */
   public async writeOrUpdateVSCodeSettings(settings: Record<string, any>): Promise<void> {
-    try {
-      const vscodeDir = path.join(this.repoDir ?? '', '.vscode');
-      const settingsPath = path.join(vscodeDir, 'settings.json');
-      if (!fs.existsSync(vscodeDir)) {
-        fs.mkdirSync(vscodeDir, { recursive: true });
-      }
-      let existingSettings: Record<string, any> = {};
-      if (fs.existsSync(settingsPath)) {
-        try {
-          const existingContent = fs.readFileSync(settingsPath, 'utf-8');
-          existingSettings = JSON.parse(existingContent);
-        } catch (parseError) {
-          console.warn(
-            `Failed to parse existing settings.json, starting with empty settings: ${parseError}`
-          );
-          existingSettings = {};
-        }
-      }
-      const mergedSettings = { ...existingSettings, ...settings };
-      fs.writeFileSync(settingsPath, JSON.stringify(mergedSettings, null, 2), 'utf-8');
-    } catch (error) {
-      console.error('Error writing VSCode settings:', error);
-      throw error;
-    }
+    writeOrUpdateSettingsJson(path.join(this.repoDir ?? '', '.vscode', 'settings.json'), settings);
   }
+
   public async waitForSolutionConfirmation(): Promise<void> {
     const analysisView = await this.getView(KAIViews.analysisView);
     const solutionButton = analysisView.locator('button#get-solution-button');
@@ -598,19 +631,24 @@ export class VSCode extends BasePage {
   public async acceptAllSolutions() {
     const resolutionView = await this.getView(KAIViews.resolutionDetails);
     const fixLocator = resolutionView.locator('button[aria-label="Accept all changes"]');
+    const loadingIndicator = resolutionView.locator('.loading-indicator');
 
     await this.waitDefault();
-    await expect(fixLocator.first()).toBeVisible({ timeout: 3600000 });
+    // Avoid fixing issues forever
+    const MAX_FIXES = 500;
 
-    const fixesNumber = await fixLocator.count();
-    let fixesCounter = await fixLocator.count();
-    for (let i = 0; i < fixesNumber; i++) {
-      await expect(fixLocator.first()).toBeVisible({ timeout: 30000 });
+    for (let i = 0; i < MAX_FIXES; i++) {
+      await expect(fixLocator.first()).toBeVisible({ timeout: 60000 });
       // Ensures the button is clicked even if there are notifications overlaying it due to screen size
       await fixLocator.first().dispatchEvent('click');
       await this.waitDefault();
-      expect(await fixLocator.count()).toEqual(--fixesCounter);
+
+      if (!(await loadingIndicator.isVisible())) {
+        return;
+      }
     }
+
+    throw new Error('MAX_FIXES limit reached while requesting solutions');
   }
 
   public async searchViolationAndAcceptAllSolutions(violation: string) {

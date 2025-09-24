@@ -3,7 +3,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import {
   EnhancedIncident,
   SuccessRateMetric,
-  SolutionServerAuthConfig,
+  SolutionServerConfig,
 } from "@editor-extensions/shared";
 import { Logger } from "winston";
 
@@ -45,12 +45,15 @@ export interface TokenResponse {
 
 export class SolutionServerClient {
   private mcpClient: Client | null = null;
+  private enabled: boolean;
   private serverUrl: string;
   private isConnected: boolean = false;
-  private enabled: boolean;
   private authEnabled: boolean;
   private insecure: boolean;
-  private authConfig: SolutionServerAuthConfig | null = null;
+  private realm: string;
+  private clientId: string;
+  private username: string;
+  private password: string;
   private bearerToken: string | null = null;
   private refreshToken: string | null = null;
   private tokenExpiresAt: number | null = null;
@@ -59,25 +62,68 @@ export class SolutionServerClient {
   private logger: Logger;
   private sslBypassCleanup: (() => void) | null = null;
 
-  constructor(
-    serverUrl: string,
-    enabled: boolean = true,
-    authEnabled: boolean = false,
-    insecure: boolean = false,
-    logger: Logger,
-  ) {
-    this.serverUrl = serverUrl;
-    this.enabled = enabled;
-    this.authEnabled = authEnabled;
-    this.insecure = insecure;
-    this.authConfig = null; // Will be set via setAuthConfig if needed
+  constructor(config: SolutionServerConfig, logger: Logger) {
+    this.enabled = config.enabled;
+    this.serverUrl = config.url;
+    this.authEnabled = config.auth.enabled;
+    this.insecure = config.auth.insecure;
+    this.realm = config.auth.realm;
+    this.clientId = `${this.realm}-ui`;
+    this.username = "";
+    this.password = "";
     this.logger = logger.child({
       component: "SolutionServerClient",
     });
+    // Clear auth-related properties if auth is disabled
+    if (!this.authEnabled) {
+      this.realm = "";
+      this.clientId = "";
+      this.insecure = false;
+      this.bearerToken = null;
+      this.refreshToken = null;
+      this.tokenExpiresAt = null;
+      this.clearTokenRefreshTimer();
+    }
   }
 
-  public setAuthConfig(authConfig: SolutionServerAuthConfig | null): void {
-    this.authConfig = authConfig;
+  public updateConfig(config: SolutionServerConfig): void {
+    this.enabled = config.enabled;
+    this.serverUrl = config.url;
+    this.authEnabled = config.auth.enabled;
+    this.insecure = config.auth.insecure;
+    this.realm = config.auth.realm;
+    this.clientId = `${this.realm}-ui`;
+    // Clear auth-related properties if auth is disabled
+    if (!this.authEnabled) {
+      this.realm = "";
+      this.clientId = "";
+      this.insecure = false;
+      this.bearerToken = null;
+      this.refreshToken = null;
+      this.tokenExpiresAt = null;
+      this.clearTokenRefreshTimer();
+    }
+    this.logger.info("Solution server configuration updated");
+  }
+
+  public async authenticate(username: string, password: string): Promise<void> {
+    if (!this.enabled) {
+      this.logger.info("Solution server is disabled, skipping authentication");
+      return;
+    }
+
+    if (!this.authEnabled) {
+      this.logger.info("Authentication is disabled");
+      return;
+    }
+
+    if (!username || !password) {
+      throw new SolutionServerClientError("No username or password provided");
+    }
+
+    this.username = username;
+    this.password = password;
+    this.logger.info("Credentials stored for authentication");
   }
 
   public async connect(): Promise<void> {
@@ -91,24 +137,24 @@ export class SolutionServerClient {
       this.sslBypassCleanup = this.applySSLBypass();
     }
 
+    // Handle authentication if required
     if (this.authEnabled) {
-      if (!this.authConfig) {
-        throw new SolutionServerClientError(
-          "Authentication is enabled but no auth config provided",
-        );
+      // Only require credentials if we don't yet have a token
+      if (!this.bearerToken && (!this.username || !this.password)) {
+        throw new SolutionServerClientError("No credentials available. Call authenticate() first.");
+      }
+      // Exchange for tokens if we don't have one
+      if (!this.bearerToken) {
+        try {
+          await this.exchangeForTokens();
+        } catch (error) {
+          this.logger.error("Failed to exchange for tokens", error);
+          throw error;
+        }
       }
 
-      // Always get fresh tokens on startup/connect
-      try {
-        if (!this.bearerToken) {
-          await this.exchangeForTokens();
-        }
-        this.startTokenRefreshTimer();
-      } catch (error) {
-        this.logger.error("Failed to exchange for tokens", error);
-        await this.disconnect();
-        return;
-      }
+      // Ensure refresh timer is running (also after manual restarts)
+      this.startTokenRefreshTimer();
     }
 
     this.mcpClient = new Client(
@@ -241,6 +287,10 @@ export class SolutionServerClient {
   }
 
   public async getServerCapabilities(): Promise<any> {
+    if (!this.enabled) {
+      this.logger.info("Solution server is disabled, returning empty capabilities");
+      return;
+    }
     if (!this.mcpClient || !this.isConnected) {
       throw new SolutionServerClientError("Solution server is not connected");
     }
@@ -713,19 +763,19 @@ export class SolutionServerClient {
   }
 
   private async exchangeForTokens(): Promise<void> {
-    if (!this.authConfig) {
-      throw new SolutionServerClientError("No auth config available for token exchange");
+    if (!this.username || !this.password) {
+      throw new SolutionServerClientError("No username or password available for token exchange");
     }
 
     const url = new URL(this.serverUrl);
     const keycloakUrl = `${url.protocol}//${url.host}/auth`;
-    const tokenUrl = `${keycloakUrl}/realms/${this.authConfig.realm}/protocol/openid-connect/token`;
+    const tokenUrl = `${keycloakUrl}/realms/${this.realm}/protocol/openid-connect/token`;
 
     const params = new URLSearchParams();
     params.append("grant_type", "password");
-    params.append("client_id", this.authConfig.clientId);
-    params.append("username", this.authConfig.username);
-    params.append("password", this.authConfig.password);
+    params.append("client_id", this.clientId);
+    params.append("username", this.username);
+    params.append("password", this.password);
 
     try {
       this.logger.debug(`Attempting token exchange with ${tokenUrl}`);
@@ -773,18 +823,13 @@ export class SolutionServerClient {
       return;
     }
 
-    if (!this.authConfig) {
-      this.logger.warn("No auth config available for token refresh");
-      return;
-    }
-
     const url = new URL(this.serverUrl);
     const keycloakUrl = `${url.protocol}//${url.host}/auth`;
-    const tokenUrl = `${keycloakUrl}/realms/${this.authConfig.realm}/protocol/openid-connect/token`;
+    const tokenUrl = `${keycloakUrl}/realms/${this.realm}/protocol/openid-connect/token`;
 
     const params = new URLSearchParams();
     params.append("grant_type", "refresh_token");
-    params.append("client_id", this.authConfig.clientId);
+    params.append("client_id", this.clientId);
     params.append("refresh_token", this.refreshToken);
 
     try {
@@ -826,8 +871,7 @@ export class SolutionServerClient {
           this.logger.error("Error reconnecting to MCP solution server", error);
         }
       }
-
-      // Restart the refresh timer
+      // Always restart the refresh timer
       this.startTokenRefreshTimer();
     } catch (error) {
       this.logger.error("Token refresh failed", error);

@@ -5,7 +5,7 @@
   "author": "Konveyor",
   "icon": "resources/icon.png",
   "license": "Apache-2.0",
-  "version": "0.2.0-pre.2-1",
+  "version": "0.3.0",
   "main": "./out/extension.js",
   "publisher": "konveyor",
   "repository": {
@@ -32,9 +32,6 @@
     "node": ">=22.9.0",
     "npm": "^9.5.0 || >=10.5.2"
   },
-  "enabledApiProposals": [
-    "contribDiffEditorGutterToolBarMenus"
-  ],
   "extensionDependencies": [
     "redhat.java"
   ],
@@ -292,7 +289,7 @@
       "konveyor": [
         {
           "id": "konveyor.issueView",
-          "name": "Konveyor Issues"
+          "name": "Issues"
         }
       ]
     },
@@ -423,44 +420,6 @@
           "scope": "window",
           "order": 10
         },
-        "konveyor.analysis.incidentLimit": {
-          "type": "integer",
-          "default": 10000,
-          "description": "Maximum number of incidents to report",
-          "scope": "window",
-          "order": 11,
-          "minimum": 1
-        },
-        "konveyor.analysis.contextLines": {
-          "type": "integer",
-          "default": 10,
-          "description": "Number of lines of context to include in incident reports.",
-          "scope": "window",
-          "order": 12,
-          "minimum": 1
-        },
-        "konveyor.analysis.codeSnipLimit": {
-          "type": "integer",
-          "default": 10,
-          "description": "Number of lines of code to include in incident reports.",
-          "scope": "window",
-          "order": 13,
-          "minimum": 1
-        },
-        "konveyor.analysis.analyzeKnownLibraries": {
-          "type": "boolean",
-          "default": false,
-          "description": "Should the analyzer analyze known open-source libraries?",
-          "scope": "window",
-          "order": 14
-        },
-        "konveyor.analysis.analyzeDependencies": {
-          "type": "boolean",
-          "default": true,
-          "description": "Should the analyzer analyze project dependencies?",
-          "scope": "window",
-          "order": 15
-        },
         "konveyor.genai.enabled": {
           "type": "boolean",
           "default": true,
@@ -468,14 +427,14 @@
           "scope": "window",
           "order": 20
         },
-        "konveyor.kai.agentMode": {
+        "konveyor.genai.agentMode": {
           "type": "boolean",
           "default": false,
           "description": "(Experimental) Use agentic flow when getting solution. Requires automatic analysis.",
           "scope": "window",
           "order": 21
         },
-        "konveyor.kai.excludedDiagnosticSources": {
+        "konveyor.genai.excludedDiagnosticSources": {
           "type": "array",
           "default": [
             "trunk"
@@ -484,7 +443,7 @@
           "scope": "window",
           "order": 22
         },
-        "konveyor.kai.cacheDir": {
+        "konveyor.genai.cacheDir": {
           "type": [
             "string",
             "null"
@@ -494,7 +453,7 @@
           "scope": "window",
           "order": 23
         },
-        "konveyor.kai.traceDir": {
+        "konveyor.genai.traceDir": {
           "type": [
             "string",
             "null"
@@ -504,49 +463,60 @@
           "scope": "window",
           "order": 24
         },
-        "konveyor.kai.traceEnabled": {
+        "konveyor.genai.traceEnabled": {
           "type": "boolean",
           "default": false,
           "description": "Whether to create traces of the communication with the model",
           "scope": "window",
           "order": 25
         },
-        "konveyor.solutionServer.enabled": {
+        "konveyor.genai.demoMode": {
           "type": "boolean",
           "default": false,
-          "description": "Enable the MCP solution server client.",
+          "description": "Whether to run GenAI in demo mode i.e. use cached LLM responses",
           "scope": "window",
-          "order": 30
+          "order": 26
         },
-        "konveyor.solutionServer.url": {
-          "type": "string",
-          "default": "http://localhost:8000",
-          "pattern": "^https?://.*",
-          "patternErrorMessage": "The URL must start with http:// or https://",
-          "description": "URL for the MCP solution server endpoint.",
+        "konveyor.solutionServer": {
+          "type": "object",
+          "description": "Configuration for the MCP solution server. Set 'enabled: true' to enable, 'url' for server endpoint, and configure 'auth' object with 'enabled: true', 'realm' (default: tackle), and 'insecure: true' to skip SSL verification if needed.",
           "scope": "window",
-          "order": 31
-        },
-        "konveyor.solutionServer.auth.enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable authentication for the solution server.",
-          "scope": "window",
-          "order": 32
-        },
-        "konveyor.solutionServer.auth.realm": {
-          "type": "string",
-          "default": "tackle",
-          "description": "Keycloak realm for authentication.",
-          "scope": "window",
-          "order": 33
-        },
-        "konveyor.solutionServer.auth.insecure": {
-          "type": "boolean",
-          "default": false,
-          "description": "Skip SSL certificate verification for the solution server.",
-          "scope": "window",
-          "order": 34
+          "order": 30,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable the MCP solution server client"
+            },
+            "url": {
+              "type": "string",
+              "default": "http://localhost:8000",
+              "pattern": "^https?://.*",
+              "patternErrorMessage": "The URL must start with http:// or https://",
+              "description": "URL for the MCP solution server endpoint"
+            },
+            "auth": {
+              "type": "object",
+              "description": "Authentication settings for the solution server",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Enable authentication for the solution server"
+                },
+                "realm": {
+                  "type": "string",
+                  "default": "tackle",
+                  "description": "Keycloak realm for authentication"
+                },
+                "insecure": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Skip SSL certificate verification for the solution server"
+                }
+              }
+            }
+          }
         },
         "konveyor.debug.webview": {
           "type": "boolean",
@@ -554,13 +524,6 @@
           "description": "Enable debug logging for webview message handling",
           "scope": "window",
           "order": 40
-        },
-        "konveyor.kai.demoMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Whether to run Kai in demo mode i.e. use cached LLM responses",
-          "scope": "window",
-          "order": 41
         }
       }
     },

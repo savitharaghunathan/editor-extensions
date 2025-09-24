@@ -1,3 +1,4 @@
+import { Logger } from "winston";
 import { basename, relative } from "path";
 import {
   type AIMessage,
@@ -22,7 +23,7 @@ import { type InMemoryCacheWithRevisions } from "../cache";
 import { type KaiModelProvider, KaiWorkflowMessageType } from "../types";
 import { type GetBestHintResult, SolutionServerClient } from "../clients/solutionServerClient";
 
-type IssueFixResponseParserState = "reasoning" | "updatedFile" | "additionalInfo";
+export type IssueFixResponseParserState = "reasoning" | "updatedFile" | "additionalInfo";
 
 export class AnalysisIssueFix extends BaseNode {
   constructor(
@@ -31,13 +32,13 @@ export class AnalysisIssueFix extends BaseNode {
     private readonly fsCache: InMemoryCacheWithRevisions<string, string>,
     private readonly workspaceDir: string,
     private readonly solutionServerClient: SolutionServerClient,
+    private readonly logger: Logger,
   ) {
     super("AnalysisIssueFix", modelProvider, tools);
 
     this.fixAnalysisIssue = this.fixAnalysisIssue.bind(this);
     this.summarizeHistory = this.summarizeHistory.bind(this);
     this.fixAnalysisIssueRouter = this.fixAnalysisIssueRouter.bind(this);
-    this.parseAnalysisFixResponse = this.parseAnalysisFixResponse.bind(this);
     this.summarizeAdditionalInformation = this.summarizeAdditionalInformation.bind(this);
   }
 
@@ -56,6 +57,7 @@ export class AnalysisIssueFix extends BaseNode {
       inputFileContent: undefined,
       inputIncidents: [],
     };
+    this.logger.silly("AnalysisIssueFixRouter called with state", { state });
     // we have to fix the incidents if there's at least one present in state
     if (state.currentIdx < state.inputIncidentsByUris.length) {
       const nextEntry = state.inputIncidentsByUris[state.currentIdx];
@@ -70,7 +72,7 @@ export class AnalysisIssueFix extends BaseNode {
           nextState.inputFileUri = nextEntry.uri;
           nextState.inputIncidents = nextEntry.incidents;
         } catch (err) {
-          console.error("Failed to read input file", nextEntry.uri);
+          this.logger.error("Failed to read input file", nextEntry.uri);
           this.emitWorkflowMessage({
             type: KaiWorkflowMessageType.Error,
             data: String(err),
@@ -125,10 +127,10 @@ export class AnalysisIssueFix extends BaseNode {
             state.outputHints || [],
           );
         } catch (error) {
-          console.error(`Failed to create solution: ${error}`);
+          this.logger.error(`Failed to create solution: ${error}`);
         }
       } else {
-        console.error("Missing required fields for solution creation");
+        this.logger.error("Missing required fields for solution creation");
       }
 
       nextState.outputAllResponses = [
@@ -145,8 +147,8 @@ export class AnalysisIssueFix extends BaseNode {
       const accumulated = [...state.outputAllResponses, ...nextState.outputAllResponses].reduce(
         (acc, val) => {
           return {
-            reasoning: `${acc.reasoning}\n${val.outputReasoning}`,
-            additionalInfo: `${acc.additionalInfo}\n${val.outputAdditionalInfo}`,
+            reasoning: `${acc.reasoning}\n\n\n#### Changes made in ${relative(this.workspaceDir, val.outputUpdatedFileUri ?? "")}\n\n${val.outputReasoning}`,
+            additionalInfo: `${acc.additionalInfo}\n\n\n#### Additional changes from ${relative(this.workspaceDir, val.outputUpdatedFileUri ?? "")}\n\n${val.outputAdditionalInfo}`,
             uris: val.outputUpdatedFileUri
               ? acc.uris.concat([relative(this.workspaceDir, val.outputUpdatedFileUri)])
               : acc.uris,
@@ -162,6 +164,7 @@ export class AnalysisIssueFix extends BaseNode {
       nextState.inputAllReasoning = accumulated.reasoning;
       nextState.inputAllModifiedFiles = accumulated.uris;
     }
+    this.logger.silly("AnalysisIssueFixRouter returning nextState", { nextState });
     return nextState;
   }
 
@@ -169,6 +172,7 @@ export class AnalysisIssueFix extends BaseNode {
   async fixAnalysisIssue(
     state: typeof AnalysisIssueFixInputState.State,
   ): Promise<typeof AnalysisIssueFixOutputState.State> {
+    this.logger.silly("AnalysisIssueFix called with state", { state });
     if (!state.inputFileUri || !state.inputFileContent || state.inputIncidents.length === 0) {
       return {
         outputUpdatedFile: undefined,
@@ -200,7 +204,7 @@ export class AnalysisIssueFix extends BaseNode {
               hints.push(hint);
             }
           } catch (error) {
-            console.warn(`Failed to get hint for ${violationKey}: ${error}`);
+            this.logger.warn(`Failed to get hint for ${violationKey}: ${error}`);
           }
         }
       }
@@ -267,6 +271,7 @@ If you have any additional details or steps that need to be performed, put it he
     );
 
     if (!response) {
+      this.logger.silly("AnalysisIssueFix returned undefined response");
       return {
         outputAdditionalInfo: undefined,
         outputUpdatedFile: undefined,
@@ -277,7 +282,7 @@ If you have any additional details or steps that need to be performed, put it he
       };
     }
 
-    const { additionalInfo, reasoning, updatedFile } = this.parseAnalysisFixResponse(response);
+    const { additionalInfo, reasoning, updatedFile } = parseAnalysisFixResponse(response);
 
     return {
       outputReasoning: reasoning,
@@ -302,30 +307,45 @@ If you have any additional details or steps that need to be performed, put it he
     }
 
     const sys_message = new SystemMessage(
-      `You are an experienced ${state.programmingLanguage} programmer, specializing in migrating source code to ${state.migrationHint}. You are overlooking migration of a project.`,
+      `You are an experienced ${state.programmingLanguage} programmer, specializing in migrating source code to ${state.migrationHint}. Your job is to read migration notes and output only the additional changes that are still needed elsewhere in the project.`,
     );
     const human_message = new HumanMessage(
-      `During the migration to ${state.migrationHint}, we captured notes detailing changes made to existing files.\
-The notes contain a summary of changes we already made and additional changes that may be required in other files elsewhere in the project.\
-They also contain a list of files we changed.
-Your task is to carefully analyze the notes, compare them with files that are changed, understand any additional changes needed to complete the migration and provide a concise summary *solely* of the additional changes required elsewhere in the project.\
-**It is essential that your summary includes only the additional changes needed. Do not include changes already made.**\
+      `During the migration to ${state.migrationHint}, we captured notes that include:
+- A list of files we modified
+- Reasoning behind changes made to existing files
+- Additional information that may contain even more changes needed
+
+* Your task:
+Carefully analyze the reasoning and additional information for each file, and determine if there are any additional changes needed to complete the migration. \
+Provide a concise summary *solely* of the additional changes required elsewhere in the project. \
+**It is essential that your summary includes only the additional changes needed. Do not include changes already made.** \
 Make sure you output all the details about the changes including any relevant code snippets and instructions.
-**Do not omit any additional changes needed.**
-If there are no additional changes needed to complete the migration, respond with text "NO-CHANGE".\
-Here is the summary: \
-${
-  state.inputAllReasoning && state.inputAllReasoning.length > 0
-    ? `### Summary of changes made\n${state.inputAllReasoning}`
-    : ""
-}
-### Additional information about changes
-${state.inputAllAdditionalInfo}
+**Do not omit any additional changes needed. Be exhaustive and specific.**
+
+* Rules:
+- Only the files listed under MODIFIED_FILES are already changed. Any file **not** in MODIFIED_FILES is unmodified.
+- Treat sections named “Summary of changes made” as implemented changes only for the files listed in MODIFIED_FILES.
+- Treat “Additional information / notes / rationale” as proposed work, not-yet-applied.
+- If there are no additional changes needed, respond with exactly:
+NO-CHANGE: <one-sentence reason>
+
+Here is your input:
+
 ${
   state.inputAllModifiedFiles
-    ? `### List of modified files\n${state.inputAllModifiedFiles?.join("\n")}`
+    ? `### MODIFIED_FILES\n\n${state.inputAllModifiedFiles?.join("\n")}`
     : ""
 }
+
+${
+  state.inputAllReasoning && state.inputAllReasoning.length > 0
+    ? `### Summary of changes made\n\n${state.inputAllReasoning}`
+    : ""
+}
+
+### Additional information about changes
+
+${state.inputAllAdditionalInfo}
 `,
     );
 
@@ -397,44 +417,61 @@ ${state.inputAllReasoning}`,
       iterationCount: state.iterationCount + 2, // since these steps happen in parallel, we increment by 2
     };
   }
+}
 
-  private parseAnalysisFixResponse(response: AIMessage | AIMessageChunk): {
+export function parseAnalysisFixResponse(response: AIMessage | AIMessageChunk): {
+  [key in IssueFixResponseParserState]: string;
+} {
+  const parsed: {
     [key in IssueFixResponseParserState]: string;
-  } {
-    const parsed: {
-      [key in IssueFixResponseParserState]: string;
-    } = { updatedFile: "", additionalInfo: "", reasoning: "" };
-    const content = typeof response.content === "string" ? response.content : "";
+  } = { updatedFile: "", additionalInfo: "", reasoning: "" };
+  const content = typeof response.content === "string" ? response.content : "";
 
-    const matcherFunc = (line: string): IssueFixResponseParserState | undefined =>
-      line.match(/(#|\*)* *[R|r]easoning/)
-        ? "reasoning"
-        : line.match(/(#|\*)* *[U|u]pdated *[F|f]ile/)
-          ? "updatedFile"
-          : line.match(/(#|\*)* *[A|a]dditional *[I|i]nformation/)
-            ? "additionalInfo"
-            : undefined;
+  const matcherFunc = (line: string): IssueFixResponseParserState | undefined =>
+    line.match(/(#|\*)* *[R|r]easoning/)
+      ? "reasoning"
+      : line.match(/(#|\*)* *[U|u]pdated *[F|f]ile/)
+        ? "updatedFile"
+        : line.match(/(#|\*)* *[A|a]dditional *[I|i]nformation/)
+          ? "additionalInfo"
+          : undefined;
 
-    let parserState: IssueFixResponseParserState | undefined = undefined;
-    let buffer: string[] = [];
+  const processBuffer = (buffer: string[], parserState: IssueFixResponseParserState): string => {
+    if (parserState === "updatedFile") {
+      // ISSUE-848: anything before and after the first and last code block separator should be omitted
+      const firstCodeBlockSeparatorIndex = buffer.findIndex((line) => line.match(/^\s*```\w*/));
+      const lastCodeBlockSeparatorIndex = buffer.findLastIndex((line) => line.match(/^\s*```\w*/));
+      return buffer
+        .slice(
+          firstCodeBlockSeparatorIndex !== -1 ? firstCodeBlockSeparatorIndex + 1 : 0,
+          lastCodeBlockSeparatorIndex !== -1 ? lastCodeBlockSeparatorIndex : buffer.length,
+        )
+        .join("\n")
+        .trim();
+    } else {
+      return buffer.join("\n").trim();
+    }
+  };
 
-    for (const line of content.split("\n")) {
-      const nextState = matcherFunc(line);
-      if (nextState) {
-        if (parserState && buffer.length) {
-          parsed[parserState] = buffer.join("\n").trim();
-        }
-        buffer = [];
-        parserState = nextState;
-      } else if (parserState !== "updatedFile" || !line.match(/```\w*/)) {
-        buffer.push(line);
+  let parserState: IssueFixResponseParserState | undefined = undefined;
+  let buffer: string[] = [];
+
+  for (const line of content.split("\n")) {
+    const nextState = matcherFunc(line);
+    if (nextState) {
+      if (parserState && buffer.length) {
+        parsed[parserState] = processBuffer(buffer, parserState);
       }
+      buffer = [];
+      parserState = nextState;
+    } else {
+      buffer.push(line);
     }
-
-    if (parserState && buffer.length) {
-      parsed[parserState] = buffer.join("\n").trim();
-    }
-
-    return parsed;
   }
+
+  if (parserState && buffer.length) {
+    parsed[parserState] = processBuffer(buffer, parserState);
+  }
+
+  return parsed;
 }

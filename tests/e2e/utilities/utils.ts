@@ -9,10 +9,11 @@ import process from 'process';
 export const extensionName = process.env.EXTENSION_NAME || 'konveyor';
 export const extensionPublisher = process.env.EXTENSION_PUBLISHER || 'konveyor';
 export const extensionId = `${extensionPublisher}.${extensionName}`;
+export const extensionShortName = process.env.TEST_CATEGORY || 'Konveyor';
 
-// Function to get the analysis view title based on extension name
+// Function to get the analysis view title based on extension short name
 export function getAnalysisViewTitle(): string {
-  return `${extensionName.charAt(0).toUpperCase() + extensionName.slice(1)} Analysis View`;
+  return `${extensionShortName} Analysis View`;
 }
 
 // Function to get OS information
@@ -86,4 +87,30 @@ export function generateRandomString(length: number = 8): string {
   return Math.random()
     .toString(36)
     .substring(2, 2 + length);
+}
+
+export function writeOrUpdateSettingsJson(settingsPath: string, settings: Record<string, any>) {
+  try {
+    const vscodeDir = path.dirname(settingsPath);
+    if (!fs.existsSync(vscodeDir)) {
+      fs.mkdirSync(vscodeDir, { recursive: true });
+    }
+    let existingSettings: Record<string, any> = {};
+    if (fs.existsSync(settingsPath)) {
+      try {
+        const existingContent = fs.readFileSync(settingsPath, 'utf-8');
+        existingSettings = JSON.parse(existingContent);
+      } catch (parseError) {
+        console.warn(
+          `Failed to parse existing settings.json, starting with empty settings: ${parseError}`
+        );
+        existingSettings = {};
+      }
+    }
+    const mergedSettings = { ...existingSettings, ...settings };
+    fs.writeFileSync(settingsPath, JSON.stringify(mergedSettings, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('Error writing VSCode settings:', error);
+    throw error;
+  }
 }
