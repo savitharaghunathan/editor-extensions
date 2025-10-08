@@ -7,6 +7,7 @@ import { MIN, SEC } from '../utilities/consts';
 import { createZip, extractZip } from '../utilities/archive';
 import {
   cleanupRepo,
+  extensionName,
   generateRandomString,
   getOSInfo,
   writeOrUpdateSettingsJson,
@@ -676,5 +677,14 @@ export class VSCode extends BasePage {
   public async searchViolationAndAcceptAllSolutions(violation: string) {
     await this.searchAndRequestFix(violation, FixTypes.Issue);
     await this.acceptAllSolutions();
+  }
+
+  /**
+   * Enables or disables the Generative AI feature in VSCode for the current workspace.
+   * @param enabled - `true` to enable GenAI, `false` to disable it.
+   */
+  public async setGenerativeAIEnabled(enabled: boolean): Promise<void> {
+    const genAISettingKey = `${extensionName}.genai.enabled`;
+    await this.writeOrUpdateVSCodeSettings({ [genAISettingKey]: enabled });
   }
 }
