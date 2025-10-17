@@ -330,8 +330,17 @@ export class AnalyzerClient {
                 return {
                   ...symbol,
                   location: {
-                    ...symbol.location,
                     uri: uriString,
+                    range: {
+                      start: {
+                        line: symbol.location.range.start.line,
+                        character: symbol.location.range.start.character,
+                      },
+                      end: {
+                        line: symbol.location.range.end.line,
+                        character: symbol.location.range.end.character,
+                      },
+                    },
                   },
                 };
               })
@@ -362,9 +371,25 @@ export class AnalyzerClient {
           vscode.Uri.parse(params.textDocument.uri),
           new vscode.Position(params.position.line, params.position.character),
         );
+
+        // Convert VSCode Uri objects to strings for LSP compliance
+        const normalizedResult = Array.isArray(result)
+          ? result.map((location) => ({
+              ...location,
+              uri: location.uri.toString(),
+              range: {
+                start: {
+                  line: location.range.start.line,
+                  character: location.range.start.character,
+                },
+                end: { line: location.range.end.line, character: location.range.end.character },
+              },
+            }))
+          : result;
+
         console.log("=== textDocument/definition RESPONSE SENDING ===");
-        console.log("Result:", JSON.stringify(result, null, 2));
-        return result;
+        console.log("Result:", JSON.stringify(normalizedResult, null, 2));
+        return normalizedResult;
       } catch (error) {
         console.error("=== textDocument/definition ERROR ===");
         console.error("Error:", error);
@@ -383,9 +408,25 @@ export class AnalyzerClient {
           vscode.Uri.parse(params.textDocument.uri),
           new vscode.Position(params.position.line, params.position.character),
         );
+
+        // Convert VSCode Uri objects to strings for LSP compliance
+        const normalizedResult = Array.isArray(result)
+          ? result.map((location) => ({
+              ...location,
+              uri: location.uri.toString(),
+              range: {
+                start: {
+                  line: location.range.start.line,
+                  character: location.range.start.character,
+                },
+                end: { line: location.range.end.line, character: location.range.end.character },
+              },
+            }))
+          : result;
+
         console.log("=== textDocument/references RESPONSE SENDING ===");
-        console.log("Result:", JSON.stringify(result, null, 2));
-        return result;
+        console.log("Result:", JSON.stringify(normalizedResult, null, 2));
+        return normalizedResult;
       } catch (error) {
         console.error("=== textDocument/references ERROR ===");
         console.error("Error:", error);
