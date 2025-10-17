@@ -109,8 +109,12 @@ export class AnalyzerClient {
     this.fireServerStateChange("starting");
     const startTime = performance.now();
 
+    // Detect languages in the workspace
+    const detectedLanguages = this.detectWorkspaceLanguages();
+    this.logger.info(`Starting analyzer with detected languages: ${detectedLanguages.join(", ")}`);
+
     const pipeName = rpc.generateRandomPipeName();
-    const [analyzerRpcServer, analyzerPid] = this.startAnalysisServer(pipeName);
+    const [analyzerRpcServer, analyzerPid] = this.startAnalysisServer(pipeName, detectedLanguages);
     analyzerRpcServer.on("exit", (code, signal) => {
       this.logger.info(`Analyzer RPC server terminated [signal: ${signal}, code: ${code}]`);
       if (code) {
@@ -137,29 +141,70 @@ export class AnalyzerClient {
     this.analyzerRpcServer = analyzerRpcServer;
     this.logger.info(`Analyzer RPC server started successfully [pid: ${analyzerPid}]`);
 
+    console.log("=== GETTING SOCKET CONNECTION ===");
     const socket: Socket = await this.getSocket(pipeName);
+    console.log("=== SOCKET CONNECTION ESTABLISHED ===");
     socket.addListener("connectionAttempt", () => {
+      console.log("=== SOCKET CONNECTION ATTEMPT ===");
       this.logger.info("Attempting to establish connection...");
     });
     socket.addListener("connectionAttemptFailed", () => {
+      console.log("=== SOCKET CONNECTION ATTEMPT FAILED ===");
       this.logger.info("Connection attempt failed");
     });
     socket.on("data", (data) => {
-      this.logger.debug(`Received data: ${data.toString()}`);
+      console.log("=== SOCKET DATA RECEIVED ===");
+      const dataString = data.toString();
+      console.log("Data:", dataString);
+
+      // Parse HTTP-style protocol to extract JSON part
+      const lines = dataString.split("\r\n");
+      const contentLengthLine = lines.find((line) => line.startsWith("Content-Length:"));
+      const jsonStartIndex = dataString.indexOf("\r\n\r\n") + 4;
+
+      if (jsonStartIndex > 3 && jsonStartIndex < dataString.length) {
+        const jsonPart = dataString.substring(jsonStartIndex);
+        try {
+          const parsed = JSON.parse(jsonPart);
+          if (parsed.method) {
+            console.log("=== RPC METHOD DETECTED ===");
+            console.log("Method:", parsed.method);
+            console.log("Params:", JSON.stringify(parsed.params));
+          } else if (parsed.result !== undefined || parsed.error !== undefined) {
+            console.log("=== RPC RESPONSE DETECTED ===");
+            console.log("ID:", parsed.id);
+            console.log("Result/Error:", parsed.result || parsed.error);
+          }
+        } catch (e) {
+          console.log("Failed to parse JSON part:", jsonPart);
+        }
+      }
+
+      this.logger.debug(`Received data: ${dataString}`);
+    });
+    socket.on("error", (error) => {
+      console.error("=== SOCKET ERROR ===");
+      console.error("Error:", error);
     });
     const reader = new rpc.SocketMessageReader(socket, "utf-8");
     const writer = new rpc.SocketMessageWriter(socket, "utf-8");
 
     reader.onClose(() => {
+      console.log("=== MESSAGE READER CLOSED ===");
       this.logger.info("Message reader closed");
     });
     reader.onError((e) => {
+      console.error("=== MESSAGE READER ERROR ===");
+      console.error("Error:", e);
       this.logger.error("Error in message reader", e);
     });
     writer.onClose(() => {
+      console.log("=== MESSAGE WRITER CLOSED ===");
       this.logger.info("Message writer closed");
     });
     writer.onError((e) => {
+      console.error("=== MESSAGE WRITER ERROR ===");
+      console.error("Error:", e);
       this.logger.error("Error in message writer", e);
     });
     this.analyzerRpcConnection = rpc.createMessageConnection(reader, writer);
@@ -177,46 +222,185 @@ export class AnalyzerClient {
     });
 
     this.analyzerRpcConnection.onClose(() => this.logger.info("RPC connection closed"));
-    this.analyzerRpcConnection.onRequest((method, params) => {
-      this.logger.debug(`Received request: ${method} + ${JSON.stringify(params)}`);
-    });
 
     this.analyzerRpcConnection.onNotification("started", (_: []) => {
       this.logger.info("Server initialization complete");
       this.fireServerStateChange("running");
     });
     this.analyzerRpcConnection.onNotification((method: string, params: any) => {
+      console.log(`=== NOTIFICATION RECEIVED ===`);
+      console.log(`Method: ${method}`);
+      console.log(`Params: ${JSON.stringify(params)}`);
       this.logger.debug(`Received notification: ${method} + ${JSON.stringify(params)}`);
     });
     this.analyzerRpcConnection.onUnhandledNotification((e) => {
+      console.log(`=== UNHANDLED NOTIFICATION ===`);
+      console.log(`Method: ${e.method}`);
       this.logger.warn(`Unhandled notification: ${e.method}`);
     });
     this.analyzerRpcConnection.onRequest(
       "workspace/executeCommand",
       async (params: WorksapceCommandParams) => {
+        console.log("=== workspace/executeCommand REQUEST RECEIVED ===");
+        console.log("Command:", params.command);
+        console.log("Arguments:", JSON.stringify(params.arguments, null, 2));
         this.logger.debug(`Executing workspace command`, {
           command: params.command,
           arguments: JSON.stringify(params.arguments),
         });
 
         try {
-          const result = await vscode.commands.executeCommand(
-            "java.execute.workspaceCommand",
-            params.command,
-            params.arguments![0],
-          );
+          // Detect if this is an LSP method (Go) or Java command
+          const isLspMethod = params.command?.includes("/");
 
-          this.logger.debug(`Command execution result: ${JSON.stringify(result)}`);
+          let result;
+          if (isLspMethod) {
+            // Handle LSP methods for Go
+            console.log("Routing to LSP handler for Go");
+            result = await this.translateLspToVsCode(params.command!, params.arguments![0]);
+            this.logger.debug(`[LSP] Command execution result: ${JSON.stringify(result)}`);
+          } else {
+            // Handle Java commands (existing logic)
+            console.log("Routing to Java handler");
+            result = await vscode.commands.executeCommand(
+              "java.execute.workspaceCommand",
+              params.command,
+              params.arguments![0],
+            );
+            this.logger.debug(`[Java] Command execution result: ${JSON.stringify(result)}`);
+          }
+          console.log("=== workspace/executeCommand RESPONSE SENDING ===");
+          console.log("Result:", JSON.stringify(result, null, 2));
           return result;
         } catch (error) {
-          this.logger.error(`[Java] Command execution error`, error);
+          this.logger.error(`Command execution error for ${params.command}`, error);
+          throw error;
         }
       },
     );
+
+    // Add direct handler for workspace/symbol requests from Go analyzer
+    this.analyzerRpcConnection.onRequest("workspace/symbol", async (params: any) => {
+      console.log("=== workspace/symbol REQUEST RECEIVED ===");
+      console.log("Params:", JSON.stringify(params, null, 2));
+
+      try {
+        // Handle both possible parameter formats
+        const query = Array.isArray(params) ? params[0]?.query : params?.query;
+        console.log("Extracted query:", query);
+
+        const rawResult = await vscode.commands.executeCommand(
+          "vscode.executeWorkspaceSymbolProvider",
+          query,
+        );
+
+        // Get the workspace directory to filter symbols
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const workspacePath = workspaceFolders?.[0]?.uri?.fsPath;
+
+        console.log("Workspace path:", workspacePath);
+
+        // Filter symbols to only include those from the actual workspace directory
+        const filteredResult = Array.isArray(rawResult)
+          ? rawResult
+              .filter((symbol: any) => {
+                const uri = symbol?.location?.uri;
+                const uriString =
+                  typeof uri === "string" ? uri : uri?.toString() || uri?.external || "";
+
+                console.log("Symbol URI:", uriString, "Symbol name:", symbol?.name);
+
+                // Only include symbols from the workspace directory, not stdlib
+                if (workspacePath && uriString) {
+                  const isFromWorkspace =
+                    uriString.includes(workspacePath) ||
+                    uriString.startsWith("file://" + workspacePath);
+                  console.log("Is from workspace:", isFromWorkspace);
+                  return isFromWorkspace && uriString.trim() !== "" && uriString !== "undefined";
+                }
+
+                return false;
+              })
+              .map((symbol: any) => {
+                // Convert URI to string format if needed
+                const uri = symbol?.location?.uri;
+                const uriString =
+                  typeof uri === "string" ? uri : uri?.toString() || uri?.external || "";
+
+                return {
+                  ...symbol,
+                  location: {
+                    ...symbol.location,
+                    uri: uriString,
+                  },
+                };
+              })
+          : [];
+
+        console.log("=== workspace/symbol RESPONSE SENDING ===");
+        console.log("Raw result count:", Array.isArray(rawResult) ? rawResult.length : 0);
+        console.log("Filtered result count:", filteredResult.length);
+        console.log("Filtered result:", JSON.stringify(filteredResult, null, 2));
+
+        return filteredResult;
+      } catch (error) {
+        console.error("=== workspace/symbol ERROR ===");
+        console.error("Error:", error);
+        // Return empty array instead of throwing to prevent analyzer crash
+        return [];
+      }
+    });
+
+    // Add handler for textDocument/definition requests
+    this.analyzerRpcConnection.onRequest("textDocument/definition", async (params: any) => {
+      console.log("=== textDocument/definition REQUEST RECEIVED ===");
+      console.log("Params:", JSON.stringify(params, null, 2));
+
+      try {
+        const result = await vscode.commands.executeCommand(
+          "vscode.executeDefinitionProvider",
+          vscode.Uri.parse(params.textDocument.uri),
+          new vscode.Position(params.position.line, params.position.character),
+        );
+        console.log("=== textDocument/definition RESPONSE SENDING ===");
+        console.log("Result:", JSON.stringify(result, null, 2));
+        return result;
+      } catch (error) {
+        console.error("=== textDocument/definition ERROR ===");
+        console.error("Error:", error);
+        throw error;
+      }
+    });
+
+    // Add handler for textDocument/references requests
+    this.analyzerRpcConnection.onRequest("textDocument/references", async (params: any) => {
+      console.log("=== textDocument/references REQUEST RECEIVED ===");
+      console.log("Params:", JSON.stringify(params, null, 2));
+
+      try {
+        const result = await vscode.commands.executeCommand(
+          "vscode.executeReferenceProvider",
+          vscode.Uri.parse(params.textDocument.uri),
+          new vscode.Position(params.position.line, params.position.character),
+        );
+        console.log("=== textDocument/references RESPONSE SENDING ===");
+        console.log("Result:", JSON.stringify(result, null, 2));
+        return result;
+      } catch (error) {
+        console.error("=== textDocument/references ERROR ===");
+        console.error("Error:", error);
+        throw error;
+      }
+    });
     this.analyzerRpcConnection.onError((e) => {
+      console.error("=== RPC CONNECTION ERROR ===");
+      console.error("Error:", e);
       this.logger.error("RPC connection error", e);
     });
+
+    console.log("=== STARTING RPC CONNECTION LISTEN ===");
     this.analyzerRpcConnection.listen();
+    console.log("=== SENDING START NOTIFICATION ===");
     this.analyzerRpcConnection.sendNotification("start", { type: "start" });
     await this.runHealthCheck();
     this.logger.info(`startAnalyzer took ${performance.now() - startTime}ms`);
@@ -284,6 +468,7 @@ export class AnalyzerClient {
 
   protected startAnalysisServer(
     pipeName: string,
+    languages: string[] = [],
   ): [ChildProcessWithoutNullStreams, number | undefined] {
     const analyzerPath = this.getAnalyzerPath();
     const serverEnv = this.getKaiRpcServerEnv();
@@ -293,23 +478,40 @@ export class AnalyzerClient {
     this.logger.info(`server cwd: ${paths().serverCwd.fsPath}`);
     this.logger.info(`analysis server path: ${analyzerPath}`);
 
-    const analyzerRpcServer = spawn(
-      analyzerPath,
-      [
-        "-pipePath",
-        pipeName,
-        "-rules",
-        analyzerLspRulesPaths,
-        "-source-directory",
-        location,
-        "-log-file",
-        logs,
-      ],
-      {
-        cwd: paths().serverCwd.fsPath,
-        env: serverEnv,
-      },
-    );
+    const args = [
+      "-pipePath",
+      pipeName,
+      "-rules",
+      analyzerLspRulesPaths,
+      "-source-directory",
+      location,
+      "-log-file",
+      logs,
+    ];
+
+    // Add language arguments if languages are detected
+    // The analyzer only supports single language, so we'll prioritize based on common patterns
+    if (languages.length > 0) {
+      // Prioritize languages: java > go > others
+      let selectedLanguage = languages[0];
+      if (languages.includes("java")) {
+        selectedLanguage = "java";
+      } else if (languages.includes("go")) {
+        selectedLanguage = "go";
+      }
+
+      args.push("-language", selectedLanguage);
+      this.logger.info(
+        `Passing language to analyzer: ${selectedLanguage} (detected: ${languages.join(", ")})`,
+      );
+    }
+
+    this.logger.info(`analyzer arguments: ${args.join(" ")}`);
+
+    const analyzerRpcServer = spawn(analyzerPath, args, {
+      cwd: paths().serverCwd.fsPath,
+      env: serverEnv,
+    });
 
     analyzerRpcServer.stderr.on("data", (data) => {
       const asString: string = data.toString().trimEnd();
@@ -384,10 +586,16 @@ export class AnalyzerClient {
    * Will only run if the sever state is: `running`
    */
   public async runAnalysis(filePaths?: vscode.Uri[]): Promise<void> {
+    console.log("=== RUN ANALYSIS CALLED ===");
+    console.log("Server state:", this.serverState);
+    console.log("RPC connection exists:", !!this.analyzerRpcConnection);
+
     if (this.serverState !== "running" || !this.analyzerRpcConnection) {
+      console.log("=== ANALYSIS SKIPPED - SERVER NOT READY ===");
       this.logger.warn("kai rpc server is not running, skipping runAnalysis.");
       return;
     }
+    console.log("=== STARTING ANALYSIS ===");
     this.logger.info("Running analysis");
     const analysisStartTime = performance.now();
 
@@ -609,5 +817,171 @@ export class AnalyzerClient {
       rulesets,
       isValid: !!profile.labelSelector && rulesets.length > 0,
     };
+  }
+
+  /**
+   * Detect programming languages present in the workspace
+   */
+  protected detectWorkspaceLanguages(): string[] {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      return [];
+    }
+
+    const detectedLanguages = new Set<string>();
+
+    for (const folder of workspaceFolders) {
+      const workspaceRoot = folder.uri.fsPath;
+
+      // Check for language-specific files and directories
+      const languageIndicators = [
+        // Java
+        { file: "pom.xml", language: "java" },
+        { file: "build.gradle", language: "java" },
+        { file: "build.gradle.kts", language: "java" },
+        { dir: "src/main/java", language: "java" },
+
+        // Go
+        { file: "go.mod", language: "go" },
+        { file: "go.sum", language: "go" },
+        { dir: "cmd", language: "go" },
+        { dir: "pkg", language: "go" },
+
+        // Python
+        { file: "requirements.txt", language: "python" },
+        { file: "setup.py", language: "python" },
+        { file: "pyproject.toml", language: "python" },
+        { file: "Pipfile", language: "python" },
+
+        // JavaScript/TypeScript
+        { file: "package.json", language: "javascript" },
+        { file: "tsconfig.json", language: "typescript" },
+        { file: "yarn.lock", language: "javascript" },
+        { file: "package-lock.json", language: "javascript" },
+
+        // C/C++ (removed as requested)
+        // { file: 'CMakeLists.txt', language: 'cpp' },
+        // { file: 'Makefile', language: 'cpp' },
+        // { file: 'configure', language: 'cpp' },
+
+        // C#
+        { file: "*.csproj", language: "csharp" },
+        { file: "*.sln", language: "csharp" },
+
+        // Rust
+        { file: "Cargo.toml", language: "rust" },
+        { file: "Cargo.lock", language: "rust" },
+
+        // Ruby
+        { file: "Gemfile", language: "ruby" },
+        { file: "Rakefile", language: "ruby" },
+
+        // PHP
+        { file: "composer.json", language: "php" },
+        { file: "composer.lock", language: "php" },
+      ];
+
+      for (const indicator of languageIndicators) {
+        try {
+          const fullPath = require("path").join(workspaceRoot, indicator.file || indicator.dir!);
+          if (require("fs").existsSync(fullPath)) {
+            detectedLanguages.add(indicator.language);
+            this.logger.debug(
+              `Detected ${indicator.language} via ${indicator.file || indicator.dir}`,
+            );
+          }
+        } catch {
+          // Ignore file system errors
+        }
+      }
+    }
+
+    const languages = Array.from(detectedLanguages);
+    this.logger.info(`Detected languages in workspace: ${languages.join(", ")}`);
+    return languages;
+  }
+
+  // private async translateLspToVsCode(method: string, params: any): Promise<any> {
+  //   switch (method) {
+  //     case 'workspace/symbol':
+  //       return await vscode.commands.executeCommand(
+  //         'vscode.executeWorkspaceSymbolProvider',
+  //         params.query
+  //       );
+
+  //     case 'textDocument/definition':
+  //       return await vscode.commands.executeCommand(
+  //         'vscode.executeDefinitionProvider',
+  //         vscode.Uri.parse(params.textDocument.uri),
+  //         new vscode.Position(params.position.line, params.position.character)
+  //       );
+
+  //     case 'textDocument/references':
+  //       return await vscode.commands.executeCommand(
+  //         'vscode.executeReferenceProvider',
+  //         vscode.Uri.parse(params.textDocument.uri),
+  //         new vscode.Position(params.position.line, params.position.character)
+  //       );
+
+  //     default:
+  //       throw new Error(`Unsupported LSP method: ${method}`);
+  //   }
+  // }
+
+  private async translateLspToVsCode(method: string, params: any): Promise<any> {
+    console.log("=== translateLspToVsCode DEBUG START ===");
+    console.log("Method:", method);
+    console.log("Params:", JSON.stringify(params, null, 2));
+
+    try {
+      let result;
+
+      switch (method) {
+        case "workspace/symbol":
+          console.log("Executing workspace/symbol with query:", params.query);
+          result = await vscode.commands.executeCommand(
+            "vscode.executeWorkspaceSymbolProvider",
+            params.query,
+          );
+          console.log("workspace/symbol result:", JSON.stringify(result, null, 2));
+          console.log("Result type:", typeof result);
+          console.log("Result length:", Array.isArray(result) ? result.length : "not array");
+          break;
+
+        case "textDocument/definition":
+          console.log("Executing textDocument/definition");
+          result = await vscode.commands.executeCommand(
+            "vscode.executeDefinitionProvider",
+            vscode.Uri.parse(params.textDocument.uri),
+            new vscode.Position(params.position.line, params.position.character),
+          );
+          console.log("textDocument/definition result:", JSON.stringify(result, null, 2));
+          break;
+
+        case "textDocument/references":
+          console.log("Executing textDocument/references");
+          result = await vscode.commands.executeCommand(
+            "vscode.executeReferenceProvider",
+            vscode.Uri.parse(params.textDocument.uri),
+            new vscode.Position(params.position.line, params.position.character),
+          );
+          console.log("textDocument/references result:", JSON.stringify(result, null, 2));
+          break;
+
+        default:
+          console.log("Unsupported LSP method:", method);
+          throw new Error(`Unsupported LSP method: ${method}`);
+      }
+
+      console.log("=== translateLspToVsCode SUCCESS ===");
+      console.log("Final result:", JSON.stringify(result, null, 2));
+      return result;
+    } catch (error) {
+      console.error("=== translateLspToVsCode ERROR ===");
+      console.error("Error details:", error);
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+      throw error;
+    }
   }
 }

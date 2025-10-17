@@ -281,7 +281,7 @@ const commandsMap: (
           const input: KaiInteractiveWorkflowInput = {
             incidents,
             migrationHint: profileName,
-            programmingLanguage: "Java",
+            programmingLanguage: "Go",
             enableAgentMode: agentMode,
           };
 

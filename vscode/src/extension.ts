@@ -312,11 +312,24 @@ class VsCodeExtension {
 
       this.checkJavaExtensionInstalled();
 
-      // Listen for extension changes to update Continue installation status and Java extension status
+      // Check Go extension only if workspace contains Go files
+      if (this.hasGoFiles()) {
+        console.log("Go files detected in workspace, checking Go extension...");
+        this.checkGoExtensionInstalled();
+      } else {
+        console.log("No Go files detected in workspace, skipping Go extension check");
+      }
+
+      // Listen for extension changes to update Continue installation status and language extension status
       this.listeners.push(
         vscode.extensions.onDidChange(() => {
           this.checkContinueInstalled();
           this.checkJavaExtensionInstalled();
+
+          // Only check Go extension if workspace has Go files
+          if (this.hasGoFiles()) {
+            this.checkGoExtensionInstalled();
+          }
         }),
       );
 
@@ -741,6 +754,55 @@ class VsCodeExtension {
           "Java analysis features may be limited until it's fully loaded.",
       );
     }
+  }
+
+  private checkGoExtensionInstalled(): void {
+    const goExt = vscode.extensions.getExtension("golang.go");
+    if (!goExt) {
+      vscode.window
+        .showWarningMessage(
+          "The Go extension is required for proper Go analysis. " +
+            "Please install it from the VS Code marketplace.",
+          "Install Go Extension",
+        )
+        .then((selection) => {
+          if (selection === "Install Go Extension") {
+            vscode.commands.executeCommand("workbench.extensions.search", "golang.go");
+          }
+        });
+      return;
+    }
+
+    if (!goExt.isActive) {
+      vscode.window.showInformationMessage(
+        "The Go extension is installed but not yet active. " +
+          "Go analysis features may be limited until it's fully loaded.",
+      );
+    }
+  }
+
+  private hasGoFiles(): boolean {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      return false;
+    }
+
+    for (const folder of workspaceFolders) {
+      const workspaceRoot = folder.uri.fsPath;
+
+      // Check for go.mod (most reliable indicator of Go project)
+      try {
+        if (require("fs").existsSync(require("path").join(workspaceRoot, "go.mod"))) {
+          return true;
+        }
+      } catch {
+        // Ignore file system errors
+      }
+
+      // TODO: Add more sophisticated Go file detection if needed
+    }
+
+    return false;
   }
 
   private async setupModelProvider(settingsPath: vscode.Uri): Promise<ConfigError | undefined> {
