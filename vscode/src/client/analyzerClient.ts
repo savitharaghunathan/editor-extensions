@@ -250,25 +250,15 @@ export class AnalyzerClient {
         });
 
         try {
-          // Detect if this is an LSP method (Go) or Java command
-          const isLspMethod = params.command?.includes("/");
+          // Handle Java commands only (Go uses direct LSP methods)
+          console.log("Executing Java workspace command");
+          const result = await vscode.commands.executeCommand(
+            "java.execute.workspaceCommand",
+            params.command,
+            params.arguments![0],
+          );
+          this.logger.debug(`Command execution result: ${JSON.stringify(result)}`);
 
-          let result;
-          if (isLspMethod) {
-            // Handle LSP methods for Go
-            console.log("Routing to LSP handler for Go");
-            result = await this.translateLspToVsCode(params.command!, params.arguments![0]);
-            this.logger.debug(`[LSP] Command execution result: ${JSON.stringify(result)}`);
-          } else {
-            // Handle Java commands (existing logic)
-            console.log("Routing to Java handler");
-            result = await vscode.commands.executeCommand(
-              "java.execute.workspaceCommand",
-              params.command,
-              params.arguments![0],
-            );
-            this.logger.debug(`[Java] Command execution result: ${JSON.stringify(result)}`);
-          }
           console.log("=== workspace/executeCommand RESPONSE SENDING ===");
           console.log("Result:", JSON.stringify(result, null, 2));
           return result;
@@ -940,89 +930,5 @@ export class AnalyzerClient {
     const languages = Array.from(detectedLanguages);
     this.logger.info(`Detected languages in workspace: ${languages.join(", ")}`);
     return languages;
-  }
-
-  // private async translateLspToVsCode(method: string, params: any): Promise<any> {
-  //   switch (method) {
-  //     case 'workspace/symbol':
-  //       return await vscode.commands.executeCommand(
-  //         'vscode.executeWorkspaceSymbolProvider',
-  //         params.query
-  //       );
-
-  //     case 'textDocument/definition':
-  //       return await vscode.commands.executeCommand(
-  //         'vscode.executeDefinitionProvider',
-  //         vscode.Uri.parse(params.textDocument.uri),
-  //         new vscode.Position(params.position.line, params.position.character)
-  //       );
-
-  //     case 'textDocument/references':
-  //       return await vscode.commands.executeCommand(
-  //         'vscode.executeReferenceProvider',
-  //         vscode.Uri.parse(params.textDocument.uri),
-  //         new vscode.Position(params.position.line, params.position.character)
-  //       );
-
-  //     default:
-  //       throw new Error(`Unsupported LSP method: ${method}`);
-  //   }
-  // }
-
-  private async translateLspToVsCode(method: string, params: any): Promise<any> {
-    console.log("=== translateLspToVsCode DEBUG START ===");
-    console.log("Method:", method);
-    console.log("Params:", JSON.stringify(params, null, 2));
-
-    try {
-      let result;
-
-      switch (method) {
-        case "workspace/symbol":
-          console.log("Executing workspace/symbol with query:", params.query);
-          result = await vscode.commands.executeCommand(
-            "vscode.executeWorkspaceSymbolProvider",
-            params.query,
-          );
-          console.log("workspace/symbol result:", JSON.stringify(result, null, 2));
-          console.log("Result type:", typeof result);
-          console.log("Result length:", Array.isArray(result) ? result.length : "not array");
-          break;
-
-        case "textDocument/definition":
-          console.log("Executing textDocument/definition");
-          result = await vscode.commands.executeCommand(
-            "vscode.executeDefinitionProvider",
-            vscode.Uri.parse(params.textDocument.uri),
-            new vscode.Position(params.position.line, params.position.character),
-          );
-          console.log("textDocument/definition result:", JSON.stringify(result, null, 2));
-          break;
-
-        case "textDocument/references":
-          console.log("Executing textDocument/references");
-          result = await vscode.commands.executeCommand(
-            "vscode.executeReferenceProvider",
-            vscode.Uri.parse(params.textDocument.uri),
-            new vscode.Position(params.position.line, params.position.character),
-          );
-          console.log("textDocument/references result:", JSON.stringify(result, null, 2));
-          break;
-
-        default:
-          console.log("Unsupported LSP method:", method);
-          throw new Error(`Unsupported LSP method: ${method}`);
-      }
-
-      console.log("=== translateLspToVsCode SUCCESS ===");
-      console.log("Final result:", JSON.stringify(result, null, 2));
-      return result;
-    } catch (error) {
-      console.error("=== translateLspToVsCode ERROR ===");
-      console.error("Error details:", error);
-      console.error("Error message:", error instanceof Error ? error.message : String(error));
-      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
-      throw error;
-    }
   }
 }
