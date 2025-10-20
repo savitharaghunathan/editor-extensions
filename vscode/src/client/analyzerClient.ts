@@ -284,6 +284,27 @@ export class AnalyzerClient {
           query,
         );
 
+        console.log("=== WORKSPACE SYMBOL RAW RESULT DEBUG ===");
+        console.log("Raw result type:", typeof rawResult);
+        console.log("Raw result is array:", Array.isArray(rawResult));
+        console.log("Raw result count:", Array.isArray(rawResult) ? rawResult.length : 0);
+        if (Array.isArray(rawResult) && rawResult.length > 0) {
+          const firstSymbol = rawResult[0];
+          console.log("First symbol structure:", firstSymbol);
+          console.log("Symbol location:", firstSymbol?.location);
+          console.log("Symbol URI type:", typeof firstSymbol?.location?.uri);
+          console.log("Symbol URI value:", firstSymbol?.location?.uri);
+          console.log("Symbol range structure:", firstSymbol?.location?.range);
+          console.log("Range is array:", Array.isArray(firstSymbol?.location?.range));
+          console.log("Range has start:", firstSymbol?.location?.range?.start !== undefined);
+          console.log("Range has end:", firstSymbol?.location?.range?.end !== undefined);
+          console.log("Range toJSON method:", typeof firstSymbol?.location?.range?.toJSON);
+          if (firstSymbol?.location?.range?.toJSON) {
+            console.log("Range toJSON result:", firstSymbol.location.range.toJSON());
+          }
+          console.log("Range JSON.stringify:", JSON.stringify(firstSymbol?.location?.range));
+        }
+
         // Get the workspace directory to filter symbols
         const workspaceFolders = vscode.workspace.workspaceFolders;
         const workspacePath = workspaceFolders?.[0]?.uri?.fsPath;
@@ -362,6 +383,26 @@ export class AnalyzerClient {
           new vscode.Position(params.position.line, params.position.character),
         );
 
+        console.log("=== DEFINITION RAW RESULT DEBUG ===");
+        console.log("Raw result type:", typeof result);
+        console.log("Raw result is array:", Array.isArray(result));
+        console.log("Raw result count:", Array.isArray(result) ? result.length : 0);
+        if (Array.isArray(result) && result.length > 0) {
+          const firstLocation = result[0];
+          console.log("First location structure:", firstLocation);
+          console.log("Location URI type:", typeof firstLocation?.uri);
+          console.log("Location URI value:", firstLocation?.uri);
+          console.log("Location range structure:", firstLocation?.range);
+          console.log("Range is array:", Array.isArray(firstLocation?.range));
+          console.log("Range has start:", firstLocation?.range?.start !== undefined);
+          console.log("Range has end:", firstLocation?.range?.end !== undefined);
+          console.log("Range toJSON method:", typeof firstLocation?.range?.toJSON);
+          if (firstLocation?.range?.toJSON) {
+            console.log("Range toJSON result:", firstLocation.range.toJSON());
+          }
+          console.log("Range JSON.stringify:", JSON.stringify(firstLocation?.range));
+        }
+
         // Convert VSCode Uri objects to strings for LSP compliance
         const normalizedResult = Array.isArray(result)
           ? result.map((location) => ({
@@ -398,6 +439,26 @@ export class AnalyzerClient {
           vscode.Uri.parse(params.textDocument.uri),
           new vscode.Position(params.position.line, params.position.character),
         );
+
+        console.log("=== REFERENCES RAW RESULT DEBUG ===");
+        console.log("Raw result type:", typeof result);
+        console.log("Raw result is array:", Array.isArray(result));
+        console.log("Raw result count:", Array.isArray(result) ? result.length : 0);
+        if (Array.isArray(result) && result.length > 0) {
+          const firstLocation = result[0];
+          console.log("First location structure:", firstLocation);
+          console.log("Location URI type:", typeof firstLocation?.uri);
+          console.log("Location URI value:", firstLocation?.uri);
+          console.log("Location range structure:", firstLocation?.range);
+          console.log("Range is array:", Array.isArray(firstLocation?.range));
+          console.log("Range has start:", firstLocation?.range?.start !== undefined);
+          console.log("Range has end:", firstLocation?.range?.end !== undefined);
+          console.log("Range toJSON method:", typeof firstLocation?.range?.toJSON);
+          if (firstLocation?.range?.toJSON) {
+            console.log("Range toJSON result:", firstLocation.range.toJSON());
+          }
+          console.log("Range JSON.stringify:", JSON.stringify(firstLocation?.range));
+        }
 
         // Convert VSCode Uri objects to strings for LSP compliance
         const normalizedResult = Array.isArray(result)
