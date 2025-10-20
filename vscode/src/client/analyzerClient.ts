@@ -321,13 +321,24 @@ export class AnalyzerClient {
 
                 console.log("Symbol URI:", uriString, "Symbol name:", symbol?.name);
 
-                // Only include symbols from the workspace directory, not stdlib
-                if (workspacePath && uriString) {
+                // Include symbols from workspace OR any external APIs
+                if (uriString) {
                   const isFromWorkspace =
-                    uriString.includes(workspacePath) ||
-                    uriString.startsWith("file://" + workspacePath);
+                    workspacePath &&
+                    (uriString.includes(workspacePath) ||
+                      uriString.startsWith("file://" + workspacePath));
+
+                  const isExternalAPI =
+                    uriString.includes("/go/pkg/mod/") || uriString.includes("/pkg/mod/");
+
                   console.log("Is from workspace:", isFromWorkspace);
-                  return isFromWorkspace && uriString.trim() !== "" && uriString !== "undefined";
+                  console.log("Is external API:", isExternalAPI);
+
+                  return (
+                    (isFromWorkspace || isExternalAPI) &&
+                    uriString.trim() !== "" &&
+                    uriString !== "undefined"
+                  );
                 }
 
                 return false;
