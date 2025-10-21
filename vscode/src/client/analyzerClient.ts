@@ -140,20 +140,14 @@ export class AnalyzerClient {
     });
     this.analyzerRpcServer = analyzerRpcServer;
     this.logger.info(`Analyzer RPC server started successfully [pid: ${analyzerPid}]`);
-
-    console.log("=== GETTING SOCKET CONNECTION ===");
     const socket: Socket = await this.getSocket(pipeName);
-    console.log("=== SOCKET CONNECTION ESTABLISHED ===");
     socket.addListener("connectionAttempt", () => {
-      console.log("=== SOCKET CONNECTION ATTEMPT ===");
       this.logger.info("Attempting to establish connection...");
     });
     socket.addListener("connectionAttemptFailed", () => {
-      console.log("=== SOCKET CONNECTION ATTEMPT FAILED ===");
       this.logger.info("Connection attempt failed");
     });
     socket.on("data", (data) => {
-      console.log("=== SOCKET DATA RECEIVED ===");
       const dataString = data.toString();
       console.log("Data:", dataString);
 
@@ -167,11 +161,9 @@ export class AnalyzerClient {
         try {
           const parsed = JSON.parse(jsonPart);
           if (parsed.method) {
-            console.log("=== RPC METHOD DETECTED ===");
             console.log("Method:", parsed.method);
             console.log("Params:", JSON.stringify(parsed.params));
           } else if (parsed.result !== undefined || parsed.error !== undefined) {
-            console.log("=== RPC RESPONSE DETECTED ===");
             console.log("ID:", parsed.id);
             console.log("Result/Error:", parsed.result || parsed.error);
           }
@@ -183,27 +175,22 @@ export class AnalyzerClient {
       this.logger.debug(`Received data: ${dataString}`);
     });
     socket.on("error", (error) => {
-      console.error("=== SOCKET ERROR ===");
       console.error("Error:", error);
     });
     const reader = new rpc.SocketMessageReader(socket, "utf-8");
     const writer = new rpc.SocketMessageWriter(socket, "utf-8");
 
     reader.onClose(() => {
-      console.log("=== MESSAGE READER CLOSED ===");
       this.logger.info("Message reader closed");
     });
     reader.onError((e) => {
-      console.error("=== MESSAGE READER ERROR ===");
       console.error("Error:", e);
       this.logger.error("Error in message reader", e);
     });
     writer.onClose(() => {
-      console.log("=== MESSAGE WRITER CLOSED ===");
       this.logger.info("Message writer closed");
     });
     writer.onError((e) => {
-      console.error("=== MESSAGE WRITER ERROR ===");
       console.error("Error:", e);
       this.logger.error("Error in message writer", e);
     });
@@ -228,20 +215,17 @@ export class AnalyzerClient {
       this.fireServerStateChange("running");
     });
     this.analyzerRpcConnection.onNotification((method: string, params: any) => {
-      console.log(`=== NOTIFICATION RECEIVED ===`);
       console.log(`Method: ${method}`);
       console.log(`Params: ${JSON.stringify(params)}`);
       this.logger.debug(`Received notification: ${method} + ${JSON.stringify(params)}`);
     });
     this.analyzerRpcConnection.onUnhandledNotification((e) => {
-      console.log(`=== UNHANDLED NOTIFICATION ===`);
       console.log(`Method: ${e.method}`);
       this.logger.warn(`Unhandled notification: ${e.method}`);
     });
     this.analyzerRpcConnection.onRequest(
       "workspace/executeCommand",
       async (params: WorksapceCommandParams) => {
-        console.log("=== workspace/executeCommand REQUEST RECEIVED ===");
         console.log("Command:", params.command);
         console.log("Arguments:", JSON.stringify(params.arguments, null, 2));
         this.logger.debug(`Executing workspace command`, {
@@ -258,8 +242,6 @@ export class AnalyzerClient {
             params.arguments![0],
           );
           this.logger.debug(`Command execution result: ${JSON.stringify(result)}`);
-
-          console.log("=== workspace/executeCommand RESPONSE SENDING ===");
           console.log("Result:", JSON.stringify(result, null, 2));
           return result;
         } catch (error) {
@@ -271,111 +253,55 @@ export class AnalyzerClient {
 
     // Add direct handler for workspace/symbol requests from Go analyzer
     this.analyzerRpcConnection.onRequest("workspace/symbol", async (params: any) => {
-      console.log("=== workspace/symbol REQUEST RECEIVED ===");
       console.log("Params:", JSON.stringify(params, null, 2));
 
       try {
         // Handle both possible parameter formats
         const query = Array.isArray(params) ? params[0]?.query : params?.query;
-        console.log("Extracted query:", query);
-
         const rawResult = await vscode.commands.executeCommand(
           "vscode.executeWorkspaceSymbolProvider",
           query,
         );
-
-        console.log("=== WORKSPACE SYMBOL RAW RESULT DEBUG ===");
-        console.log("Raw result type:", typeof rawResult);
-        console.log("Raw result is array:", Array.isArray(rawResult));
-        console.log("Raw result count:", Array.isArray(rawResult) ? rawResult.length : 0);
         if (Array.isArray(rawResult) && rawResult.length > 0) {
           const firstSymbol = rawResult[0];
-          console.log("First symbol structure:", firstSymbol);
-          console.log("Symbol location:", firstSymbol?.location);
-          console.log("Symbol URI type:", typeof firstSymbol?.location?.uri);
-          console.log("Symbol URI value:", firstSymbol?.location?.uri);
-          console.log("Symbol range structure:", firstSymbol?.location?.range);
-          console.log("Range is array:", Array.isArray(firstSymbol?.location?.range));
-          console.log("Range has start:", firstSymbol?.location?.range?.start !== undefined);
-          console.log("Range has end:", firstSymbol?.location?.range?.end !== undefined);
-          console.log("Range toJSON method:", typeof firstSymbol?.location?.range?.toJSON);
           if (firstSymbol?.location?.range?.toJSON) {
             console.log("Range toJSON result:", firstSymbol.location.range.toJSON());
           }
           console.log("Range JSON.stringify:", JSON.stringify(firstSymbol?.location?.range));
         }
 
-        // Get the workspace directory to filter symbols
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        const workspacePath = workspaceFolders?.[0]?.uri?.fsPath;
-
-        console.log("Workspace path:", workspacePath);
-
-        // Filter symbols to only include those from the actual workspace directory
+        // Return all symbols without filtering
         const filteredResult = Array.isArray(rawResult)
-          ? rawResult
-              .filter((symbol: any) => {
-                const uri = symbol?.location?.uri;
-                const uriString =
-                  typeof uri === "string" ? uri : uri?.toString() || uri?.external || "";
+          ? rawResult.map((symbol: any) => {
+              // Convert URI to string format if needed
+              const uri = symbol?.location?.uri;
+              const uriString =
+                typeof uri === "string" ? uri : uri?.toString() || uri?.external || "";
 
-                console.log("Symbol URI:", uriString, "Symbol name:", symbol?.name);
-
-                // Include symbols from workspace OR any external APIs
-                if (uriString) {
-                  const isFromWorkspace =
-                    workspacePath &&
-                    (uriString.includes(workspacePath) ||
-                      uriString.startsWith("file://" + workspacePath));
-
-                  const isExternalAPI =
-                    uriString.includes("/go/pkg/mod/") || uriString.includes("/pkg/mod/");
-
-                  console.log("Is from workspace:", isFromWorkspace);
-                  console.log("Is external API:", isExternalAPI);
-
-                  return (
-                    (isFromWorkspace || isExternalAPI) &&
-                    uriString.trim() !== "" &&
-                    uriString !== "undefined"
-                  );
-                }
-
-                return false;
-              })
-              .map((symbol: any) => {
-                // Convert URI to string format if needed
-                const uri = symbol?.location?.uri;
-                const uriString =
-                  typeof uri === "string" ? uri : uri?.toString() || uri?.external || "";
-
-                return {
-                  ...symbol,
-                  location: {
-                    uri: uriString,
-                    range: {
-                      start: {
-                        line: symbol.location.range.start.line,
-                        character: symbol.location.range.start.character,
-                      },
-                      end: {
-                        line: symbol.location.range.end.line,
-                        character: symbol.location.range.end.character,
-                      },
+              return {
+                ...symbol,
+                location: {
+                  uri: uriString,
+                  range: {
+                    start: {
+                      line: symbol.location.range.start.line,
+                      character: symbol.location.range.start.character,
+                    },
+                    end: {
+                      line: symbol.location.range.end.line,
+                      character: symbol.location.range.end.character,
                     },
                   },
-                };
-              })
+                },
+              };
+            })
           : [];
 
         console.log("=== workspace/symbol RESPONSE SENDING ===");
-        console.log("Raw result count:", Array.isArray(rawResult) ? rawResult.length : 0);
-        console.log("Filtered result count:", filteredResult.length);
         console.log("Filtered result:", JSON.stringify(filteredResult, null, 2));
 
         return filteredResult;
       } catch (error) {
-        console.error("=== workspace/symbol ERROR ===");
         console.error("Error:", error);
         // Return empty array instead of throwing to prevent analyzer crash
         return [];
@@ -384,9 +310,6 @@ export class AnalyzerClient {
 
     // Add handler for textDocument/definition requests
     this.analyzerRpcConnection.onRequest("textDocument/definition", async (params: any) => {
-      console.log("=== textDocument/definition REQUEST RECEIVED ===");
-      console.log("Params:", JSON.stringify(params, null, 2));
-
       try {
         const result = await vscode.commands.executeCommand(
           "vscode.executeDefinitionProvider",
@@ -394,20 +317,8 @@ export class AnalyzerClient {
           new vscode.Position(params.position.line, params.position.character),
         );
 
-        console.log("=== DEFINITION RAW RESULT DEBUG ===");
-        console.log("Raw result type:", typeof result);
-        console.log("Raw result is array:", Array.isArray(result));
-        console.log("Raw result count:", Array.isArray(result) ? result.length : 0);
         if (Array.isArray(result) && result.length > 0) {
           const firstLocation = result[0];
-          console.log("First location structure:", firstLocation);
-          console.log("Location URI type:", typeof firstLocation?.uri);
-          console.log("Location URI value:", firstLocation?.uri);
-          console.log("Location range structure:", firstLocation?.range);
-          console.log("Range is array:", Array.isArray(firstLocation?.range));
-          console.log("Range has start:", firstLocation?.range?.start !== undefined);
-          console.log("Range has end:", firstLocation?.range?.end !== undefined);
-          console.log("Range toJSON method:", typeof firstLocation?.range?.toJSON);
           if (firstLocation?.range?.toJSON) {
             console.log("Range toJSON result:", firstLocation.range.toJSON());
           }
@@ -441,7 +352,6 @@ export class AnalyzerClient {
 
     // Add handler for textDocument/references requests
     this.analyzerRpcConnection.onRequest("textDocument/references", async (params: any) => {
-      console.log("=== textDocument/references REQUEST RECEIVED ===");
       console.log("Params:", JSON.stringify(params, null, 2));
 
       try {
@@ -450,21 +360,8 @@ export class AnalyzerClient {
           vscode.Uri.parse(params.textDocument.uri),
           new vscode.Position(params.position.line, params.position.character),
         );
-
-        console.log("=== REFERENCES RAW RESULT DEBUG ===");
-        console.log("Raw result type:", typeof result);
-        console.log("Raw result is array:", Array.isArray(result));
-        console.log("Raw result count:", Array.isArray(result) ? result.length : 0);
         if (Array.isArray(result) && result.length > 0) {
           const firstLocation = result[0];
-          console.log("First location structure:", firstLocation);
-          console.log("Location URI type:", typeof firstLocation?.uri);
-          console.log("Location URI value:", firstLocation?.uri);
-          console.log("Location range structure:", firstLocation?.range);
-          console.log("Range is array:", Array.isArray(firstLocation?.range));
-          console.log("Range has start:", firstLocation?.range?.start !== undefined);
-          console.log("Range has end:", firstLocation?.range?.end !== undefined);
-          console.log("Range toJSON method:", typeof firstLocation?.range?.toJSON);
           if (firstLocation?.range?.toJSON) {
             console.log("Range toJSON result:", firstLocation.range.toJSON());
           }
@@ -496,16 +393,13 @@ export class AnalyzerClient {
       }
     });
     this.analyzerRpcConnection.onError((e) => {
-      console.error("=== RPC CONNECTION ERROR ===");
       console.error("Error:", e);
       this.logger.error("RPC connection error", e);
     });
 
-    console.log("=== STARTING RPC CONNECTION LISTEN ===");
     this.analyzerRpcConnection.listen();
-    console.log("=== SENDING START NOTIFICATION ===");
     this.analyzerRpcConnection.sendNotification("start", { type: "start" });
-    await this.runHealthCheck();
+    // await this.runHealthCheck();
     this.logger.info(`startAnalyzer took ${performance.now() - startTime}ms`);
   }
 
