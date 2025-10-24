@@ -39,7 +39,6 @@ export abstract class VSCode {
     await expect(
       this.window.locator(`a.label-name span.highlight >> text="${command}"`)
     ).toBeVisible();
-
     await input.press('Enter', { delay: 500 });
   }
 
@@ -444,11 +443,98 @@ export abstract class VSCode {
   }
 
   /**
-   * Enables or disables the Generative AI feature in VSCode for the current workspace.
-   * @param enabled - `true` to enable GenAI, `false` to disable it.
+   * Opens the workspace settings file in VSCode and writes new settings.
+   * Supports updating a single key/value pair or merging multiple settings at once.
+   * @param keyOrObject - Either a settings key (string) or an object containing multiple settings.
+   * @param value - The value to set when a single key is provided.
    */
-  public async setGenerativeAIEnabled(enabled: boolean): Promise<void> {
-    const genAISettingKey = `${extensionName}.genai.enabled`;
-    await this.writeOrUpdateVSCodeSettings({ [genAISettingKey]: enabled });
+  public async openWorkspaceSettingsAndWrite(
+    keyOrObject: string | Record<string, any>,
+    value?: any
+  ): Promise<void> {
+    await this.executeQuickCommand('Preferences: Open Workspace Settings (JSON)');
+
+    const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
+    const editor = this.window.locator('.monaco-editor .view-lines').first();
+    await expect(editor).toBeVisible({ timeout: 10000 });
+    await editor.click();
+    await this.window.waitForTimeout(200);
+
+    // --- Read current content ---
+    let editorContent = '';
+    try {
+      editorContent = await editor.innerText();
+    } catch {
+      editorContent = '{}';
+    }
+
+    // --- Parse settings safely ---
+    let settings: Record<string, any> = {};
+    try {
+      settings = editorContent ? JSON.parse(editorContent.replace(/\u00A0/g, ' ')) : {};
+    } catch {
+      settings = {};
+    }
+
+    // --- Merge updates ---
+    const deepMerge = (target: any, source: any): any => {
+      for (const key of Object.keys(source)) {
+        if (
+          source[key] instanceof Object &&
+          !Array.isArray(source[key]) &&
+          key in target &&
+          target[key] instanceof Object &&
+          !Array.isArray(target[key])
+        ) {
+          deepMerge(target[key], source[key]);
+        } else {
+          target[key] = source[key];
+        }
+      }
+      return target;
+    };
+
+    if (typeof keyOrObject === 'string') {
+      settings[keyOrObject] = value;
+    } else {
+      settings = deepMerge(settings, keyOrObject);
+    }
+
+    const newContent = JSON.stringify(settings, null, 2);
+
+    // --- Replace file content and save ---
+    await editor.click();
+    await this.window.keyboard.press(`${modifier}+a`);
+    await this.window.waitForTimeout(100);
+    await this.window.keyboard.press('Backspace');
+    await this.window.waitForTimeout(100);
+    await this.pasteContent(newContent);
+
+    await this.window.keyboard.press(`${modifier}+s`, { delay: 500 });
+    await this.window.waitForTimeout(300);
+    await this.window.keyboard.press(`${modifier}+w`);
+  }
+
+  /**
+   * Opens the Konveyor command to configure Solution Server credentials,
+   * then types username and password into the respective input fields.
+   * @param username - Username for solution server
+   * @param password - Password for solution server
+   */
+  public async configureSolutionServerCredentials(
+    username: string,
+    password: string
+  ): Promise<void> {
+    await this.executeQuickCommand(`${extensionShortName}: Configure Solution Server Credentials`);
+
+    const usernameInput = this.window.getByRole('textbox', { name: 'input' });
+    await expect(usernameInput).toBeVisible({ timeout: 5000 });
+    await usernameInput.fill(username);
+    await usernameInput.press('Enter');
+
+    const passwordInput = this.window.getByRole('textbox', { name: 'input' });
+    await expect(passwordInput).toBeVisible({ timeout: 5000 });
+    await passwordInput.fill(password);
+    await passwordInput.press('Enter');
   }
 }

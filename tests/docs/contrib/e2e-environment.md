@@ -80,6 +80,10 @@ Additionally, you can directly pass the env variables.
 | WEB_BASE_URL           | (Required if WEB_ENV is 1) The URL of the VSCode web instance                                                                                                                                                                                              |
 | WEB_LOGIN              | (Required if WEB_ENV is 1) The login credentials for the web instance                                                                                                                                                                                      |
 | WEB_PASSWORD           | (Required if WEB_ENV is 1) The password for the web instance                                                                                                                                                                                               |
+| SOLUTION_SERVER_URL   | URL of the Solution Server instance |
+| SOLUTION_SERVER_REALM  | Authentication realm for Solution Server|
+| SOLUTION_SERVER_USERNAME   | Username for Solution Server authentication |
+| SOLUTION_SERVER_PASSWORD  | Password for Solution Server authentication |
 
 ## Running Tests
 

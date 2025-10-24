@@ -6,6 +6,7 @@ import * as fs from 'fs/promises';
 import { generateRandomString } from '../../utilities/utils';
 import { extractZip } from '../../utilities/archive';
 import { KAIViews } from '../../enums/views.enum';
+import { genAISettingKey } from '../../enums/configuration-options.enum';
 import * as VSCodeFactory from '../../utilities/vscode.factory';
 
 test.describe(`Configure extension and run analysis`, () => {
@@ -50,7 +51,7 @@ test.describe(`Configure extension and run analysis`, () => {
   });
 
   test('Disable and enable Generative AI', async () => {
-    await vscodeApp.setGenerativeAIEnabled(false); // disable and verify in settings.json
+    await vscodeApp.openWorkspaceSettingsAndWrite(genAISettingKey, false); // disable
     await vscodeApp.waitDefault();
     const analysisView = await vscodeApp.getView(KAIViews.analysisView);
     const solutionButton = analysisView.locator('button#get-solution-button');
@@ -59,7 +60,7 @@ test.describe(`Configure extension and run analysis`, () => {
     await expect(analysisView.getByText('Agent Mode')).not.toBeVisible();
     await expect(solutionButton.first()).not.toBeVisible({ timeout: 36000 });
 
-    await vscodeApp.setGenerativeAIEnabled(true); // enable
+    await vscodeApp.openWorkspaceSettingsAndWrite(genAISettingKey, true); // enable
     await vscodeApp.waitDefault();
     await expect(
       analysisView.getByRole('heading', { name: 'Warning alert: GenAI' })
