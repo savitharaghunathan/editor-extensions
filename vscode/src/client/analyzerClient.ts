@@ -495,6 +495,12 @@ export class AnalyzerClient {
         selectedLanguage = "java";
       } else if (languages.includes("go")) {
         selectedLanguage = "go";
+
+        // Add Go-specific dependency provider path
+        const dependencyProviderPath =
+          "/Users/sraghuna/local_dev/analyzer-lsp/external-providers/golang-dependency-provider/golang-dependency-provider";
+        args.push("-dependencyProviderPath", dependencyProviderPath);
+        this.logger.info(`Adding Go dependency provider path: ${dependencyProviderPath}`);
       }
 
       args.push("-language", selectedLanguage);
