@@ -32,9 +32,9 @@ export class AnalysisIssueFix extends BaseNode {
     private readonly fsCache: InMemoryCacheWithRevisions<string, string>,
     private readonly workspaceDir: string,
     private readonly solutionServerClient: SolutionServerClient,
-    private readonly logger: Logger,
+    logger: Logger,
   ) {
-    super("AnalysisIssueFix", modelProvider, tools);
+    super("AnalysisIssueFix", modelProvider, tools, logger);
 
     this.fixAnalysisIssue = this.fixAnalysisIssue.bind(this);
     this.summarizeHistory = this.summarizeHistory.bind(this);
@@ -226,6 +226,8 @@ Pay attention to changes you make and impacts to external dependencies in the po
 Remember when updating or adding annotations that the class must be imported.
 As you make changes that impact the pom.xml or imports, be sure you explain what needs to be updated.
 After you have shared your step by step thinking, provide a full output of the updated file.
+
+**It is essential that you always output the entire updated file without omitting any unchanged code.**
 
 # Input information
 

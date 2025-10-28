@@ -59,6 +59,7 @@ import ViolationIncidentsList from "../ViolationIncidentsList";
 import { ProfileSelector } from "../ProfileSelector/ProfileSelector";
 import ProgressIndicator from "../ProgressIndicator";
 import ConfigAlerts from "./ConfigAlerts";
+import GetSolutionDropdown from "../GetSolutionDropdown";
 import { Incident } from "@editor-extensions/shared";
 
 const AnalysisPage: React.FC = () => {
@@ -66,6 +67,7 @@ const AnalysisPage: React.FC = () => {
 
   const {
     isAnalyzing,
+    isAnalysisScheduled,
     isStartingServer,
     isInitializingServer,
     isFetchingSolution: isWaitingForSolution,
@@ -76,7 +78,6 @@ const AnalysisPage: React.FC = () => {
     activeProfileId,
     serverState,
     solutionServerEnabled,
-    localChanges,
     isAgentMode,
     solutionServerConnected,
     isWaitingForUserInteraction,
@@ -86,6 +87,7 @@ const AnalysisPage: React.FC = () => {
   const [focusedIncident, setFocusedIncident] = useState<Incident | null>(null);
   const [expandedViolations, setExpandedViolations] = useState<Set<string>>(new Set());
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isGenAIAlertDismissed, setIsGenAIAlertDismissed] = useState(false);
 
   const violations = useViolations(analysisResults);
   const hasViolations = violations.length > 0;
@@ -99,13 +101,7 @@ const AnalysisPage: React.FC = () => {
     if (enhancedIncidents.length > 0 && solutionServerEnabled && solutionServerConnected) {
       dispatch(getSuccessRate());
     }
-  }, [
-    enhancedIncidents.length,
-    localChanges.length,
-    solutionServerEnabled,
-    solutionServerConnected,
-    dispatch,
-  ]);
+  }, [enhancedIncidents.length, solutionServerEnabled, solutionServerConnected, dispatch]);
 
   const handleIncidentSelect = (incident: Incident) => {
     setFocusedIncident(incident);
@@ -223,6 +219,24 @@ const AnalysisPage: React.FC = () => {
               onOpenProfileManager={() => dispatch({ type: "OPEN_PROFILE_MANAGER", payload: {} })}
               dispatch={dispatch}
             />
+            {!isGenAIDisabled && !isGenAIAlertDismissed && (
+              <PageSection padding={{ default: "noPadding" }}>
+                <Card isCompact style={{ maxWidth: "600px", margin: "0 auto" }}>
+                  <Alert
+                    variant="info"
+                    title="Generative AI is enabled"
+                    actionClose={
+                      <Button variant="link" onClick={() => setIsGenAIAlertDismissed(true)}>
+                        Close
+                      </Button>
+                    }
+                  >
+                    This feature uses AI technology. Do not include any personal information or
+                    other sensitive information in your input.
+                  </Alert>
+                </Card>
+              </PageSection>
+            )}
             {selectedProfile && (
               <PageSection padding={{ default: "padding" }}>
                 <Card isCompact>
@@ -248,18 +262,26 @@ const AnalysisPage: React.FC = () => {
                           onManageProfiles={() =>
                             dispatch({ type: "OPEN_PROFILE_MANAGER", payload: {} })
                           }
-                          isDisabled={isStartingServer || isAnalyzing}
+                          isDisabled={isStartingServer || isAnalyzing || isAnalysisScheduled}
                         />
                       </Flex>
                       <Button
                         variant="primary"
                         onClick={handleRunAnalysis}
-                        isLoading={isAnalyzing}
+                        isLoading={isAnalyzing || isAnalysisScheduled}
                         isDisabled={
-                          isAnalyzing || isStartingServer || !serverRunning || isWaitingForSolution
+                          isAnalyzing ||
+                          isAnalysisScheduled ||
+                          isStartingServer ||
+                          !serverRunning ||
+                          isWaitingForSolution
                         }
                       >
-                        {isAnalyzing ? "Analyzing..." : "Run Analysis"}
+                        {isAnalyzing
+                          ? "Analyzing..."
+                          : isAnalysisScheduled
+                            ? "Scheduled..."
+                            : "Run Analysis"}
                       </Button>
                     </Flex>
                   </CardHeader>
@@ -297,7 +319,22 @@ const AnalysisPage: React.FC = () => {
               <Stack hasGutter>
                 <StackItem>
                   <Card>
-                    <CardHeader>
+                    <CardHeader
+                      actions={
+                        hasViolations && !isAnalyzing
+                          ? {
+                              actions: [
+                                <GetSolutionDropdown
+                                  key="get-solution-workspace"
+                                  incidents={enhancedIncidents}
+                                  scope="workspace"
+                                />,
+                              ],
+                              hasNoOffset: true,
+                            }
+                          : undefined
+                      }
+                    >
                       <Flex className="header-layout">
                         <FlexItem>
                           <CardTitle>Analysis Results</CardTitle>
