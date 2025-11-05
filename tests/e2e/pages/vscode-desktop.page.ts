@@ -70,7 +70,7 @@ export class VSCodeDesktop extends VSCode {
       }
     }
 
-    if (!process.env.VSIX_FILE_PATH && !process.env.VSIX_DOWNLOAD_URL) {
+    if (!process.env.CORE_VSIX_FILE_PATH && !process.env.CORE_VSIX_DOWNLOAD_URL) {
       args.push(
         `--extensionDevelopmentPath=${path.resolve(__dirname, '../../../vscode')}`,
         `--enable-proposed-api=${extensionId}`
@@ -114,7 +114,7 @@ export class VSCodeDesktop extends VSCode {
    */
   public static async init(repoUrl?: string, repoDir?: string, branch?: string): Promise<VSCode> {
     try {
-      if (process.env.VSIX_FILE_PATH || process.env.VSIX_DOWNLOAD_URL) {
+      if (process.env.CORE_VSIX_FILE_PATH || process.env.CORE_VSIX_DOWNLOAD_URL) {
         await installExtension();
       }
 
@@ -144,7 +144,9 @@ export class VSCodeDesktop extends VSCode {
 
   /**
    * Waits for the Konveyor extension to complete initialization by watching for
-   * the __EXTENSION_INITIALIZED__ info message signal.
+   * the __JAVA_EXTENSION_INITIALIZED__ info message signal.
+   * Since the Java extension waits for the core extension to activate before completing,
+   * this signal guarantees that both core and Java extensions are fully ready.
    */
   public async waitForExtensionInitialization(): Promise<void> {
     try {
@@ -162,17 +164,15 @@ export class VSCodeDesktop extends VSCode {
       // This was working before - the extension activates and opens the view
       await this.executeQuickCommand(`${VSCode.COMMAND_CATEGORY}: Open Analysis View`);
 
-      // Now wait for the initialization signal message to appear
-      // This message is shown by the extension when __TEST_EXTENSION_END_TO_END__ env var is set
-      const initializationMessage = this.window
-        .getByRole('alert')
-        .getByText('__EXTENSION_INITIALIZED__');
-      await expect(initializationMessage).toBeVisible({ timeout: 300000 }); // 5 minute timeout for asset downloads
+      // Wait for Java extension initialization signal
+      // The Java extension waits for core to activate, so this signal means both are ready
+      // This is a persistent status bar item, so we can just wait for it to appear
+      console.log('Waiting for Java extension initialization signal...');
 
-      // Dismiss the message
-      await this.window.keyboard.press('Escape');
-      await this.window.waitForTimeout(2000); // Give VSCode a chance to process the message
-      console.log('Konveyor extension initialized successfully');
+      const javaInitStatusBar = this.window.getByText('__JAVA_EXTENSION_INITIALIZED__');
+      await expect(javaInitStatusBar).toBeVisible({ timeout: 300_000 }); // 5 minute timeout
+
+      console.log('Konveyor extensions initialized successfully');
     } catch (error) {
       console.error('Failed to wait for extension initialization:', error);
       throw error;
