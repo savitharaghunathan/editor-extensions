@@ -97,27 +97,27 @@ export class GoVscodeProxyServer implements vscode.Disposable {
     this.connections.add(connection);
 
     // Handle LSP initialize request (required before any other methods)
-    connection.onRequest("initialize", async (params: any) => {
-      this.logger.debug("Received initialize request", { params });
+    // connection.onRequest("initialize", async (params: any) => {
+    //   this.logger.debug("Received initialize request", { params });
 
-      try {
-        // Return standard LSP initialize response with capabilities
-        return {
-          capabilities: {
-            definitionProvider: true,
-            referencesProvider: true,
-            workspaceSymbolProvider: true,
-          },
-          serverInfo: {
-            name: "go-vscode-proxy",
-            version: "1.0.0",
-          },
-        };
-      } catch (error) {
-        this.logger.error(`Initialize error`, error);
-        throw error;
-      }
-    });
+    //   try {
+    //     // Return standard LSP initialize response with capabilities
+    //     return {
+    //       capabilities: {
+    //         definitionProvider: true,
+    //         referencesProvider: true,
+    //         workspaceSymbolProvider: true,
+    //       },
+    //       serverInfo: {
+    //         name: "go-vscode-proxy",
+    //         version: "1.0.0",
+    //       },
+    //     };
+    //   } catch (error) {
+    //     this.logger.error(`Initialize error`, error);
+    //     throw error;
+    //   }
+    // });
 
     // Handle initialized notification (sent after initialize)
     connection.onNotification("initialized", () => {
@@ -139,7 +139,8 @@ export class GoVscodeProxyServer implements vscode.Disposable {
         this.logger.debug(
           `Workspace symbol result: ${Array.isArray(result) ? result.length : 0} symbols`,
         );
-        return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
+        //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
+        return result || [];
       } catch (error) {
         this.logger.error(`Workspace symbol error`, error);
         return [];
@@ -163,7 +164,8 @@ export class GoVscodeProxyServer implements vscode.Disposable {
         this.logger.debug(
           `Definition result: ${Array.isArray(result) ? result.length : 1} locations`,
         );
-        return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : [result]);
+        //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : [result]);
+        return result || [];
       } catch (error) {
         this.logger.error(`Text document definition error`, error);
         throw error;
@@ -186,7 +188,8 @@ export class GoVscodeProxyServer implements vscode.Disposable {
         this.logger.debug(
           `References result: ${Array.isArray(result) ? result.length : 0} locations`,
         );
-        return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
+        //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
+        return result || [];
       } catch (error) {
         this.logger.error(`Text document references error`, error);
         throw error;

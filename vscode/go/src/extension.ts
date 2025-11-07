@@ -148,6 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
           location: workspaceLocation,
           analysisMode: "source-only",
           pipeName: lspProxySocketPath, // JSON-RPC socket for vscode proxy communication
+          initialized: true,
           providerSpecificConfig: {
             lspServerName: "generic",
             //dependencyProviderPath: dependencyProviderPath,
