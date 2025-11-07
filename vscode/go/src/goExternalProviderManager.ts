@@ -1,13 +1,8 @@
 import * as vscode from "vscode";
-
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
-
 import { Logger } from "winston";
-
 import * as path from "path";
-
 import * as fs from "fs";
-
 import { platform, arch } from "process";
 
 /**
@@ -20,9 +15,7 @@ import { platform, arch } from "process";
  */
 export class GoExternalProviderManager implements vscode.Disposable {
   private process: ChildProcessWithoutNullStreams | null = null;
-
   private providerSocketPath: string;
-
   private disposed = false;
 
   constructor(
@@ -31,7 +24,6 @@ export class GoExternalProviderManager implements vscode.Disposable {
     private logger: Logger,
   ) {
     this.providerSocketPath = providerSocketPath;
-
     this.logger = logger.child({ component: "GoExternalProviderManager" });
   }
 
@@ -91,6 +83,7 @@ export class GoExternalProviderManager implements vscode.Disposable {
     // Handle process errors
     this.process.on("error", (err) => {
       this.logger.error("go-external-provider process error", err);
+      this.process = null;
       vscode.window.showErrorMessage(`Failed to start go-external-provider: ${err.message}`);
     });
 
@@ -102,13 +95,11 @@ export class GoExternalProviderManager implements vscode.Disposable {
    */
   private getProviderBinaryPath(): string {
     const packageJson = this.context.extension.packageJSON;
-
     const baseAssetPath =
       packageJson.includedAssetPaths?.genericExternalProvider ||
       "../../downloaded_assets/generic-external-provider";
 
     const platformArch = `${platform}-${arch}`;
-
     const binaryName =
       platform === "win32" ? "generic-external-provider.exe" : "generic-external-provider";
 
