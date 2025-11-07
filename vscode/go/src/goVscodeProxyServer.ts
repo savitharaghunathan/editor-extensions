@@ -95,30 +95,6 @@ export class GoVscodeProxyServer implements vscode.Disposable {
 
     // Track this connection
     this.connections.add(connection);
-
-    // Handle LSP initialize request (required before any other methods)
-    // connection.onRequest("initialize", async (params: any) => {
-    //   this.logger.debug("Received initialize request", { params });
-
-    //   try {
-    //     // Return standard LSP initialize response with capabilities
-    //     return {
-    //       capabilities: {
-    //         definitionProvider: true,
-    //         referencesProvider: true,
-    //         workspaceSymbolProvider: true,
-    //       },
-    //       serverInfo: {
-    //         name: "go-vscode-proxy",
-    //         version: "1.0.0",
-    //       },
-    //     };
-    //   } catch (error) {
-    //     this.logger.error(`Initialize error`, error);
-    //     throw error;
-    //   }
-    // });
-
     // Handle initialized notification (sent after initialize)
     connection.onNotification("initialized", () => {
       this.logger.debug("Received initialized notification");
@@ -126,7 +102,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
 
     // Handle workspace/executeCommand requests
     connection.onRequest("workspace/symbol", async (params: any) => {
-      this.logger.debug("Received workspace/symbol", { params });
+      this.logger.info("Received workspace/symbol", { params });
 
       try {
         const query = Array.isArray(params) ? params[0]?.query : params?.query;
@@ -136,7 +112,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
           query,
         );
 
-        this.logger.debug(
+        this.logger.info(
           `Workspace symbol result: ${Array.isArray(result) ? result.length : 0} symbols`,
         );
         //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
@@ -149,7 +125,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
 
     // Handle other LSP requests that go-external-provider might send
     connection.onRequest("textDocument/definition", async (params: any) => {
-      this.logger.debug(`Text document definition request`, {
+      this.logger.info(`Text document definition request`, {
         uri: params.textDocument?.uri,
         position: params.position,
       });
@@ -161,7 +137,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
           new vscode.Position(params.position.line, params.position.character),
         );
 
-        this.logger.debug(
+        this.logger.info(
           `Definition result: ${Array.isArray(result) ? result.length : 1} locations`,
         );
         //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : [result]);
@@ -173,7 +149,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
     });
 
     connection.onRequest("textDocument/references", async (params: any) => {
-      this.logger.debug(`Text document references request`, {
+      this.logger.info(`Text document references request`, {
         uri: params.textDocument?.uri,
         position: params.position,
       });
@@ -185,7 +161,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
           new vscode.Position(params.position.line, params.position.character),
         );
 
-        this.logger.debug(
+        this.logger.info(
           `References result: ${Array.isArray(result) ? result.length : 0} locations`,
         );
         //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
