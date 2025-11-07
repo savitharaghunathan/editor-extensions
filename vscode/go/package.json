@@ -3,6 +3,7 @@
   "displayName": "Konveyor Go Extension",
   "description": "Go language provider for Konveyor migration and modernization analysis",
   "author": "Konveyor",
+  "icon": "resources/icon.png",
   "license": "Apache-2.0",
   "version": "0.4.0",
   "main": "./out/extension.js",
@@ -30,10 +31,11 @@
     "npm": "^9.5.0 || >=10.5.2"
   },
   "extensionDependencies": [
-    "konveyor",
+    "konveyor.konveyor",
     "golang.go"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onLanguage:go"
   ],
   "contributes": {
@@ -51,6 +53,10 @@
         ]
       }
     ]
+  },
+  "includedAssetPaths": {
+    "genericExternalProvider": "../../downloaded_assets/generic-external-provider",
+    "golangDependencyProvider": "../../downloaded_assets/golang-dependency-provider"
   },
   "scripts": {
     "clean": "rimraf out",
@@ -77,9 +83,8 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@editor-extensions/shared": "*",
     "winston": "^3.17.0",
     "winston-transport-vscode": "^0.1.0",
-    "vscode-jsonrpc": "^9.0.1"
+    "vscode-jsonrpc": "^8.2.1"
   }
 }
