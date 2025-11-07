@@ -128,7 +128,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Format provider address for GRPC
   // Windows named pipes: unix:\\.\pipe\vscode-ipc-123
   // Unix domain sockets: unix:///tmp/vscode-ipc-123.sock
-  const providerAddress = `unix:${providerSocketPath}`;
+  const providerAddress = `unix://${providerSocketPath}`;
 
   logger.info("Provider configuration", {
     providerAddress,
@@ -142,13 +142,12 @@ export async function activate(context: vscode.ExtensionContext) {
     providerConfig: {
       name: "go",
       address: providerAddress, // GRPC socket address
-      useSockets: true,
+      useSocket: true,
       initConfig: [
         {
           location: workspaceLocation,
           analysisMode: "source-only",
           pipeName: lspProxySocketPath, // JSON-RPC socket for vscode proxy communication
-          initialized: true,
           providerSpecificConfig: {
             lspServerName: "generic",
             //dependencyProviderPath: dependencyProviderPath,

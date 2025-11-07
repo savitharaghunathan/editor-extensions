@@ -31,7 +31,7 @@
     "konveyor.konveyor"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onLanguage:javascript"
   ],
   "contributes": {},
   "includedAssetPaths": {
