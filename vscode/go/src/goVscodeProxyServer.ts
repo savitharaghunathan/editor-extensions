@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { createServer, Server, Socket } from "net";
 import * as rpc from "vscode-jsonrpc/node";
+import { createConverter } from "vscode-languageclient/lib/common/codeConverter";
 import { Logger } from "winston";
 
 /**
@@ -13,6 +14,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
   private server: Server | null = null;
   private connections: Set<rpc.MessageConnection> = new Set();
   private socketPath: string;
+  private converter = createConverter();
 
   constructor(
     socketPath: string,
@@ -45,46 +47,6 @@ export class GoVscodeProxyServer implements vscode.Disposable {
   }
 
   /**
-   * Normalize VSCode Location objects for LSP communication
-   */
-  private normalizeLocationForLSP(location: any): any {
-    if (!location) {
-      return null;
-    }
-
-    // Handle both VSCode Location objects and plain objects
-    const uri = location.uri;
-    const range = location.range;
-
-    return {
-      uri: typeof uri === "string" ? uri : uri?.toString() || "",
-      range: {
-        start: {
-          line: range?.start?.line ?? 0,
-          character: range?.start?.character ?? 0,
-        },
-        end: {
-          line: range?.end?.line ?? 0,
-          character: range?.end?.character ?? 0,
-        },
-      },
-    };
-  }
-
-  /**
-   * Normalize array of VSCode Location objects for LSP communication
-   */
-  private normalizeLocationsArrayForLSP(locations: any[]): any[] {
-    if (!Array.isArray(locations)) {
-      return [];
-    }
-
-    return locations
-      .filter((location) => location && location.range && location.uri)
-      .map((location) => this.normalizeLocationForLSP(location));
-  }
-
-  /**
    * Handle a new connection from go-external-provider
    */
   private handleConnection(socket: Socket): void {
@@ -95,6 +57,23 @@ export class GoVscodeProxyServer implements vscode.Disposable {
 
     // Track this connection
     this.connections.add(connection);
+
+    // Handle initialize request (required for LSP handshake)
+    connection.onRequest("initialize", async (params: any) => {
+      this.logger.info("Received initialize request", { params });
+      return {
+        capabilities: {
+          workspaceSymbolProvider: true,
+          definitionProvider: true,
+          referencesProvider: true,
+        },
+        serverInfo: {
+          name: "go-vscode-proxy",
+          version: "1.0.0",
+        },
+      };
+    });
+
     // Handle initialized notification (sent after initialize)
     connection.onNotification("initialized", () => {
       this.logger.debug("Received initialized notification");
@@ -107,16 +86,21 @@ export class GoVscodeProxyServer implements vscode.Disposable {
       try {
         const query = Array.isArray(params) ? params[0]?.query : params?.query;
 
-        const result = await vscode.commands.executeCommand(
+        const result: vscode.SymbolInformation[] = await vscode.commands.executeCommand(
           "vscode.executeWorkspaceSymbolProvider",
           query,
         );
 
-        this.logger.info(
-          `Workspace symbol result: ${Array.isArray(result) ? result.length : 0} symbols`,
+        this.logger.info(`Workspace symbol result: ${result?.length || 0} symbols`);
+
+        // Convert vscode.SymbolInformation[] to LSP WorkspaceSymbol[]
+        return (
+          result?.map((symbol) => ({
+            name: symbol.name,
+            kind: this.converter.asSymbolKind(symbol.kind),
+            location: this.converter.asLocation(symbol.location),
+          })) || []
         );
-        //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
-        return result || [];
       } catch (error) {
         this.logger.error(`Workspace symbol error`, error);
         return [];
@@ -131,7 +115,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
       });
 
       try {
-        const result = await vscode.commands.executeCommand(
+        const result: vscode.Location[] = await vscode.commands.executeCommand(
           "vscode.executeDefinitionProvider",
           vscode.Uri.parse(params.textDocument.uri),
           new vscode.Position(params.position.line, params.position.character),
@@ -140,8 +124,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
         this.logger.info(
           `Definition result: ${Array.isArray(result) ? result.length : 1} locations`,
         );
-        //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : [result]);
-        return result || [];
+        return result?.map((location) => this.converter.asLocation(location)) || [];
       } catch (error) {
         this.logger.error(`Text document definition error`, error);
         throw error;
@@ -155,7 +138,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
       });
 
       try {
-        const result = await vscode.commands.executeCommand(
+        const result: vscode.Location[] = await vscode.commands.executeCommand(
           "vscode.executeReferenceProvider",
           vscode.Uri.parse(params.textDocument.uri),
           new vscode.Position(params.position.line, params.position.character),
@@ -164,8 +147,7 @@ export class GoVscodeProxyServer implements vscode.Disposable {
         this.logger.info(
           `References result: ${Array.isArray(result) ? result.length : 0} locations`,
         );
-        //return this.normalizeLocationsArrayForLSP(Array.isArray(result) ? result : []);
-        return result || [];
+        return result?.map((location) => this.converter.asLocation(location)) || [];
       } catch (error) {
         this.logger.error(`Text document references error`, error);
         throw error;
