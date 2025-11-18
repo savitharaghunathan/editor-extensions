@@ -1,7 +1,7 @@
 {
   "name": "konveyor-go",
   "displayName": "Konveyor Go Extension",
-  "description": "Go language provider for Konveyor migration and modernization analysis",
+  "description": "Go language support for Konveyor migration and modernization",
   "author": "Konveyor",
   "icon": "resources/icon.png",
   "license": "Apache-2.0",
@@ -15,15 +15,13 @@
   "bugs": "https://github.com/konveyor/editor-extensions/issues",
   "preview": false,
   "categories": [
-    "Programming Languages",
-    "Linters"
+    "Programming Languages"
   ],
   "keywords": [
     "Go",
     "Golang",
     "Migration",
-    "Modernization",
-    "Analysis"
+    "Modernization"
   ],
   "engines": {
     "vscode": "^1.93.0",
@@ -35,24 +33,10 @@
     "golang.go"
   ],
   "activationEvents": [
-    "onLanguage:go"
+    "onLanguage:go",
+    "onStartupFinished"
   ],
-  "contributes": {
-    "languages": [
-      {
-        "id": "go",
-        "extensions": [
-          ".go",
-          ".mod",
-          ".sum"
-        ],
-        "aliases": [
-          "Go",
-          "golang"
-        ]
-      }
-    ]
-  },
+  "contributes": {},
   "includedAssetPaths": {
     "genericExternalProvider": "../../downloaded_assets/generic-external-provider",
     "golangDependencyProvider": "../../downloaded_assets/golang-dependency-provider"
@@ -63,10 +47,7 @@
     "lint:fix": "eslint --fix .",
     "prebuild": "npm run clean",
     "build": "webpack --mode production",
-    "dev": "webpack --watch --mode development",
-    "pretest": "npm run build",
-    "test": "npm run test:unit-tests",
-    "test:unit-tests": "mocha"
+    "dev": "webpack --watch --mode development"
   },
   "lint-staged": {
     "*.{js,cjs,mjs,ts,cts,mts}": "eslint --fix",
