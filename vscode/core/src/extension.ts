@@ -39,8 +39,7 @@ import {
   getConfigAutoAcceptOnSave,
   updateConfigErrors,
 } from "./utilities";
-import { getBundledProfiles } from "./utilities/profiles/bundledProfiles";
-import { getUserProfiles } from "./utilities/profiles/profileService";
+import { getAllProfiles } from "./utilities/profiles/profileService";
 import { DiagnosticTaskManager } from "./taskManager/taskManager";
 // Removed registerSuggestionCommands import since we're using merge editor now
 // Removed InlineSuggestionCodeActionProvider import since we're using merge editor now
@@ -53,6 +52,8 @@ import { OutputChannelTransport } from "winston-transport-vscode";
 import { VerticalDiffManager } from "./diff/vertical/manager";
 import { StaticDiffAdapter } from "./diff/staticDiffAdapter";
 import { FileEditor } from "./utilities/ideUtils";
+import { ProviderRegistry, createCoreApi } from "./api";
+import { KonveyorCoreApi } from "@editor-extensions/shared";
 
 class VsCodeExtension {
   public state: ExtensionState;
@@ -66,6 +67,7 @@ class VsCodeExtension {
     public readonly paths: ExtensionPaths,
     public readonly context: vscode.ExtensionContext,
     logger: winston.Logger,
+    private readonly providerRegistry: ProviderRegistry,
   ) {
     const solutionServerConfig = getConfigSolutionServer();
     this.diffStatusBarItem = vscode.window.createStatusBarItem(
@@ -89,6 +91,7 @@ class VsCodeExtension {
         solutionState: "none",
         solutionServerEnabled: solutionServerConfig.enabled, // should we pass the full config object?
         configErrors: [],
+        llmErrors: [],
         activeProfileId: "",
         profiles: [],
         isAgentMode: getConfigAgentMode(),
@@ -119,7 +122,14 @@ class VsCodeExtension {
     const taskManager = new DiagnosticTaskManager(getExcludedDiagnosticSources());
 
     this.state = {
-      analyzerClient: new AnalyzerClient(context, mutateData, getData, taskManager, logger),
+      analyzerClient: new AnalyzerClient(
+        context,
+        mutateData,
+        getData,
+        taskManager,
+        logger,
+        providerRegistry,
+      ),
       solutionServerClient: new SolutionServerClient(solutionServerConfig, logger),
       webviewProviders: new Map<string, KonveyorGUIWebviewViewProvider>(),
       extensionContext: context,
@@ -208,9 +218,7 @@ class VsCodeExtension {
       // Initialize vertical diff system
       this.initializeVerticalDiff();
 
-      const bundled = getBundledProfiles();
-      const user = getUserProfiles(this.context);
-      const allProfiles = [...bundled, ...user];
+      const allProfiles = await getAllProfiles(this.context);
 
       const storedActiveId = this.context.workspaceState.get<string>("activeProfileId");
 
@@ -251,6 +259,9 @@ class VsCodeExtension {
         this.updateConfigurationErrors(draft);
       });
 
+      // Watch for changes to .konveyor/profiles directory
+      this.setupProfileWatcher();
+
       this.setupModelProvider(paths().settingsYaml)
         .then((configError) => {
           this.state.mutateData((draft) => {
@@ -284,36 +295,83 @@ class VsCodeExtension {
         await this.connectToSolutionServer();
       }
 
-      // Connection poll to catch network issues and missed connection state changes
-      const connectionPollInterval = setInterval(async () => {
-        if (getConfigSolutionServerEnabled()) {
+      // Adaptive connection polling with exponential backoff
+      let pollInterval = 10000; // Start at 10 seconds
+      let consecutiveFailures = 0;
+      let pollTimeout: NodeJS.Timeout | undefined;
+
+      const withJitter = (ms: number) => Math.round(ms * (0.9 + Math.random() * 0.2));
+      const scheduleNextPoll = (delay: number = pollInterval) => {
+        if (pollTimeout) {
+          clearTimeout(pollTimeout);
+        }
+
+        pollTimeout = setTimeout(async () => {
+          // Only poll if solution server is enabled and we should be connected
+          if (!getConfigSolutionServerEnabled()) {
+            // Pause; config change handlers will resume when re-enabled
+            this.state.mutateData((draft) => {
+              draft.solutionServerConnected = false;
+            });
+            return;
+          }
+
           try {
-            // Try to get server capabilities to check if connection is alive
-            await this.state.solutionServerClient.getServerCapabilities();
-            // If we get here, connection is working
+            await this.state.solutionServerClient.getServerCapabilities(true);
+            // Success - reset failure count and use base interval
+            if (consecutiveFailures > 0) {
+              this.state.logger.info(
+                "Solution server connectivity restored; resuming 10s polling.",
+              );
+            }
+            consecutiveFailures = 0;
+            pollInterval = 10000;
+
             this.state.mutateData((draft) => {
               draft.solutionServerConnected = true;
             });
           } catch {
-            // If we can't get capabilities, assume disconnected
+            // Failure - increase backoff interval
+            consecutiveFailures++;
             this.state.mutateData((draft) => {
               draft.solutionServerConnected = false;
             });
+
+            // Exponential backoff: 10s -> 30s -> 60s (max)
+            if (consecutiveFailures === 1) {
+              pollInterval = 30000;
+            } else if (consecutiveFailures >= 2) {
+              pollInterval = 60000;
+            }
           }
-        }
-      }, 2000); // Check every 2 seconds to catch network issues quickly
+
+          // Schedule next poll unless we've had too many failures
+          if (consecutiveFailures < 5) {
+            scheduleNextPoll(withJitter(pollInterval));
+          } else {
+            // Stop polling after 5 consecutive failures - will resume on manual retry or config change
+            this.state.logger.info(
+              "Stopping connection polling after repeated failures. Will resume on demand.",
+            );
+          }
+        }, delay);
+      };
+
+      // Start the adaptive polling
+      scheduleNextPoll(withJitter(pollInterval));
 
       this.listeners.push({
-        dispose: () => clearInterval(connectionPollInterval),
+        dispose: () => {
+          if (pollTimeout) {
+            clearTimeout(pollTimeout);
+          }
+        },
       });
 
-      this.checkJavaExtensionInstalled();
-
-      // Listen for extension changes to update Continue installation status and Java extension status
+      // Listen for extension changes to update Continue installation status
       this.listeners.push(
         vscode.extensions.onDidChange(() => {
           this.checkContinueInstalled();
-          this.checkJavaExtensionInstalled();
         }),
       );
 
@@ -438,32 +496,46 @@ class VsCodeExtension {
             });
           }
 
-          // Handle solution server configuration changes with auto-restart
           if (event.affectsConfiguration(`${EXTENSION_NAME}.solutionServer`)) {
-            this.state.logger.info("Solution server configuration modified!");
             const newConfig = getConfigSolutionServer();
+            this.state.logger.info("Solution server configuration modified!", {
+              enabled: newConfig.enabled,
+              url: newConfig.url,
+              authEnabled: newConfig.auth.enabled,
+            });
+
+            // Capture current connection state before mutating
+            const wasConnected = this.state.data.solutionServerConnected;
 
             // Update the enabled state immediately
             this.state.mutateData((draft) => {
               draft.solutionServerEnabled = newConfig.enabled;
-              // Reset connection status
+              // Reset connection status - let the connection poll handle updating it
               draft.solutionServerConnected = false;
             });
 
-            // Disconnect and reconnect with new configuration
-            try {
-              await this.state.solutionServerClient.disconnect();
-              this.state.logger.info(
-                "Disconnected from solution server due to configuration change",
-              );
+            // Update the client configuration
+            this.state.solutionServerClient.updateConfig(newConfig);
 
-              // Update client configuration
-              this.state.solutionServerClient.updateConfig(newConfig);
+            // Disconnect if currently connected to apply new settings
+            if (wasConnected) {
+              try {
+                await this.state.solutionServerClient.disconnect();
+                this.state.logger.info(
+                  "Disconnected from solution server for configuration update",
+                );
+              } catch (error) {
+                this.state.logger.error("Error disconnecting from solution server:", error);
+              }
+            }
 
-              // Reconnect with new configuration
-              await this.connectToSolutionServer();
-            } catch (error) {
-              this.state.logger.error("Error handling solution server configuration change", error);
+            // Resume polling if enabled - it will handle reconnection with new config
+            if (newConfig.enabled) {
+              consecutiveFailures = 0;
+              pollInterval = 10000;
+              scheduleNextPoll(withJitter(pollInterval));
+
+              // Auth credentials will be prompted on next connection attempt if needed
             }
           }
 
@@ -514,11 +586,6 @@ class VsCodeExtension {
 
       // Setup diff status bar item
       this.setupDiffStatusBar();
-
-      // Signal completion for E2E tests
-      if (process.env.__TEST_EXTENSION_END_TO_END__) {
-        vscode.window.showInformationMessage("__EXTENSION_INITIALIZED__");
-      }
     } catch (error) {
       this.state.logger.error("Error initializing extension", error);
       vscode.window.showErrorMessage(`Failed to initialize Konveyor extension: ${error}`);
@@ -718,61 +785,56 @@ class VsCodeExtension {
     );
   }
 
+  private setupProfileWatcher(): void {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!workspaceRoot) {
+      return;
+    }
+
+    // Watch for changes to .konveyor/profiles directory
+    const profilesPattern = new vscode.RelativePattern(
+      workspaceRoot,
+      ".konveyor/profiles/**/profile.yaml",
+    );
+    const watcher = vscode.workspace.createFileSystemWatcher(profilesPattern);
+
+    // Reload profiles when files change
+    const reloadProfiles = async () => {
+      this.state.logger.info("Detected changes to .konveyor/profiles, reloading profiles");
+      const allProfiles = await getAllProfiles(this.context);
+      const currentActiveId = this.state.data.activeProfileId;
+
+      // Check if active profile still exists
+      const activeStillExists = allProfiles.find((p) => p.id === currentActiveId);
+      const newActiveId =
+        activeStillExists?.id ?? (allProfiles.length > 0 ? allProfiles[0].id : null);
+
+      this.state.mutateData((draft) => {
+        draft.profiles = allProfiles;
+        draft.activeProfileId = newActiveId;
+        this.updateConfigurationErrors(draft);
+      });
+
+      if (currentActiveId !== newActiveId) {
+        this.state.logger.info(`Active profile changed to "${newActiveId}" after profile reload.`);
+        vscode.window.showInformationMessage(
+          `Active profile changed to "${allProfiles.find((p) => p.id === newActiveId)?.name ?? "none"}" after profile reload.`,
+        );
+      }
+    };
+
+    watcher.onDidCreate(reloadProfiles);
+    watcher.onDidChange(reloadProfiles);
+    watcher.onDidDelete(reloadProfiles);
+
+    this.context.subscriptions.push(watcher);
+  }
+
   private checkContinueInstalled(): void {
     const continueExt = vscode.extensions.getExtension("Continue.continue");
     this.state.mutateData((draft) => {
       draft.isContinueInstalled = !!continueExt;
     });
-  }
-
-  private checkJavaExtensionInstalled(): void {
-    const javaExt = vscode.extensions.getExtension("redhat.java");
-    if (!javaExt) {
-      vscode.window
-        .showWarningMessage(
-          "The Red Hat Java Language Support extension is required for proper Java analysis. " +
-            "Please install it from the VS Code marketplace.",
-          "Install Java Extension",
-        )
-        .then((selection) => {
-          if (selection === "Install Java Extension") {
-            vscode.commands.executeCommand("workbench.extensions.search", "redhat.java");
-          }
-        });
-      return;
-    }
-
-    // Check version compatibility - versions > 1.45.0 have breaking changes
-    const version = javaExt.packageJSON?.version;
-    if (version) {
-      const versionParts = version.split(".").map(Number);
-      const major = versionParts[0] || 0;
-      const minor = versionParts[1] || 0;
-      const isIncompatible = major > 1 || (major === 1 && minor > 45);
-
-      if (isIncompatible) {
-        this.state.logger.error(`Incompatible Java extension version: ${version}`);
-        vscode.window
-          .showErrorMessage(
-            `Red Hat Java Language Support version ${version} is incompatible. ` +
-              `Please downgrade to version 1.45.0 or earlier. Versions above 1.45.0 contain breaking changes that prevent proper Java analysis.`,
-            "Show Extensions",
-          )
-          .then((selection) => {
-            if (selection === "Show Extensions") {
-              vscode.commands.executeCommand("workbench.extensions.search", "redhat.java");
-            }
-          });
-        return;
-      }
-    }
-
-    if (!javaExt.isActive) {
-      vscode.window.showInformationMessage(
-        "The Java Language Support extension is installed but not yet active. " +
-          "Java analysis features may be limited until it's fully loaded.",
-      );
-    }
   }
 
   private async setupModelProvider(settingsPath: vscode.Uri): Promise<ConfigError | undefined> {
@@ -904,8 +966,9 @@ class VsCodeExtension {
 }
 
 let extension: VsCodeExtension | undefined;
+let providerRegistry: ProviderRegistry | undefined;
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+export async function activate(context: vscode.ExtensionContext): Promise<KonveyorCoreApi> {
   // Logger is our bae...before anything else
   const outputChannel = vscode.window.createOutputChannel(EXTENSION_DISPLAY_NAME);
   const logger = winston.createLogger({
@@ -934,11 +997,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const paths = await ensurePaths(context, logger);
     await copySampleProviderSettings();
 
-    extension = new VsCodeExtension(paths, context, logger);
+    // Create provider registry
+    providerRegistry = new ProviderRegistry(logger);
+    context.subscriptions.push(providerRegistry);
+
+    extension = new VsCodeExtension(paths, context, logger, providerRegistry);
     await extension.initialize();
+
+    // Create and return the API for language extensions
+    const api = createCoreApi(providerRegistry);
+    logger.info("Core extension API created and ready for language extensions");
+    return api;
   } catch (error) {
     await extension?.dispose();
     extension = undefined;
+    providerRegistry?.dispose();
+    providerRegistry = undefined;
     logger.error("Failed to activate Konveyor extension", error);
     vscode.window.showErrorMessage(`Failed to activate Konveyor extension: ${error}`);
     throw error; // Re-throw to ensure VS Code marks the extension as failed to activate

@@ -1,9 +1,11 @@
 import { FrameLocator } from 'playwright';
 import { expect, Page } from '@playwright/test';
-import { extensionName, generateRandomString, getOSInfo } from '../utilities/utils';
+import { generateRandomString, getOSInfo } from '../utilities/utils';
 import { DEFAULT_PROVIDER } from '../fixtures/provider-configs.fixture';
 import { KAIViews } from '../enums/views.enum';
 import { FixTypes } from '../enums/fix-types.enum';
+import { ProfileActions } from '../enums/profile-action-types.enum';
+import path from 'path';
 
 type SortOrder = 'ascending' | 'descending';
 type ListKind = 'issues' | 'files';
@@ -15,19 +17,24 @@ export abstract class VSCode {
   public static readonly COMMAND_CATEGORY = process.env.TEST_CATEGORY || 'Konveyor';
 
   /**
-   * Unzips all test data into workspace .vscode/ directory, deletes the zip files if cleanup is true
+   * Unzips all test data into workspace .vscode/ directory, only deletes the zip files if cleanup is true
    */
   public abstract ensureLLMCache(cleanup: boolean): Promise<void>;
   public abstract updateLLMCache(): Promise<void>;
-  /**
-   * Writes or updates the VSCode settings.json file to current workspace @ .vscode/settings.json
-   * @param settings - Key - value: A pair of settings to write or update, if a setting already exists, the new values will be merged
-   */
-  public abstract writeOrUpdateVSCodeSettings(settings: Record<string, any>): Promise<void>;
   protected abstract selectCustomRules(customRulesPath: string): Promise<void>;
   public abstract closeVSCode(): Promise<void>;
   public abstract pasteContent(content: string): Promise<void>;
   public abstract getWindow(): Page;
+
+  protected llmCachePaths(): {
+    storedPath: string; // this is where the data is checked-in in the repo
+    workspacePath: string; // this is where a workspace is expecting to find cached data
+  } {
+    return {
+      storedPath: path.join(__dirname, '..', '..', 'data', 'llm_cache.zip'),
+      workspacePath: path.join(this.repoDir ?? '', '.vscode', 'cache'),
+    };
+  }
 
   public async executeQuickCommand(command: string) {
     await this.waitDefault();
@@ -127,14 +134,30 @@ export abstract class VSCode {
     await toggleFilterButton.click();
   }
 
+  /**
+   * Checks if the server is running by verifying the presence of the "Running" label
+   * inside the unique ".server-status-wrapper" element.
+   * @returns {Promise<boolean>} Whether the server is running or not
+   */
+  public async isServerRunning(): Promise<boolean> {
+    await this.openAnalysisView();
+    const analysisView = await this.getView(KAIViews.analysisView);
+    const serverStatusWrapper = analysisView.locator('.server-status-wrapper');
+    const runningLabel = serverStatusWrapper.getByText('Running', { exact: true });
+    return await runningLabel.isVisible({ timeout: 5000 }).catch(() => false);
+  }
+
   public async runAnalysis() {
     await this.window.waitForTimeout(15000);
+    await this.openAnalysisView();
     const analysisView = await this.getView(KAIViews.analysisView);
 
     try {
       // Ensure server is running before attempting analysis
-      const stopButton = analysisView.getByRole('button', { name: 'Stop' });
-      await expect(stopButton).toBeVisible({ timeout: 30000 });
+      const serverRunning = await this.isServerRunning();
+      if (!serverRunning) {
+        throw new Error('Cannot run analysis: server is not running.');
+      }
 
       const runAnalysisBtnLocator = analysisView.getByRole('button', {
         name: 'Run Analysis',
@@ -155,6 +178,13 @@ export abstract class VSCode {
       console.log('Error running analysis:', error);
       throw error;
     }
+  }
+
+  public async waitForAnalysisCompleted(): Promise<void> {
+    const notificationLocator = this.window.locator('.notification-list-item-message span', {
+      hasText: 'Analysis completed successfully!',
+    });
+    await expect(notificationLocator).toBeVisible({ timeout: 10 * 60 * 1000 }); // up to 10 minutes
   }
 
   /**
@@ -269,11 +299,14 @@ export abstract class VSCode {
     await this.executeQuickCommand(
       `${VSCode.COMMAND_CATEGORY}: Open the GenAI model provider configuration file`
     );
-
+    const fileTab = this.window.locator('div[data-resource-name="provider-settings.yaml"]');
+    await expect(fileTab).toBeVisible();
+    expect(await fileTab.getAttribute('aria-selected')).toBe('true');
     const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
     await this.window.keyboard.press(`${modifier}+a+Delete`);
     await this.pasteContent(config);
     await this.window.keyboard.press(`${modifier}+s`, { delay: 500 });
+    await this.waitDefault();
   }
 
   public async findDebugArchiveCommand(): Promise<string> {
@@ -348,7 +381,7 @@ export abstract class VSCode {
       }
 
       console.log(`Found profile '${profileName}', proceeding with deletion`);
-      await targetProfile.click({ timeout: 30000 });
+      await targetProfile.click({ timeout: 60000 });
 
       const deleteButton = manageProfileView.getByRole('button', { name: 'Delete Profile' });
       await deleteButton.waitFor({ state: 'visible', timeout: 10000 });
@@ -443,16 +476,34 @@ export abstract class VSCode {
     await this.window.waitForTimeout(process.env.CI ? 5000 : 3000);
   }
 
+  public async openConfiguration() {
+    const analysisView = await this.getView(KAIViews.analysisView);
+    await analysisView.locator('button[aria-label="Configuration"]').first().click();
+  }
+
+  public async closeConfiguration(): Promise<void> {
+    const analysisView = await this.getView(KAIViews.analysisView);
+    const closeButton = analysisView.locator('button[aria-label="Close drawer panel"]');
+    await expect(closeButton).toBeVisible({ timeout: 5000 });
+    await closeButton.click();
+    await expect(closeButton).not.toBeVisible({ timeout: 5000 });
+  }
+
+  public async waitForGenAIConfigurationCompleted(): Promise<void> {
+    await this.openAnalysisView();
+    const analysisView = await this.getView(KAIViews.analysisView);
+    await this.openConfiguration();
+    const genaiCard = analysisView.locator('.pf-v6-c-card__header:has-text("Configure GenAI")');
+    const completedLabel = genaiCard.getByText('Completed', { exact: true });
+    await expect(completedLabel).toBeVisible({ timeout: 30000 });
+    await this.closeConfiguration();
+  }
+
   /**
-   * Opens the workspace settings file in VSCode and writes new settings.
-   * Supports updating a single key/value pair or merging multiple settings at once.
-   * @param keyOrObject - Either a settings key (string) or an object containing multiple settings.
-   * @param value - The value to set when a single key is provided.
+   * Writes or updates the VSCode settings.json file to current workspace @ .vscode/settings.json
+   * @param settings - Key - value: A pair of settings to write or update, if a setting already exists, the new values will be merged
    */
-  public async openWorkspaceSettingsAndWrite(
-    keyOrObject: string | Record<string, any>,
-    value?: any
-  ): Promise<void> {
+  public async openWorkspaceSettingsAndWrite(settings: Record<string, any>): Promise<void> {
     await this.executeQuickCommand('Preferences: Open Workspace Settings (JSON)');
 
     const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
@@ -461,7 +512,6 @@ export abstract class VSCode {
     await editor.click();
     await this.window.waitForTimeout(200);
 
-    // --- Read current content ---
     let editorContent = '';
     try {
       editorContent = await editor.innerText();
@@ -469,41 +519,22 @@ export abstract class VSCode {
       editorContent = '{}';
     }
 
-    // --- Parse settings safely ---
-    let settings: Record<string, any> = {};
+    let existingSettings: Record<string, any> = {};
     try {
-      settings = editorContent ? JSON.parse(editorContent.replace(/\u00A0/g, ' ')) : {};
+      existingSettings = editorContent ? JSON.parse(editorContent.replace(/\u00A0/g, ' ')) : {};
     } catch {
-      settings = {};
+      existingSettings = {};
     }
 
-    // --- Merge updates ---
-    const deepMerge = (target: any, source: any): any => {
-      for (const key of Object.keys(source)) {
-        if (
-          source[key] instanceof Object &&
-          !Array.isArray(source[key]) &&
-          key in target &&
-          target[key] instanceof Object &&
-          !Array.isArray(target[key])
-        ) {
-          deepMerge(target[key], source[key]);
-        } else {
-          target[key] = source[key];
-        }
-      }
-      return target;
-    };
+    const newContent = JSON.stringify(
+      {
+        ...existingSettings,
+        ...settings,
+      },
+      null,
+      2
+    );
 
-    if (typeof keyOrObject === 'string') {
-      settings[keyOrObject] = value;
-    } else {
-      settings = deepMerge(settings, keyOrObject);
-    }
-
-    const newContent = JSON.stringify(settings, null, 2);
-
-    // --- Replace file content and save ---
     await editor.click();
     await this.window.keyboard.press(`${modifier}+a`);
     await this.window.waitForTimeout(100);
@@ -519,6 +550,7 @@ export abstract class VSCode {
   /**
    * Opens the Konveyor command to configure Solution Server credentials,
    * then types username and password into the respective input fields.
+   * All commands are executed from the project folder
    * @param username - Username for solution server
    * @param password - Password for solution server
    */
@@ -526,7 +558,9 @@ export abstract class VSCode {
     username: string,
     password: string
   ): Promise<void> {
-    await this.executeQuickCommand(`${extensionShortName}: Configure Solution Server Credentials`);
+    await this.executeQuickCommand(
+      `${VSCode.COMMAND_CATEGORY}: Configure Solution Server Credentials`
+    );
 
     const usernameInput = this.window.getByRole('textbox', { name: 'input' });
     await expect(usernameInput).toBeVisible({ timeout: 5000 });
@@ -546,12 +580,105 @@ export abstract class VSCode {
     if (!(await this.window.getByRole('tab', { name: 'Terminal' }).isVisible())) {
       await this.executeQuickCommand(`View: Toggle Terminal`);
     }
+
+    await expect(this.window.locator('.terminal-widget-container')).toBeVisible();
+    await this.window.keyboard.type(`cd /projects/${this.repoDir}`);
+    await this.window.keyboard.press('Enter');
     await expect(this.window.getByText(`${this.repoDir} (${this.branch})`).last()).toBeVisible();
     await this.window.keyboard.type(command);
     await this.window.keyboard.press('Enter');
     if (expectedOutput) {
-      await expect(this.window.getByText(expectedOutput)).toBeVisible();
+      await expect(this.window.getByText(expectedOutput).first()).toBeVisible();
     }
+
     await this.executeQuickCommand(`View: Toggle Terminal`);
+    await expect(this.window.locator('.terminal-widget-container')).not.toBeVisible();
+  }
+
+  public async getIssuesCount(): Promise<number> {
+    const analysisView = await this.getView(KAIViews.analysisView);
+    const issuesCount = analysisView.locator('.violations-count h4.violations-title');
+    const issuesText = await issuesCount.textContent();
+    const issuesMatch = issuesText?.match(/Total Issues:\s*(\d+)/i);
+    return Number(issuesMatch?.[1]);
+  }
+
+  public async getIncidentsCount(): Promise<number> {
+    const analysisView = await this.getView(KAIViews.analysisView);
+    const incidentsCount = analysisView.locator('.violations-count small.violations-subtitle');
+    const incidentsText = await incidentsCount.textContent();
+    const incidentsMatch = incidentsText?.match(/\(([\d,]+)\s+incidents?\s+found\)/i);
+    return Number(incidentsMatch?.[1].replace(/,/g, ''));
+  }
+
+  private async getProfileContainerByName(profileName: string, profileView: FrameLocator) {
+    const profileList = profileView.getByRole('list', {
+      name: 'Profile list',
+    });
+    await profileList.waitFor({ state: 'visible', timeout: 30000 });
+
+    const targetProfile = profileList.locator(
+      `//li[.//span[normalize-space() = "${profileName}" or normalize-space() = "${profileName} (active)"]]`
+    );
+    await expect(targetProfile).toHaveCount(1, { timeout: 60000 });
+    return targetProfile;
+  }
+
+  public async clickOnProfileContainer(profileName: string, profileView: FrameLocator) {
+    const targetProfile = await this.getProfileContainerByName(profileName, profileView);
+    await targetProfile.click({ timeout: 60000 });
+  }
+
+  public async activateProfile(profileName: string, profileView?: FrameLocator) {
+    const pageView = profileView ? profileView : await this.getView(KAIViews.manageProfiles);
+    await this.clickOnProfileContainer(profileName, pageView);
+    const activationButton = pageView.getByRole('button', { name: 'Make Active' });
+    await activationButton.waitFor({ state: 'visible', timeout: 10000 });
+    await activationButton.click();
+    const activeProfileButton = pageView.getByRole('button', { name: 'Active Profile' });
+    await expect(activeProfileButton).toBeVisible({ timeout: 30000 });
+    await expect(activeProfileButton).toBeDisabled({ timeout: 30000 });
+  }
+
+  public async doProfileMenuButtonAction(
+    profileName: string,
+    actionName: ProfileActions,
+    profileView?: FrameLocator
+  ) {
+    let manageProfileView = profileView ? profileView : await this.getView(KAIViews.manageProfiles);
+    const targetProfile = await this.getProfileContainerByName(profileName, manageProfileView);
+    const kebabMenuButton = targetProfile.getByLabel('Profile actions menu');
+    await kebabMenuButton.click();
+    await manageProfileView.getByRole('menuitem', { name: actionName }).click();
+    await this.waitDefault();
+    if (actionName === ProfileActions.deleteProfile) {
+      const confirmButton = manageProfileView
+        .getByRole('dialog', { name: 'Delete profile?' })
+        .getByRole('button', { name: 'Confirm' });
+      await confirmButton.click();
+    }
+  }
+
+  public async removeProfileCustomRules(profileName: string, pageView?: FrameLocator) {
+    const profileView = pageView ? pageView : await this.getView(KAIViews.manageProfiles);
+    await this.clickOnProfileContainer(profileName, profileView);
+    const customRuleList = profileView.getByRole('list', { name: 'Custom Rules' });
+    const removeButtons = customRuleList.getByRole('button', { name: 'Remove rule' });
+    const rulesInList = await removeButtons.count();
+    for (let i = 0; i < rulesInList; i++) {
+      await removeButtons.first().click();
+    }
+    await expect(removeButtons).toHaveCount(0);
+  }
+
+  public async getCurrActiveProfile() {
+    const view = await this.getView(KAIViews.manageProfiles);
+    const activeProfileLocator = view.locator('span:has(em:text-is("(active)"))');
+    const fullText = await activeProfileLocator.textContent();
+    if (fullText == null) {
+      throw new Error('No active profile found');
+    }
+    const profileName = fullText.replace('(active)', '').trim();
+    return profileName;
   }
 }
