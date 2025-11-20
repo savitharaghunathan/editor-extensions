@@ -99,6 +99,10 @@ export class VSCodeDesktop extends VSCode {
     const vscode = new VSCodeDesktop(vscodeApp, window, repoDir);
 
     if (waitForInitialization) {
+      // Open Java file immediately after VSCode starts to trigger onLanguage:java activation
+      if (repoDir) {
+        await vscode.openJavaFileForActivation();
+      }
       // Wait for extension initialization in downstream environment
       await vscode.waitForExtensionInitialization();
     }
@@ -159,6 +163,49 @@ export class VSCodeDesktop extends VSCode {
   }
 
   /**
+   * Opens a Java file to trigger onLanguage:java activation for both redhat.java and konveyor-java
+   */
+  public async openJavaFileForActivation(): Promise<void> {
+    try {
+      console.log('Opening Java file to trigger Java extension activation...');
+
+      // Wait for VSCode to be fully ready before executing commands
+      await this.waitDefault();
+      await this.window.waitForTimeout(3000);
+
+      await this.window.locator('body').focus();
+      await this.waitDefault();
+
+      const javaFilePath = path.resolve(
+        this.repoDir || '',
+        'src/main/java/com/redhat/coolstore/service/OrderService.java'
+      );
+
+      if (!fs.existsSync(javaFilePath)) {
+        throw new Error(
+          `Java file not found at ${javaFilePath}. Cannot trigger Java extension activation.`
+        );
+      }
+
+      await stubDialog(this.app, 'showOpenDialog', {
+        filePaths: [javaFilePath],
+        canceled: false,
+      });
+      await this.executeQuickCommand('File: Open File...');
+      await this.waitDefault();
+
+      // Verify file opened
+      const fileName = 'OrderService.java';
+      const editorTab = this.window.locator(`div.tab[aria-label*="${fileName}"]`);
+      await expect(editorTab).toBeVisible({ timeout: 10000 });
+      console.log(`Java file opened successfully: ${fileName}`);
+    } catch (error) {
+      console.error('Failed to open Java file for activation:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Waits for the Konveyor extension to complete initialization by watching for
    * the __JAVA_EXTENSION_INITIALIZED__ info message signal.
    * Since the Java extension waits for the core extension to activate before completing,
@@ -177,8 +224,9 @@ export class VSCodeDesktop extends VSCode {
       await javaReadySelector.waitFor({ timeout: 1200000 });
 
       // Trigger extension activation by opening the analysis view
-      // This was working before - the extension activates and opens the view
+      console.log('Opening Analysis View to trigger core extension activation...');
       await this.executeQuickCommand(`${VSCode.COMMAND_CATEGORY}: Open Analysis View`);
+      await this.waitDefault();
 
       // Wait for Java extension initialization signal
       // The Java extension waits for core to activate, so this signal means both are ready
