@@ -182,14 +182,17 @@ export abstract class VSCode {
       await runAnalysisBtnLocator.click();
 
       console.log('Waiting for analysis progress indicator...');
-      await expect(analysisView.getByText('Analysis Progress').first()).toBeVisible({
-        timeout: 60000,
-      });
+      await expect(this.analysisIsRunning()).resolves.toBe(true);
       console.log('Analysis started successfully');
     } catch (error) {
       console.log('Error running analysis:', error);
       throw error;
     }
+  }
+
+  public async analysisIsRunning(): Promise<boolean> {
+    const analysisView = await this.getView(KAIViews.analysisView);
+    return await analysisView.getByText('Analysis Progress').first().isVisible();
   }
 
   public async waitForAnalysisCompleted(): Promise<void> {
@@ -735,5 +738,23 @@ export abstract class VSCode {
     }
 
     return results;
+  }
+
+  public async openFile(filename: string, closeOtherEditors: boolean = false): Promise<void> {
+    const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
+    await this.window.keyboard.press(`${modifier}+P`, { delay: 500 });
+    const input = this.window.getByPlaceholder(
+      'Search files by name (append : to go to line or @ to go to symbol)'
+    );
+    await input.waitFor({ state: 'visible', timeout: 5000 });
+    await input.fill(filename);
+    const fileLocator = await this.window.locator('a').filter({ hasText: filename }).first();
+    await expect(fileLocator).toBeVisible({ timeout: 10000 });
+    await fileLocator.click();
+    if (closeOtherEditors) {
+      await this.executeQuickCommand('View: Close Other Editors in Group');
+    }
+    const tabSelector = `.tab[role="tab"][data-resource-name="${filename}"]`;
+    await expect(this.window.locator(tabSelector)).toBeVisible({ timeout: 10000 });
   }
 }
