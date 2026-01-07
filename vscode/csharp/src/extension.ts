@@ -1,10 +1,28 @@
 import * as vscode from "vscode";
-import { exec } from "node:child_process";
+import * as os from "node:os";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import winston from "winston";
 import { OutputChannelTransport } from "winston-transport-vscode";
 import * as rpc from "vscode-jsonrpc/node";
 import type { KonveyorCoreApi } from "@editor-extensions/shared";
 import { CSharpExternalProviderManager } from "./csharpExternalProviderManager";
+
+/**
+ * Find a dotnet global tool path.
+ * Dotnet global tools are installed to ~/.dotnet/tools
+ */
+function findDotnetToolPath(toolName: string): string | undefined {
+  const isWindows = process.platform === "win32";
+  const executableName = isWindows ? `${toolName}.exe` : toolName;
+  const toolPath = path.join(os.homedir(), ".dotnet", "tools", executableName);
+
+  if (fs.existsSync(toolPath)) {
+    return toolPath;
+  }
+
+  return undefined;
+}
 
 const EXTENSION_DISPLAY_NAME = "Konveyor C#";
 const EXTENSION_ID = "konveyor.konveyor-csharp";
@@ -34,24 +52,36 @@ export async function activate(context: vscode.ExtensionContext) {
   logger.info("Logger created");
   logger.info(`Extension ${EXTENSION_ID} starting`);
 
-  // Check if .NET SDK is available (optional but recommended)
-  await new Promise<void>((resolve) => {
-    exec("dotnet --version", { timeout: 5000 }, (error, stdout, _stderr) => {
-      if (error) {
-        logger.warn(".NET SDK not found in PATH", { error: error.message });
-        vscode.window.showWarningMessage(
-          ".NET SDK was not found in your PATH. " +
-            "While not strictly required for source-only analysis, " +
-            "having .NET SDK installed can improve analysis quality. " +
-            "Please install .NET SDK from https://dotnet.microsoft.com/download",
-        );
-      } else {
-        const version = stdout.trim();
-        logger.info(`.NET SDK detected: ${version}`);
-      }
-      resolve();
-    });
-  });
+  // Find tool paths for provider configuration
+  // The C# provider's auto-detect looks for "ilspy" but the tool is "ilspycmd",
+  // so we need to find and pass the actual paths explicitly
+  const ilspyCmdPath = findDotnetToolPath("ilspycmd");
+  const paketCmdPath = findDotnetToolPath("paket");
+
+  // Check for required tools by looking at file system (more reliable than PATH)
+  const missingTools: string[] = [];
+
+  if (!ilspyCmdPath) {
+    logger.warn("ilspycmd not found at ~/.dotnet/tools/");
+    missingTools.push("ilspycmd");
+  } else {
+    logger.info(`Found ilspycmd at: ${ilspyCmdPath}`);
+  }
+
+  if (!paketCmdPath) {
+    logger.warn("paket not found at ~/.dotnet/tools/");
+    missingTools.push("paket");
+  } else {
+    logger.info(`Found paket at: ${paketCmdPath}`);
+  }
+
+  if (missingTools.length > 0) {
+    const missingList = missingTools.join(", ");
+    vscode.window.showWarningMessage(
+      `C# analyzer is missing required tools: ${missingList}. ` +
+        `Install them with: 'dotnet tool install --global ilspycmd' and 'dotnet tool install --global paket'`,
+    );
+  }
 
   // Get core extension API
   const coreExtension = vscode.extensions.getExtension("konveyor.konveyor");
@@ -115,9 +145,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register C# provider with core
   const providerDisposable = coreApi.registerProvider({
-    name: "csharp",
+    name: "c-sharp",
     providerConfig: {
-      name: "dotnet",
+      name: "c-sharp",
       address: providerAddress, // GRPC socket address
       useSocket: true,
       initConfig: [
@@ -126,8 +156,9 @@ export async function activate(context: vscode.ExtensionContext) {
           analysisMode: "source-only",
           pipeName: "", // C# provider doesn't use LSP proxy, but field is required
           providerSpecificConfig: {
-            // Add any C#-specific configuration here
-            // For example: framework targets, project files to analyze, etc.
+            // Pass explicit paths since provider auto-detect looks for "ilspy" not "ilspycmd"
+            ...(ilspyCmdPath && { ilspy_cmd: ilspyCmdPath }),
+            ...(paketCmdPath && { paket_cmd: paketCmdPath }),
           },
         },
       ],
