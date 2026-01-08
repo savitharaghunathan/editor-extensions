@@ -145,9 +145,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register C# provider with core
   const providerDisposable = coreApi.registerProvider({
-    name: "c-sharp",
+    name: "csharp",
     providerConfig: {
-      name: "c-sharp",
+      name: "csharp",
       address: providerAddress, // GRPC socket address
       useSocket: true,
       initConfig: [
