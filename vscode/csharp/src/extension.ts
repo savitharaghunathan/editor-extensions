@@ -7,6 +7,7 @@ import { OutputChannelTransport } from "winston-transport-vscode";
 import * as rpc from "vscode-jsonrpc/node";
 import type { KonveyorCoreApi } from "@editor-extensions/shared";
 import { CSharpExternalProviderManager } from "./csharpExternalProviderManager";
+import { CORE_EXTENSION_ID, EXTENSION_DISPLAY_NAME, EXTENSION_ID } from "./utilities/constants";
 
 /**
  * Find a dotnet global tool path.
@@ -23,9 +24,6 @@ function findDotnetToolPath(toolName: string): string | undefined {
 
   return undefined;
 }
-
-const EXTENSION_DISPLAY_NAME = "Konveyor C#";
-const EXTENSION_ID = "konveyor.konveyor-csharp";
 
 export async function activate(context: vscode.ExtensionContext) {
   // Setup logger
@@ -84,9 +82,9 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // Get core extension API
-  const coreExtension = vscode.extensions.getExtension("konveyor.konveyor");
+  const coreExtension = vscode.extensions.getExtension(CORE_EXTENSION_ID);
   if (!coreExtension) {
-    const message = "Konveyor C# extension requires Konveyor Core extension to be installed";
+    const message = `${EXTENSION_DISPLAY_NAME} requires the core extension to be installed`;
     logger.error(message);
     vscode.window.showErrorMessage(message);
     return;
