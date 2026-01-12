@@ -152,7 +152,6 @@ export async function activate(context: vscode.ExtensionContext) {
         {
           location: workspaceLocation,
           analysisMode: "source-only",
-          pipeName: "", // C# provider doesn't use LSP proxy, but field is required
           providerSpecificConfig: {
             // Pass explicit paths since provider auto-detect looks for "ilspy" not "ilspycmd"
             ...(ilspyCmdPath && { ilspy_cmd: ilspyCmdPath }),

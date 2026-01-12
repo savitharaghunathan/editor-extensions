@@ -20,7 +20,6 @@ const cli = parseCli(
     releaseTag: "v0.9.0-alpha.4",
     // C# provider specific defaults
     csharpBranch: "main",
-    csharpReleaseTag: "v0.9.0-alpha.4", // Set when c-sharp-analyzer-provider has releases
   },
   "release",
 );
@@ -31,18 +30,7 @@ const cwd = cwdToProjectRoot();
 
 // Setup download target
 const [DOWNLOAD_CACHE, DOWNLOAD_DIR] = await ensureDirs(["downloaded_cache", "downloaded_assets"]);
-const {
-  useWorkflow,
-  useRelease,
-  org,
-  repo,
-  releaseTag,
-  branch,
-  pr,
-  workflow,
-  csharpBranch,
-  csharpReleaseTag,
-} = cli;
+const { useWorkflow, useRelease, org, repo, releaseTag, branch, pr, workflow, csharpBranch } = cli;
 const bearerToken = process.env.GITHUB_TOKEN ?? undefined;
 
 // TODO(djzager): This is just to make it so the linter doesn't complain about the variables being unused
@@ -345,14 +333,13 @@ const actions = [
 
   // Download c-sharp-analyzer-provider release assets
   useRelease &&
-    csharpReleaseTag &&
     (async () => ({
       id: "download c-sharp-analyzer-provider release assets",
       meta: await downloadGitHubReleaseAssets({
         targetDirectory: join(DOWNLOAD_CACHE, "csharp-provider-assets"),
         org: "konveyor",
         repo: "c-sharp-analyzer-provider",
-        releaseTag: csharpReleaseTag,
+        releaseTag,
         bearerToken,
         assets: [
           { name: "c-sharp-analyzer-provider-linux-x86_64.tar.gz" },
