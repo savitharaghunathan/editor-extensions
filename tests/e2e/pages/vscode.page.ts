@@ -203,6 +203,15 @@ export abstract class VSCode {
     await expect(notificationLocator).toBeVisible({ timeout: 10 * 60 * 1000 }); // up to 10 minutes
   }
 
+  public async waitForFileSolutionAccepted(fileName: string): Promise<void> {
+    const notificationLocator = this.window.locator('.notification-list-item-message span', {
+      hasText: new RegExp(
+        `Auto-accepted all diff changes for .*${fileName}.* - saving final state`
+      ),
+    });
+    await expect(notificationLocator).toBeVisible({ timeout: 1 * 60 * 1000 }); // up to 1 minute
+  }
+
   /**
    * Sets the list kind (issues or files) and sort order (ascending or descending) in the analysis view.
    * @param kind - The kind of list to display ('issues' or 'files').
@@ -621,7 +630,7 @@ export abstract class VSCode {
     await passwordInput.press('Enter');
   }
 
-  public async executeTerminalCommand(command: string, expectedOutput?: string): Promise<void> {
+  public async executeTerminalCommand(command: string, expectedOutput?: string, outputShouldBeVisible: boolean = true): Promise<void> {
     if (!this.repoDir || !this.branch) {
       throw new Error('executeTerminalCommand requires repoDir and branch to be set');
     }
@@ -636,7 +645,11 @@ export abstract class VSCode {
     await this.window.keyboard.type(command);
     await this.window.keyboard.press('Enter');
     if (expectedOutput) {
-      await expect(this.window.getByText(expectedOutput).first()).toBeVisible();
+      if (outputShouldBeVisible) {
+        await expect(this.window.getByText(expectedOutput).first()).toBeVisible();
+      } else {
+        await expect(this.window.getByText(expectedOutput).first()).not.toBeVisible();
+      }
     }
 
     await this.executeQuickCommand(`View: Toggle Terminal`);
