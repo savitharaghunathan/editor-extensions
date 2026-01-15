@@ -244,13 +244,19 @@ export class VSCodeDesktop extends VSCode {
     const manageProfileView = await this.getView(KAIViews.manageProfiles);
     console.log(`Selecting custom rules from: ${customRulesPath}`);
 
+    // Convert relative path to absolute path (relative to tests directory)
+    const absoluteRulesPath = path.isAbsolute(customRulesPath)
+      ? customRulesPath
+      : path.resolve(process.cwd(), customRulesPath);
+    console.log(`Resolved custom rules path: ${absoluteRulesPath}`);
+
     const customRulesButton = manageProfileView.getByRole('button', {
       name: 'Select Custom Rules…',
     });
 
     if (await customRulesButton.isVisible()) {
       await stubDialog(this.app, 'showOpenDialog', {
-        filePaths: [customRulesPath],
+        filePaths: [absoluteRulesPath],
         canceled: false,
       });
 

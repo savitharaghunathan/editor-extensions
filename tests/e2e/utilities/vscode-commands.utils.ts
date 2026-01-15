@@ -159,6 +159,22 @@ export async function installExtension(): Promise<void> {
         );
       }
     }
+
+    // Install konveyor-javascript extension if path provided
+    if (
+      process.env.JAVASCRIPT_VSIX_FILE_PATH &&
+      fs.existsSync(process.env.JAVASCRIPT_VSIX_FILE_PATH)
+    ) {
+      console.log(
+        `Installing Konveyor JavaScript VSIX from ${process.env.JAVASCRIPT_VSIX_FILE_PATH}`
+      );
+      execSync(`code --install-extension "${process.env.JAVASCRIPT_VSIX_FILE_PATH}" --force`, {
+        stdio: 'inherit',
+        env: getCleanEnv(),
+        shell: false,
+      });
+      console.log('JavaScript extension installed/updated successfully.');
+    }
   } catch (error) {
     console.error('Error installing the VSIX extension:', error);
     throw error;
