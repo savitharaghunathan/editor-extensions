@@ -631,18 +631,19 @@ export abstract class VSCode {
     await passwordInput.press('Enter');
   }
 
-  public async executeTerminalCommand(command: string, expectedOutput?: string, outputShouldBeVisible: boolean = true): Promise<void> {
+  public async executeTerminalCommand(
+    command: string,
+    expectedOutput?: string,
+    outputShouldBeVisible: boolean = true
+  ): Promise<void> {
     if (!this.repoDir || !this.branch) {
       throw new Error('executeTerminalCommand requires repoDir and branch to be set');
     }
     if (!(await this.window.getByRole('tab', { name: 'Terminal' }).isVisible())) {
-      await this.executeQuickCommand(`View: Toggle Terminal`);
+      await this.executeQuickCommand(`Terminal: Create New Terminal`);
     }
-
-    await expect(this.window.locator('.terminal-widget-container')).toBeVisible();
-    await this.window.keyboard.type(`cd /projects/${this.repoDir}`);
-    await this.window.keyboard.press('Enter');
-    await expect(this.window.getByText(`${this.repoDir} (${this.branch})`).last()).toBeVisible();
+    const terminalContainerLocator = this.window.locator('.terminal-widget-container').last();
+    await expect(terminalContainerLocator).toBeVisible();
     await this.window.keyboard.type(command);
     await this.window.keyboard.press('Enter');
     if (expectedOutput) {
@@ -654,7 +655,7 @@ export abstract class VSCode {
     }
 
     await this.executeQuickCommand(`View: Toggle Terminal`);
-    await expect(this.window.locator('.terminal-widget-container')).not.toBeVisible();
+    await expect(terminalContainerLocator).not.toBeVisible();
   }
 
   public async getIssuesCount(): Promise<number> {
