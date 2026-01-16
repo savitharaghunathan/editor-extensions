@@ -112,6 +112,64 @@ test.describe.serial('TypeScript Extension - Analysis Execution & Results', () =
     console.log('Get Solution button is visible');
   });
 
+  test('Verify issues count matches expected', async () => {
+    await vscodeApp.openAnalysisView();
+    await vscodeApp.waitDefault();
+
+    const issuesCount = await vscodeApp.getIssuesCount();
+    console.log(`Issues count from UI: ${issuesCount}, expected: ${repoInfo.issuesCount}`);
+
+    // Verify issues count matches the expected count from test-repos.json
+    expect(issuesCount).toBe(repoInfo.issuesCount);
+
+    await vscodeApp.getWindow().screenshot({
+      path: pathlib.join(screenshotDir, 'issues-count-verified.png'),
+    });
+  });
+
+  test('Verify incidents count matches expected', async () => {
+    await vscodeApp.openAnalysisView();
+    await vscodeApp.waitDefault();
+
+    const incidentsCount = await vscodeApp.getIncidentsCount();
+    console.log(`Incidents count from UI: ${incidentsCount}, expected: ${repoInfo.incidentsCount}`);
+
+    // Verify incidents count matches the expected count from test-repos.json
+    expect(incidentsCount).toBe(repoInfo.incidentsCount);
+
+    await vscodeApp.getWindow().screenshot({
+      path: pathlib.join(screenshotDir, 'incidents-count-verified.png'),
+    });
+  });
+
+  test('Verify specific issue has correct incidents count', async () => {
+    await vscodeApp.openAnalysisView();
+    await vscodeApp.waitDefault();
+
+    // Get all issues from the UI
+    const allIssues = await vscodeApp.getAllIssues();
+    console.log(`Found ${allIssues.length} issues in UI`);
+
+    // Pick a specific issue from test-repos.json to verify (using one with stable count)
+    const expectedIssue = repoInfo.issues.find(
+      (issue) => issue.title === 'spacer should be replaced with gap'
+    );
+    expect(expectedIssue).toBeDefined();
+
+    // Find this issue in the UI results
+    const foundIssue = allIssues.find((issue) => issue.title === expectedIssue!.title);
+    expect(foundIssue).toBeDefined();
+    expect(foundIssue!.incidentsCount).toBe(expectedIssue!.incidentsCount);
+
+    console.log(
+      `Verified issue "${expectedIssue!.title}" has ${foundIssue!.incidentsCount} incidents (expected: ${expectedIssue!.incidentsCount})`
+    );
+
+    await vscodeApp.getWindow().screenshot({
+      path: pathlib.join(screenshotDir, 'specific-issue-verified.png'),
+    });
+  });
+
   test('Delete profile', async () => {
     await vscodeApp.deleteProfile(profileName);
     console.log(`Profile deleted: ${profileName}`);
