@@ -17,6 +17,9 @@ test.describe.serial('TypeScript Extension - Analysis Execution & Results', () =
   test.beforeAll(async ({ testRepoData }) => {
     test.setTimeout(1200000);
     repoInfo = testRepoData['static-report'];
+    if (!repoInfo) {
+      throw new Error("'static-report' fixture is missing from test-repos.json");
+    }
     // Use openForRepo which determines initialization based on repo language
     vscodeApp = await VSCodeFactory.openForRepo(repoInfo);
     // Wait for extensions to load
