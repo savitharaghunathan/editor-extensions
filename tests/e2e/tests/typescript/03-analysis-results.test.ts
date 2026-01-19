@@ -77,15 +77,15 @@ test.describe.serial('TypeScript Extension - Analysis Execution & Results', () =
     const analysisView = await vscodeApp.getView(KAIViews.analysisView);
 
     // Verify PatternFly page structure is intact
-    const pageComponent = analysisView.locator('.pf-v6-c-page');
+    const pageComponent = analysisView.locator('[class*="pf-v"][class*="-c-page"]').first();
     await expect(pageComponent).toBeVisible({ timeout: 10000 });
 
     // Verify drawer component shows results
-    const drawer = analysisView.locator('.pf-v6-c-drawer');
+    const drawer = analysisView.locator('[class*="pf-v"][class*="-c-drawer"]').first();
     await expect(drawer).toBeVisible({ timeout: 5000 });
 
     // Verify toolbar is present
-    const toolbar = analysisView.locator('.pf-v6-c-toolbar').first();
+    const toolbar = analysisView.locator('[class*="pf-v"][class*="-c-toolbar"]').first();
     await expect(toolbar).toBeVisible({ timeout: 10000 });
 
     await vscodeApp.getWindow().screenshot({

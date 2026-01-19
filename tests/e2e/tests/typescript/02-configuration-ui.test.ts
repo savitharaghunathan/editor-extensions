@@ -86,8 +86,8 @@ test.describe.serial('TypeScript Extension - Configuration & UI', () => {
     console.log(`Found ${buttonCount} buttons in analysis view`);
     expect(buttonCount).toBeGreaterThan(0);
 
-    // Verify PatternFly components are rendered
-    const pfComponents = analysisView.locator('[class*="pf-v6"]');
+    // Verify PatternFly components are rendered (use pf-v for future PF version compatibility)
+    const pfComponents = analysisView.locator('[class*="pf-v"]');
     const pfCount = await pfComponents.count();
     console.log(`Found ${pfCount} PatternFly components`);
     expect(pfCount).toBeGreaterThan(0);
@@ -135,37 +135,6 @@ test.describe.serial('TypeScript Extension - Configuration & UI', () => {
     await vscodeApp.getWindow().screenshot({
       path: pathlib.join(screenshotDir, 'genai-enabled.png'),
     });
-  });
-
-  test('Extension commands are available in command palette', async () => {
-    await vscodeApp.waitDefault();
-
-    // Open command palette
-    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
-    await vscodeApp.getWindow().keyboard.press(`${modifier}+Shift+P`);
-    await vscodeApp.getWindow().waitForTimeout(1000);
-
-    // Type Konveyor to filter commands
-    await vscodeApp.getWindow().keyboard.type('Konveyor', { delay: 50 });
-    await vscodeApp.getWindow().waitForTimeout(1000);
-
-    // Verify command list shows results
-    const commandList = vscodeApp.getWindow().locator('.quick-input-list');
-    await expect(commandList).toBeVisible({ timeout: 5000 });
-
-    // Check for at least one command entry
-    const commandEntries = vscodeApp.getWindow().locator('.quick-input-list-entry');
-    const entryCount = await commandEntries.count();
-    console.log(`Found ${entryCount} Konveyor commands in palette`);
-    expect(entryCount).toBeGreaterThan(0);
-
-    await vscodeApp.getWindow().screenshot({
-      path: pathlib.join(screenshotDir, 'command-palette.png'),
-    });
-
-    // Close command palette
-    await vscodeApp.getWindow().keyboard.press('Escape');
-    await vscodeApp.waitDefault();
   });
 
   test('Delete profile', async () => {

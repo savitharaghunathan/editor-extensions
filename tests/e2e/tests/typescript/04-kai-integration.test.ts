@@ -109,7 +109,7 @@ test.describe.serial('TypeScript Extension - Kai Integration', () => {
     const analysisView = await vscodeApp.getView(KAIViews.analysisView);
 
     // Count violations before fix
-    const violations = analysisView.locator('.pf-v6-c-card__header-toggle');
+    const violations = analysisView.locator('[class*="pf-v"][class*="-c-card__header-toggle"]');
     violationCountBefore = await violations.count();
     console.log(`Violations before fix: ${violationCountBefore}`);
 
@@ -165,7 +165,7 @@ test.describe.serial('TypeScript Extension - Kai Integration', () => {
     const analysisView = await vscodeApp.getView(KAIViews.analysisView);
 
     // Count violations after fix
-    const violations = analysisView.locator('.pf-v6-c-card__header-toggle');
+    const violations = analysisView.locator('[class*="pf-v"][class*="-c-card__header-toggle"]');
     const violationCountAfter = await violations.count();
     console.log(`Violations after fix: ${violationCountAfter}`);
 
