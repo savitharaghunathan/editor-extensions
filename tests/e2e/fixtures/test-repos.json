@@ -210,15 +210,23 @@
     "issues": [
       {
         "title": "--pf-v5-global should be replaced with --pf-v6-global",
-        "incidentsCount": 4
+        "incidentsCount": 2
+      },
+      {
+        "title": "--pf-v5-global should be replaced with --pf-v6-global",
+        "incidentsCount": 2
       },
       {
         "title": "--pf-v5-global-- should be replaced with --pf-t--global--",
-        "incidentsCount": 4
+        "incidentsCount": 2
       },
       {
-        "title": "MastheadBrand should be replaced with MastheadLogo",
-        "incidentsCount": 4
+        "title": "--pf-v5-global-- should be replaced with --pf-t--global--",
+        "incidentsCount": 2
+      },
+      {
+        "title": "<MastheadBrand should be replaced with <MastheadLogo",
+        "incidentsCount": 1
       },
       {
         "title": "<MenuToggle variant='plain'><EllipsisVIcon /></MenuToggle> should be replaced with <MenuToggle icon={EllipsisVIcon} variant='plain' />",
@@ -226,11 +234,27 @@
       },
       {
         "title": "768px should be replaced with 48rem",
-        "incidentsCount": 4
+        "incidentsCount": 1
+      },
+      {
+        "title": "768px should be replaced with 48rem",
+        "incidentsCount": 1
+      },
+      {
+        "title": "768px should be replaced with 48rem",
+        "incidentsCount": 1
+      },
+      {
+        "title": "768px should be replaced with 48rem",
+        "incidentsCount": 1
       },
       {
         "title": "alignRight should be replaced with alignEnd",
-        "incidentsCount": 10
+        "incidentsCount": 5
+      },
+      {
+        "title": "alignRight should be replaced with alignEnd",
+        "incidentsCount": 5
       },
       {
         "title": "chips should be replaced with labels",
@@ -277,6 +301,10 @@
         "incidentsCount": 4
       },
       {
+        "title": "MastheadBrand should be replaced with MastheadLogo",
+        "incidentsCount": 3
+      },
+      {
         "title": "Page header should be replaced with Page masthead",
         "incidentsCount": 11
       },
@@ -294,7 +322,11 @@
       },
       {
         "title": "Text component should be replaced with Content component",
-        "incidentsCount": 57
+        "incidentsCount": 23
+      },
+      {
+        "title": "Text component should be replaced with Content component",
+        "incidentsCount": 34
       },
       {
         "title": "TextContent component should be replaced with Content component",
