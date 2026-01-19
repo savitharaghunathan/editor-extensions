@@ -1,8 +1,7 @@
-import { relative, dirname, posix, join } from "node:path";
-import { readFileSync, createWriteStream, createReadStream } from "node:fs";
+import { relative, dirname, join } from "node:path";
+import { createWriteStream, createReadStream } from "node:fs";
 import { globbySync, isIgnoredByIgnoreFilesSync } from "globby";
 import * as vscode from "vscode";
-import slash from "slash";
 import winston from "winston";
 import { createHash } from "node:crypto";
 import { mkdir, chmod, unlink } from "node:fs/promises";
@@ -11,6 +10,11 @@ import { platform, arch } from "node:process";
 import { existsSync } from "node:fs";
 import { getConfigAnalyzerPath } from "./utilities/configuration";
 import { EXTENSION_NAME } from "./utilities/constants";
+import {
+  createIgnoreFromWorkspace,
+  filterIgnoredPaths,
+  DEFAULT_IGNORE_PATTERNS,
+} from "./utilities/ignorePatterns";
 import AdmZip from "adm-zip";
 
 /**
@@ -326,7 +330,6 @@ export function fsPaths(): ExtensionFsPaths {
   return _fsPaths;
 }
 
-const DEFAULT_IGNORES = [".git", ".vscode", "target", "node_modules"];
 const IGNORE_FILE_IN_PRIORITY_ORDER = [".konveyorignore", ".gitignore"];
 
 let _ignoreByFunction: undefined | ((path: string) => boolean);
@@ -352,7 +355,7 @@ function isIgnoredBy(path: string): boolean {
       _ignoreByFunction = (path: string): boolean => {
         const found = globbySync(path, {
           cwd: fsPaths().workspaceRepo,
-          ignore: DEFAULT_IGNORES,
+          ignore: DEFAULT_IGNORE_PATTERNS,
         });
         return found.length === 0;
       };
@@ -387,44 +390,43 @@ export const isUriIgnored = (uri: vscode.Uri): boolean => {
  * paths based on the contents of the workspace folder itself and the
  * ignore files that can be found.
  *
- * Ignore files to consider:
- *   - `.konveyorignore` that works like `.gitignore`
- *   - `.gitignore`
- *   - {@link DEFAULT_FILE_IGNORES}
+ * Uses the `ignore` npm package which properly implements gitignore specification,
+ * supporting all patterns including negation (!), rooted (/), and wildcards.
+ *
+ * Ignore files to consider (in priority order):
+ *   - `.konveyorignore` - Konveyor-specific ignore file
+ *   - `.gitignore` - Standard git ignore file
+ *   - Default patterns if no ignore file found
  *
  * Only directories will be returned.
  */
 export const ignoresToExcludedPaths = () => {
   const cwd = fsPaths().workspaceRepo;
-  let ignores = DEFAULT_IGNORES;
 
-  for (const glob of IGNORE_FILE_IN_PRIORITY_ORDER) {
-    const ignoreFiles = globbySync(glob, { cwd, absolute: true });
-    if (ignoreFiles.length > 0) {
-      _logger?.debug(`Using file: ${ignoreFiles[0]}`);
-      const base = slash(relative(cwd, dirname(ignoreFiles[0])));
-
-      ignores = readFileSync(ignoreFiles[0], "utf-8")
-        .split(/\r?\n/)
-        .filter((line) => line && !line.startsWith("#"))
-        .map((pattern) => posix.join(pattern, base));
-
-      break;
-    }
+  // Create ignore instance from workspace (handles file loading and defaults)
+  const { ig, ignoreFile } = createIgnoreFromWorkspace(cwd);
+  if (ignoreFile) {
+    _logger?.debug(`Using ignore file: ${ignoreFile}`);
+  } else {
+    _logger?.debug(`No ignore file found, using defaults`);
   }
 
-  // Always exclude .konveyor directory regardless of ignore files
-  const alwaysExclude = [".konveyor"];
-  const allIgnores = [...new Set([...alwaysExclude, ...ignores])];
-
-  const exclude = globbySync(allIgnores, {
+  // Get all directories in the workspace
+  const allDirs = globbySync("**/*", {
     cwd,
-    expandDirectories: false,
-    dot: true,
     onlyDirectories: true,
+    dot: true,
     markDirectories: true,
-    absolute: true,
-    unique: true,
   });
+
+  // Filter to find which directories are ignored
+  const ignoredRelativePaths = filterIgnoredPaths(allDirs, ig);
+
+  // Convert to absolute paths with trailing slash
+  const exclude = ignoredRelativePaths.map((dir) => {
+    const abs = join(cwd, dir);
+    return abs.endsWith("/") ? abs : abs + "/";
+  });
+
   return exclude;
 };
