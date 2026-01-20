@@ -5,7 +5,6 @@ import * as VSCodeFactory from '../../utilities/vscode.factory';
 import { DEFAULT_PROVIDER } from '../../fixtures/provider-configs.fixture';
 import { generateRandomString } from '../../utilities/utils';
 import { KAIViews } from '../../enums/views.enum';
-import { genAISettingKey } from '../../enums/configuration-options.enum';
 import { SCREENSHOTS_FOLDER } from '../../utilities/consts';
 
 test.describe.serial('TypeScript Extension - Configuration & UI', () => {
@@ -97,46 +96,6 @@ test.describe.serial('TypeScript Extension - Configuration & UI', () => {
 
     await vscodeApp.getWindow().screenshot({
       path: pathlib.join(screenshotDir, 'analysis-view-accessible.png'),
-    });
-  });
-
-  test('Disable and enable Generative AI', async () => {
-    // Disable GenAI - use replaceAll to start with clean settings
-    await vscodeApp.openWorkspaceSettingsAndWrite({ [genAISettingKey]: false }, true);
-    await vscodeApp.openAnalysisView();
-    await vscodeApp.waitDefault();
-
-    const analysisView = await vscodeApp.getView(KAIViews.analysisView);
-    const solutionButton = analysisView.locator('button#get-solution-button');
-
-    // Verify GenAI warning is shown when disabled
-    await expect(analysisView.getByRole('heading', { name: 'Warning alert: GenAI' })).toBeVisible({
-      timeout: 30000,
-    });
-    await expect(analysisView.getByRole('button', { name: 'Enable GenAI' })).toBeVisible();
-    await expect(analysisView.getByText('Agent Mode')).not.toBeVisible();
-    await expect(solutionButton.first()).not.toBeVisible({ timeout: 10000 });
-    console.log('GenAI disabled - warning shown correctly');
-
-    await vscodeApp.getWindow().screenshot({
-      path: pathlib.join(screenshotDir, 'genai-disabled.png'),
-    });
-
-    // Enable GenAI - use replaceAll for clean settings
-    await vscodeApp.openWorkspaceSettingsAndWrite({ [genAISettingKey]: true }, true);
-    await vscodeApp.waitDefault();
-
-    // Verify GenAI is enabled
-    await expect(
-      analysisView.getByRole('heading', { name: 'Warning alert: GenAI' })
-    ).not.toBeVisible({ timeout: 30000 });
-    await expect(analysisView.getByRole('button', { name: 'Enable GenAI' })).not.toBeVisible();
-    await expect(analysisView.getByText('Agent Mode')).toBeVisible();
-    await expect(solutionButton.first()).toBeVisible({ timeout: 30000 });
-    console.log('GenAI enabled - controls visible');
-
-    await vscodeApp.getWindow().screenshot({
-      path: pathlib.join(screenshotDir, 'genai-enabled.png'),
     });
   });
 

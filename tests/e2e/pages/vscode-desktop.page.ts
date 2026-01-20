@@ -245,9 +245,10 @@ export class VSCodeDesktop extends VSCode {
     console.log(`Selecting custom rules from: ${customRulesPath}`);
 
     // Convert relative path to absolute path (relative to tests directory)
+    const testsDir = path.resolve(__dirname, '..', '..');
     const absoluteRulesPath = path.isAbsolute(customRulesPath)
       ? customRulesPath
-      : path.resolve(process.cwd(), customRulesPath);
+      : path.resolve(testsDir, customRulesPath);
     console.log(`Resolved custom rules path: ${absoluteRulesPath}`);
 
     const customRulesButton = manageProfileView.getByRole('button', {
