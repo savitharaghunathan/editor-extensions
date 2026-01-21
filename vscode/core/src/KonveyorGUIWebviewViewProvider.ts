@@ -13,7 +13,7 @@ import {
   window,
 } from "vscode";
 import { getNonce } from "./utilities/getNonce";
-import { ExtensionData, WebviewType } from "@editor-extensions/shared";
+import { ExtensionData, MessageTypes, WebviewType } from "@editor-extensions/shared";
 import { Immutable } from "immer";
 import jsesc from "jsesc";
 import { EXTENSION_NAME, EXTENSION_SHORT_NAME } from "./utilities/constants";
@@ -62,6 +62,16 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
   ): void | Thenable<void> {
     this._view = webviewView;
     this.initializeWebview(webviewView.webview, this._extensionState.data);
+
+    // When webview becomes visible again, refresh state to ensure latest data
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        this.sendMessageToWebview({
+          type: MessageTypes.FULL_STATE_UPDATE,
+          ...this._extensionState.data,
+        });
+      }
+    });
   }
   public createWebviewPanel(): void {
     if (this._panel) {
@@ -135,6 +145,16 @@ export class KonveyorGUIWebviewViewProvider implements WebviewViewProvider {
     KonveyorGUIWebviewViewProvider.activePanels.set(this._viewType, this._panel);
 
     this.initializeWebview(this._panel.webview, this._extensionState.data);
+
+    // When panel becomes visible/active again, refresh state to ensure latest data
+    this._panel.onDidChangeViewState((e) => {
+      if (e.webviewPanel.visible && e.webviewPanel.active) {
+        this.sendMessageToWebview({
+          type: MessageTypes.FULL_STATE_UPDATE,
+          ...this._extensionState.data,
+        });
+      }
+    });
 
     this._panel.onDidDispose(() => {
       // Remove from the static map when disposed
