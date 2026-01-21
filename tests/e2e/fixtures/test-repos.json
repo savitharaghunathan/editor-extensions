@@ -204,7 +204,7 @@
     "language": "typescript",
     "sources": [],
     "targets": ["patternfly-v6"],
-    "customRulesFolder": "rulesets/patternfly",
+    "customRulesFolder": "data/rulesets/patternfly",
     "issuesCount": 36,
     "incidentsCount": 350,
     "issues": [
