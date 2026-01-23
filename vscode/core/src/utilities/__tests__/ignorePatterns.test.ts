@@ -4,6 +4,7 @@ import {
   createIgnoreFromWorkspace,
   filterIgnoredPaths,
   isPathIgnored,
+  getIgnorePatternsForGlob,
   IGNORE_FILE_PRIORITY,
   DEFAULT_IGNORE_PATTERNS,
   ALWAYS_IGNORE_PATTERNS,
@@ -275,6 +276,150 @@ node_modules/
 
       expect(ig.ignores("trailing ")).toBe(true);
       expect(ig.ignores("trailing")).toBe(false);
+    });
+  });
+
+  describe("getIgnorePatternsForGlob (regression test for issue #1182)", () => {
+    let testDir: string;
+
+    beforeEach(() => {
+      testDir = mkdtempSync(join(tmpdir(), "konveyor-test-glob-"));
+    });
+
+    afterEach(() => {
+      if (testDir) {
+        rmSync(testDir, { recursive: true, force: true });
+      }
+    });
+
+    it("should return raw patterns from gitignore for glob operations", () => {
+      writeFileSync(
+        join(testDir, ".gitignore"),
+        `target
+dist
+.vscode
+`,
+      );
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain(".konveyor"); // Always included
+      expect(patterns).toContain("target");
+      expect(patterns).toContain("dist");
+      expect(patterns).toContain(".vscode");
+    });
+
+    it("should filter out comments and blank lines", () => {
+      writeFileSync(
+        join(testDir, ".gitignore"),
+        `# This is a comment
+target
+
+# Another comment
+dist
+`,
+      );
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain("target");
+      expect(patterns).toContain("dist");
+      expect(patterns).not.toContain("# This is a comment");
+      expect(patterns).not.toContain("");
+    });
+
+    it("should return patterns suitable for glob matching", () => {
+      // This test verifies that patterns are returned in a format that
+      // can be used with globby to find ONLY top-level matching directories,
+      // not all nested subdirectories (which was the issue #1182 bug)
+      writeFileSync(join(testDir, ".gitignore"), "target\n");
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      // Should return simple patterns, not recursive ones
+      expect(patterns).toContain("target");
+      expect(patterns).not.toContain("target/**");
+      expect(patterns).not.toContain("**/target/**");
+
+      // Patterns should be suitable for glob operations that will:
+      // 1. Match "target/" at root level
+      // 2. Match "client/target/" at nested levels
+      // 3. NOT match "target/classes/" or other subdirectories inside target
+    });
+
+    it("should handle complex gitignore with multiple patterns", () => {
+      writeFileSync(
+        join(testDir, ".gitignore"),
+        `# Build outputs
+target
+dist
+build
+
+# IDE
+.vscode
+.idea
+
+# Dependencies
+node_modules
+`,
+      );
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain("target");
+      expect(patterns).toContain("dist");
+      expect(patterns).toContain("build");
+      expect(patterns).toContain(".vscode");
+      expect(patterns).toContain(".idea");
+      expect(patterns).toContain("node_modules");
+
+      // Should not include comments or blank lines
+      expect(patterns.filter((p) => p.startsWith("#")).length).toBe(0);
+      expect(patterns.filter((p) => p === "").length).toBe(0);
+    });
+
+    it("should prefer .konveyorignore over .gitignore", () => {
+      writeFileSync(join(testDir, ".konveyorignore"), "custom-ignore\n");
+      writeFileSync(join(testDir, ".gitignore"), "git-ignore\n");
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain("custom-ignore");
+      expect(patterns).not.toContain("git-ignore");
+    });
+
+    it("should use defaults when no ignore file exists", () => {
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain(".konveyor");
+      expect(patterns).toContain(".git");
+      expect(patterns).toContain("node_modules");
+      expect(patterns).toContain("target");
+    });
+
+    it("should always include .konveyor in patterns", () => {
+      writeFileSync(join(testDir, ".gitignore"), "dist\n");
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain(".konveyor");
+      expect(patterns).toContain("dist");
+    });
+
+    it("should trim whitespace from patterns", () => {
+      writeFileSync(
+        join(testDir, ".gitignore"),
+        `  target
+  dist
+`,
+      );
+
+      const patterns = getIgnorePatternsForGlob(testDir);
+
+      expect(patterns).toContain("target");
+      expect(patterns).toContain("dist");
+      expect(patterns).not.toContain("  target  ");
+      expect(patterns).not.toContain("  dist  ");
     });
   });
 });
