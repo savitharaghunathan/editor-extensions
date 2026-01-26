@@ -166,6 +166,17 @@ export async function handleFileResponse(
         // Skip analysis if explicitly requested (e.g., from decorator review flow where analysis runs on save)
         if (!skipAnalysis) {
           try {
+            // Notify providers about file changes first so they can invalidate their caches
+            // This is critical for providers like c-sharp-analyzer that cache the code graph
+            if (state.analyzerClient) {
+              await state.analyzerClient.notifyFileChanges([
+                {
+                  path: uri,
+                  content: fileContent,
+                  saved: true,
+                },
+              ]);
+            }
             await runPartialAnalysis(state, [uri]);
           } catch (analysisError) {
             logger.warn(
