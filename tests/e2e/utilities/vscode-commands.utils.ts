@@ -175,6 +175,17 @@ export async function installExtension(): Promise<void> {
       });
       console.log('JavaScript extension installed/updated successfully.');
     }
+
+    // Install konveyor-go extension if path provided
+    if (process.env.GO_VSIX_FILE_PATH && fs.existsSync(process.env.GO_VSIX_FILE_PATH)) {
+      console.log(`Installing Konveyor Go VSIX from ${process.env.GO_VSIX_FILE_PATH}`);
+      execSync(`code --install-extension "${process.env.GO_VSIX_FILE_PATH}" --force`, {
+        stdio: 'inherit',
+        env: getCleanEnv(),
+        shell: false,
+      });
+      console.log('Go extension installed/updated successfully.');
+    }
   } catch (error) {
     console.error('Error installing the VSIX extension:', error);
     throw error;
