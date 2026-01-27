@@ -42,8 +42,8 @@ async function globalSetup() {
   const isJava = needsJavaInitialization(language);
   console.log(`Running global setup... (language: ${language}, Java init: ${isJava})`);
 
-  // Install extensions from VSIX if provided 
-  if (process.env.CORE_VSIX_FILE_PATH || process.env.CORE_VSIX_DOWNLOAD_URL) {
+  // Install extensions from VSIX if provided (VSCode Desktop only, not on devspaces)
+  if ((process.env.CORE_VSIX_FILE_PATH || process.env.CORE_VSIX_DOWNLOAD_URL) && !process.env.WEB) {
     await installExtension();
   }
 
