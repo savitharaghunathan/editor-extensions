@@ -5,6 +5,7 @@ import { VSCodeDesktop } from './e2e/pages/vscode-desktop.page';
 import { existsSync } from 'node:fs';
 import fs from 'fs';
 import testReposData from './e2e/fixtures/test-repos.json';
+import { installExtension } from './e2e/utilities/vscode-commands.utils';
 
 type RepoData = {
   repoUrl?: string;
@@ -41,7 +42,12 @@ async function globalSetup() {
   const isJava = needsJavaInitialization(language);
   console.log(`Running global setup... (language: ${language}, Java init: ${isJava})`);
 
-  // For Java repos, use init() which installs extensions and waits for Java initialization
+  // Install extensions from VSIX if provided (VSCode Desktop only, not on devspaces)
+  if ((process.env.CORE_VSIX_FILE_PATH || process.env.CORE_VSIX_DOWNLOAD_URL) && !process.env.WEB) {
+    await installExtension();
+  }
+
+  // For Java repos, use init() which waits for Java initialization
   // For other languages, use open() which skips Java-specific initialization
   const vscodeApp = isJava
     ? await VSCodeFactory.init(repoUrl, repoName)
