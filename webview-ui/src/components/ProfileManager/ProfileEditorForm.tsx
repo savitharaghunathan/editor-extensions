@@ -87,16 +87,21 @@ export const ProfileEditorForm: React.FC<{
   const { callback: debouncedChange, isPending: isSaving } = useDebouncedCallback(onChange, 300);
 
   useEffect(() => {
-    // Only reset localProfile if it's a different profile to prevent overwriting pending changes
-    if (profile.id !== localProfile.id || profile.customRules !== localProfile.customRules) {
+    // Handle profile prop changes
+    if (profile.id !== localProfile.id) {
+      // Complete profile switch - reset everything to new profile
       setLocalProfile(profile);
+      setNameValidation("default");
+      setNameErrorMsg(null);
+      setTargetsValidation("default");
+      setTargetsErrorMsg(null);
+      setRulesValidation("default");
+      setRulesErrorMsg(null);
+    } else if (profile.customRules !== localProfile.customRules) {
+      // Custom rules changed externally (e.g., via "Select Custom Rules..." button)
+      // Merge with local state to preserve any pending changes
+      setLocalProfile({ ...localProfile, customRules: profile.customRules });
     }
-    setNameValidation("default");
-    setNameErrorMsg(null);
-    setTargetsValidation("default");
-    setTargetsErrorMsg(null);
-    setRulesValidation("default");
-    setRulesErrorMsg(null);
 
     const parsedSources: string[] = [];
     const parsedTargets: string[] = [];
@@ -116,10 +121,15 @@ export const ProfileEditorForm: React.FC<{
     setSelectedSources(parsedSources);
     setSelectedTargets(parsedTargets);
 
-    // Validate initial state
+    // Validate targets when profile changes
     validateTargets(parsedTargets);
-    validateRules(profile);
   }, [profile]);
+
+  // Validate rules whenever useDefaultRules or customRules changes in local state
+  // This ensures validation is based on the actual UI state, not stale prop data
+  useEffect(() => {
+    validateRules(localProfile);
+  }, [localProfile.useDefaultRules, localProfile.customRules]);
 
   const handleInputChange = (value: string, field: keyof AnalysisProfile) => {
     const processedValue = field === "name" ? value.slice(0, MAX_PROFILE_NAME_LENGTH) : value;
@@ -353,7 +363,6 @@ export const ProfileEditorForm: React.FC<{
           onChange={(_e, checked) => {
             const updated = { ...localProfile, useDefaultRules: checked };
             setLocalProfile(updated);
-            validateRules(updated);
             debouncedChange(updated);
           }}
         />
@@ -482,7 +491,6 @@ export const ProfileEditorForm: React.FC<{
                           const updated = localProfile.customRules.filter((_, i) => i !== index);
                           const newProfile = { ...localProfile, customRules: updated };
                           setLocalProfile(newProfile);
-                          validateRules(newProfile);
                           debouncedChange(newProfile);
                         }
                   }
