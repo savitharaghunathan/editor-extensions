@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import fs from 'fs';
 import testReposData from './e2e/fixtures/test-repos.json';
 import { installExtension } from './e2e/utilities/vscode-commands.utils';
+import { verifyCSharpTools } from './e2e/utilities/csharp.utils';
 
 type RepoData = {
   repoUrl?: string;
@@ -47,7 +48,14 @@ async function globalSetup() {
     await installExtension();
   }
 
-  // For Java repos, use init() which waits for Java initialization
+  // Verify C# tools if running C# tests
+  // Check both language and CSHARP_VSIX_FILE_PATH to catch C# tests
+  const isCSharpTest = language === 'csharp' || !!process.env.CSHARP_VSIX_FILE_PATH;
+  if (isCSharpTest && !process.env.WEB) {
+    await verifyCSharpTools();
+  }
+
+  // For Java repos, use init() which installs extensions and waits for Java initialization
   // For other languages, use open() which skips Java-specific initialization
   const vscodeApp = isJava
     ? await VSCodeFactory.init(repoUrl, repoName)
