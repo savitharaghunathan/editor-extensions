@@ -259,3 +259,4 @@ await writeTestFile(page, "path/to/file", newContent);
 4. **Clean State** - Each test should be independent
 5. **Meaningful Names** - Describe what's being tested
 6. **Avoid accessing local files** - When the tests are executed in VSCode Web, the tests won't be able to open files locally
+7. **Prefer Assertions over Explicit Waits** - Replace `page.waitForTimeout()` with assertions like `expect(element).toBeVisible()`. Assertions have built-in auto-waiting and make tests more reliable and faster

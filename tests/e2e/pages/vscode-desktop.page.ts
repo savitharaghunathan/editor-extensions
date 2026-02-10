@@ -12,6 +12,8 @@ import { installExtension, isExtensionInstalled } from '../utilities/vscode-comm
 import { stubDialog } from 'electron-playwright-helpers';
 import { extensionId, redhatJavaExtensionId } from '../utilities/utils';
 import { VSCode } from './vscode.page';
+import { rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 
 /**
  * Prepare workspace for offline/cached mode BEFORE VS Code launches.
@@ -157,6 +159,17 @@ export class VSCodeDesktop extends VSCode {
     prepareOffline = false
   ): Promise<VSCode> {
     try {
+      // Removes the data dir to ensure the test is not affected by previous configurations
+      if (existsSync(TEST_DATA_DIR)) {
+        console.log('Cleaning data dir...');
+        await rm(TEST_DATA_DIR, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 5000,
+        });
+      }
+
       if (process.env.CORE_VSIX_FILE_PATH || process.env.CORE_VSIX_DOWNLOAD_URL) {
         await installExtension();
       }

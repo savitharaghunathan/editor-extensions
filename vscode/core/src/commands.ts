@@ -227,6 +227,7 @@ const commandsMap: (
         // Update connection state
         state.mutateServerState((draft) => {
           draft.profileSyncConnected = state.hubConnectionManager.isProfileSyncConnected();
+          draft.llmProxyAvailable = state.hubConnectionManager.isLLMProxyConnected();
         });
 
         if (state.hubConnectionManager.isProfileSyncConnected()) {

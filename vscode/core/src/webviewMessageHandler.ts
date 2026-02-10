@@ -265,6 +265,7 @@ const actions: {
     state.mutateServerState((draft) => {
       draft.solutionServerConnected = state.hubConnectionManager.isSolutionServerConnected();
       draft.profileSyncConnected = state.hubConnectionManager.isProfileSyncConnected();
+      draft.llmProxyAvailable = state.hubConnectionManager.isLLMProxyConnected();
     });
 
     // Clear syncing state if profile sync is disabled or disconnected

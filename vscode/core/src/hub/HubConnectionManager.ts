@@ -173,6 +173,10 @@ export class HubConnectionManager {
     return this.profileSyncClient?.isConnected ?? false;
   }
 
+  public isLLMProxyConnected(): boolean {
+    return this.profileSyncClient?.getLLMProxyConfig()?.available ?? false;
+  }
+
   /**
    * Check if authentication is valid
    */
