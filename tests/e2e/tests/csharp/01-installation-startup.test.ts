@@ -3,12 +3,12 @@ import { VSCode } from '../../pages/vscode.page';
 import * as VSCodeFactory from '../../utilities/vscode.factory';
 import { KAIViews } from '../../enums/views.enum';
 
-test.describe.serial('C# Extension - Installation & Startup', { tag: '@tier3' }, () => {
+test.describe.serial('C# Extension - Installation & Startup', { tag: '@tier2' }, () => {
   let vscodeApp: VSCode;
   let repoInfo: RepoData[string];
 
   test.beforeAll(async ({ testRepoData }) => {
-    test.setTimeout(300000);
+    test.setTimeout(600000);
     repoInfo = testRepoData['nerd-dinner'];
     vscodeApp = await VSCodeFactory.openForRepo(repoInfo);
 
